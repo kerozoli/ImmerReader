@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-ImmerreaderApplication<immerreader>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.keroleap.immerreader.ImmerreaderApplication",
+            "projectName": "immerreader",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
