@@ -36,7 +36,6 @@ public @ResponseBody byte[] getImage() throws IOException {
     int x2 = 240; // the x-coordinate of the bottom-right corner of the crop area
     int y2 = 140; // the y-coordinate of the bottom-right corner of the crop area
 
-    // Calculate the width and height of the crop area
     int width = x2 - x1;
     int height = y2 - y1;
 
@@ -65,7 +64,6 @@ private String getData(BufferedImage bufferedImage) {
     boolean levelThree = getLightValueAnnDrawRedCross( 172, 58 ,  bufferedImage);
     return "Kazan: " + kazanOn + " Level: " + levelOne + levelTwo + levelThree;
 }
-
 
 private BufferedImage getBufferedImage(String imageUrl) throws IOException {
 
