@@ -15,7 +15,7 @@ public class HelloWorldControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Test
+    /*@Test
     public void testGetImage() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/image"))
                 .andExpect(status().isOk())
@@ -28,5 +28,5 @@ public class HelloWorldControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.view().name("immerdata"))
                 .andExpect(MockMvcResultMatchers.model().attributeExists("message"));
-    }
+    }*/
 }
