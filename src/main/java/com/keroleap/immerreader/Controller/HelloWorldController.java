@@ -61,7 +61,7 @@ private String getData(BufferedImage bufferedImage) {
     boolean levelOne = getLightValueAnnDrawRedCross( 136, 58 ,  bufferedImage);
     boolean levelTwo = getLightValueAnnDrawRedCross(154, 58 ,  bufferedImage);
     boolean levelThree = getLightValueAnnDrawRedCross( 172, 58 ,  bufferedImage);
-    return "Kazan bekapcsolva: " + kazanOn + " Level: " + levelOne + levelTwo + levelThree;
+    return "Kazan bekapcsolva: " + kazanOn + " Kazán teljesítmény: " + levelOne + levelTwo + levelThree;
 }
 
 private BufferedImage getBufferedImage(String imageUrl) throws IOException {
