@@ -3,4 +3,4 @@
 [![Docker](https://github.com/kerozoli/ImmerReader/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/kerozoli/ImmerReader/actions/workflows/docker-publish.yml)
 [![pmd](https://github.com/kerozoli/ImmerReader/actions/workflows/pmd.yml/badge.svg)](https://github.com/kerozoli/ImmerReader/actions/workflows/pmd.yml)
 
-Automatic display detection for Immergas victrix exa 24
+Automatic display detection for VICTRIX EXA 24 X ErP
