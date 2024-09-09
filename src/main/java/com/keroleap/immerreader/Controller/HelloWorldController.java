@@ -61,7 +61,24 @@ private String getData(BufferedImage bufferedImage) {
     boolean levelOne = getLightValueAnnDrawRedCross( 136, 58 ,  bufferedImage);
     boolean levelTwo = getLightValueAnnDrawRedCross(154, 58 ,  bufferedImage);
     boolean levelThree = getLightValueAnnDrawRedCross( 172, 58 ,  bufferedImage);
-    return "Kazan bekapcsolva: " + kazanOn + " Kazán teljesítmény: " + levelOne + levelTwo + levelThree;
+
+    boolean digit1_1 = getLightValueAnnDrawRedCross(21, 90, bufferedImage);
+    boolean digit1_2 = getLightValueAnnDrawRedCross(28, 76, bufferedImage);
+    boolean digit1_3 = getLightValueAnnDrawRedCross(31, 51, bufferedImage);
+    boolean digit1_4 = getLightValueAnnDrawRedCross(20, 35, bufferedImage);
+    boolean digit1_5 = getLightValueAnnDrawRedCross(12, 53, bufferedImage);
+    boolean digit1_6 = getLightValueAnnDrawRedCross(12, 77, bufferedImage);
+    boolean digit1_7 = getLightValueAnnDrawRedCross(18, 64, bufferedImage);
+
+    boolean digit2_1 = getLightValueAnnDrawRedCross(190, 100, bufferedImage);
+    boolean digit2_2 = getLightValueAnnDrawRedCross(210, 100, bufferedImage);
+    boolean digit2_3 = getLightValueAnnDrawRedCross(230, 100, bufferedImage);
+    boolean digit2_4 = getLightValueAnnDrawRedCross(250, 100, bufferedImage);
+    boolean digit2_5 = getLightValueAnnDrawRedCross(270, 100, bufferedImage);
+    boolean digit2_6 = getLightValueAnnDrawRedCross(290, 100, bufferedImage);
+    boolean digit2_7 = getLightValueAnnDrawRedCross(310, 100, bufferedImage);
+    return "Kazan bekapcsolva: " + kazanOn + " Kazán teljesítmény: " + levelOne + levelTw
+    o + levelThree;
 }
 
 private BufferedImage getBufferedImage(String imageUrl) throws IOException {
