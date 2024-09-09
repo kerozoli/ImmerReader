@@ -171,5 +171,4 @@ private boolean getLightValueAnnDrawRedCross(int x, int y , BufferedImage image)
     }
     return detected;
 }  
-
 }
