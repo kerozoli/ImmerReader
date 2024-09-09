@@ -25,7 +25,7 @@ import org.springframework.web.servlet.ModelAndView;
 public class HelloWorldController   
 {  
 
-private static int LIGHT_THRESHOLD = -1500000;
+private static int LIGHT_THRESHOLD = -2500000;
 
 @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
 public @ResponseBody byte[] getImage() throws IOException {
@@ -42,7 +42,7 @@ public @ResponseBody byte[] getImage() throws IOException {
     // Crop the image
     BufferedImage bufferedImage = cachedImage.getSubimage(x1, y1, width, height);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    ImageIO.write(bufferedImage, "jpg", baos);
+    ImageIO.write(cachedImage, "jpg", baos);
     byte[] bytes = baos.toByteArray();
 
     return bytes;
@@ -62,23 +62,62 @@ private String getData(BufferedImage bufferedImage) {
     boolean levelTwo = getLightValueAnnDrawRedCross(154, 58 ,  bufferedImage);
     boolean levelThree = getLightValueAnnDrawRedCross( 172, 58 ,  bufferedImage);
 
-    boolean digit1_1 = getLightValueAnnDrawRedCross(21, 90, bufferedImage);
-    boolean digit1_2 = getLightValueAnnDrawRedCross(28, 76, bufferedImage);
-    boolean digit1_3 = getLightValueAnnDrawRedCross(31, 51, bufferedImage);
-    boolean digit1_4 = getLightValueAnnDrawRedCross(20, 35, bufferedImage);
-    boolean digit1_5 = getLightValueAnnDrawRedCross(12, 53, bufferedImage);
-    boolean digit1_6 = getLightValueAnnDrawRedCross(12, 77, bufferedImage);
-    boolean digit1_7 = getLightValueAnnDrawRedCross(18, 64, bufferedImage);
+    boolean digit1_1 = getLightValueAnnDrawRedCross(110, 124, bufferedImage);
+    boolean digit1_2 = getLightValueAnnDrawRedCross(119, 112, bufferedImage);
+    boolean digit1_3 = getLightValueAnnDrawRedCross(119, 86, bufferedImage);
+    boolean digit1_4 = getLightValueAnnDrawRedCross(111, 74, bufferedImage);
+    boolean digit1_5 = getLightValueAnnDrawRedCross(102, 86, bufferedImage);
+    boolean digit1_6 = getLightValueAnnDrawRedCross(102, 112, bufferedImage);
+    boolean digit1_7 = getLightValueAnnDrawRedCross(109, 99, bufferedImage);
 
-    boolean digit2_1 = getLightValueAnnDrawRedCross(190, 100, bufferedImage);
-    boolean digit2_2 = getLightValueAnnDrawRedCross(210, 100, bufferedImage);
-    boolean digit2_3 = getLightValueAnnDrawRedCross(230, 100, bufferedImage);
-    boolean digit2_4 = getLightValueAnnDrawRedCross(250, 100, bufferedImage);
-    boolean digit2_5 = getLightValueAnnDrawRedCross(270, 100, bufferedImage);
-    boolean digit2_6 = getLightValueAnnDrawRedCross(290, 100, bufferedImage);
-    boolean digit2_7 = getLightValueAnnDrawRedCross(310, 100, bufferedImage);
-    return "Kazan bekapcsolva: " + kazanOn + " Kazán teljesítmény: " + levelOne + levelTw
-    o + levelThree;
+    boolean digit2_1 = getLightValueAnnDrawRedCross(140, 124, bufferedImage);
+    boolean digit2_2 = getLightValueAnnDrawRedCross(149, 112, bufferedImage);
+    boolean digit2_3 = getLightValueAnnDrawRedCross(149, 86, bufferedImage);
+    boolean digit2_4 = getLightValueAnnDrawRedCross(141, 74, bufferedImage);
+    boolean digit2_5 = getLightValueAnnDrawRedCross(132, 86, bufferedImage);
+    boolean digit2_6 = getLightValueAnnDrawRedCross(132, 112, bufferedImage);
+    boolean digit2_7 = getLightValueAnnDrawRedCross(139, 99, bufferedImage);
+
+    int number1 = getNumber(digit1_1, digit1_2, digit1_3, digit1_4, digit1_5, digit1_6, digit1_7) * 10;
+    int number2 = getNumber(digit2_1, digit2_2, digit2_3, digit2_4, digit2_5, digit2_6, digit2_7);
+    int number = number1 + number2;
+
+    return "Kazan bekapcsolva toki: " + kazanOn + " Kazán teljesítmény: " + levelOne + levelTwo + levelThree + " Hőmérséklet: " + number;
+}
+
+public int getNumber(boolean digit1_1, boolean digit1_2, boolean digit1_3, boolean digit1_4, boolean digit1_5, boolean digit1_6, boolean digit1_7) {
+    int number = 0;
+    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && !digit1_7) {
+        number = 0;
+    }
+    if (digit1_1 && digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+        number = 1;
+    }
+    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
+        number = 2;
+    }
+    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+        number = 3;
+    }
+    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+        number = 4;
+    }
+    if (digit1_1 && digit1_2 && !digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
+        number = 5;
+    }
+    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+        number = 6;
+    }
+    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+        number = 7;
+    }
+    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+        number = 8;
+    }
+    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+        number = 9;
+    }
+    return number;
 }
 
 private BufferedImage getBufferedImage(String imageUrl) throws IOException {
@@ -115,10 +154,10 @@ private BufferedImage getBufferedImage(String imageUrl) throws IOException {
 
 private boolean getLightValueAnnDrawRedCross(int x, int y , BufferedImage image) {
     List <Integer> lightValues = new ArrayList<Integer>();
-    for (int a=x-5  ; a<x+5; a++) {
+    for (int a=x-3  ; a<x+3; a++) {
             lightValues.add(image.getRGB(a, y));
     }
-    for (int b=y-5  ; b<y+5; b++) {
+    for (int b=y-3  ; b<y+3; b++) {
             lightValues.add(image.getRGB(x, b));
     }   
     double lightValue = lightValues.stream().mapToInt(Integer::intValue).average().getAsDouble();
