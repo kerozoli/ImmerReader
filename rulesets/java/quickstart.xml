@@ -6,7 +6,7 @@
     <description>Custom ruleset for PMD</description>
 
     <!-- Optimize imports -->
-    <rule ref="category/java/codestyle.xml/UnusedImports"/>
+    <rule ref="category/java/codestyle.xml/UnnecessaryImport"/>
 
     <!-- Avoid unused private fields -->
     <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>

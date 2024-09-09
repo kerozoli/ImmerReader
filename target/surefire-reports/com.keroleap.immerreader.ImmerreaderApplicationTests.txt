@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.keroleap.immerreader.ImmerreaderApplicationTests
--------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.993 s - in com.keroleap.immerreader.ImmerreaderApplicationTests
