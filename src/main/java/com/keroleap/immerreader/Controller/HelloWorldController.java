@@ -42,7 +42,7 @@ public @ResponseBody byte[] getImage() throws IOException {
     // Crop the image
     BufferedImage bufferedImage = cachedImage.getSubimage(x1, y1, width, height);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    ImageIO.write(cachedImage, "jpg", baos);
+    ImageIO.write(bufferedImage, "jpg", baos);
     byte[] bytes = baos.toByteArray();
 
     return bytes;
