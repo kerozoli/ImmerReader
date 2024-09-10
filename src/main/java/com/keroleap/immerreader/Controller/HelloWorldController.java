@@ -95,7 +95,7 @@ private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
     int number = number1 + number2;
 
     ImmerRest immerRest = new ImmerRest();
-    immerRest.setTemperature(number);
+    immerRest.setTemperaute(number);
     immerRest.setThrottle(levelZero ? 0 : levelOne ? 1 : levelTwo ? 2 : levelThree ? 3 : 0);
     immerRest.setHeating(heating);
     immerRest.setBoilerOn(boilerOn);
