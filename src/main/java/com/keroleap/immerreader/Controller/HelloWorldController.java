@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.keroleap.immerreader.ImmerRest;
+
 @Controller
 @RequestMapping("/**")
 public class HelloWorldController   
@@ -54,6 +56,51 @@ public ModelAndView getImmerData() throws IOException {
     ModelAndView modelAndView = new ModelAndView("immerdata");
     modelAndView.addObject( "message", getData(cachedImage));
     return modelAndView;
+}
+
+@RequestMapping(value = "/immerrestdata")
+@ResponseBody
+public ImmerRest getImmerRestData() throws IOException {
+    BufferedImage cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
+    return getImmerRestData( cachedImage);
+}
+
+private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
+    boolean heating = getLightValueAnnDrawRedCross( 225, 100 ,  bufferedImage);
+    boolean levelZero = getLightValueAnnDrawRedCross( 122, 58 ,  bufferedImage);
+    boolean levelOne = getLightValueAnnDrawRedCross( 136, 58 ,  bufferedImage);
+    boolean levelTwo = getLightValueAnnDrawRedCross(154, 58 ,  bufferedImage);
+    boolean levelThree = getLightValueAnnDrawRedCross( 172, 58 ,  bufferedImage);
+
+    boolean boilerOn = getLightValueAnnDrawRedCross( 225, 100 ,  bufferedImage);
+
+    boolean digit1_1 = getLightValueAnnDrawRedCross(110, 124, bufferedImage);
+    boolean digit1_2 = getLightValueAnnDrawRedCross(119, 112, bufferedImage);
+    boolean digit1_3 = getLightValueAnnDrawRedCross(119, 86, bufferedImage);
+    boolean digit1_4 = getLightValueAnnDrawRedCross(111, 74, bufferedImage);
+    boolean digit1_5 = getLightValueAnnDrawRedCross(102, 86, bufferedImage);
+    boolean digit1_6 = getLightValueAnnDrawRedCross(102, 112, bufferedImage);
+    boolean digit1_7 = getLightValueAnnDrawRedCross(109, 99, bufferedImage);
+
+    boolean digit2_1 = getLightValueAnnDrawRedCross(140, 124, bufferedImage);
+    boolean digit2_2 = getLightValueAnnDrawRedCross(149, 112, bufferedImage);
+    boolean digit2_3 = getLightValueAnnDrawRedCross(149, 86, bufferedImage);
+    boolean digit2_4 = getLightValueAnnDrawRedCross(141, 74, bufferedImage);
+    boolean digit2_5 = getLightValueAnnDrawRedCross(132, 86, bufferedImage);
+    boolean digit2_6 = getLightValueAnnDrawRedCross(132, 112, bufferedImage);
+    boolean digit2_7 = getLightValueAnnDrawRedCross(139, 99, bufferedImage);
+
+    int number1 = getNumber(digit1_1, digit1_2, digit1_3, digit1_4, digit1_5, digit1_6, digit1_7) * 10;
+    int number2 = getNumber(digit2_1, digit2_2, digit2_3, digit2_4, digit2_5, digit2_6, digit2_7);
+    int number = number1 + number2;
+
+    ImmerRest immerRest = new ImmerRest();
+    immerRest.setTemperature(number);
+    immerRest.setThrottle(levelZero ? 0 : levelOne ? 1 : levelTwo ? 2 : levelThree ? 3 : 0);
+    immerRest.setHeating(heating);
+    immerRest.setBoilerOn(boilerOn);
+
+    return immerRest;
 }
 
 private String getData(BufferedImage bufferedImage) {
