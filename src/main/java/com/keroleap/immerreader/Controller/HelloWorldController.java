@@ -28,11 +28,12 @@ public class HelloWorldController
 {  
 
 private static int LIGHT_THRESHOLD = -2500000;
+private int previousTempValue;
 
 @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
 public @ResponseBody byte[] getImage() throws IOException {
     BufferedImage cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-    getData(cachedImage);
+    getImmerRestData(cachedImage);
     int x1 = 90; // the x-coordinate of the top-left corner of the crop area
     int y1 = 35; // the y-coordinate of the top-left corner of the crop area
     int x2 = 240; // the x-coordinate of the bottom-right corner of the crop area
@@ -50,11 +51,24 @@ public @ResponseBody byte[] getImage() throws IOException {
     return bytes;
 }
 
+@GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
+public @ResponseBody byte[] getUncroppedImage() throws IOException {
+    BufferedImage cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
+    getImmerRestData(cachedImage);
+
+    // Crop the image
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    ImageIO.write(cachedImage, "jpg", baos);
+    byte[] bytes = baos.toByteArray();
+
+    return bytes;
+}
+
 @RequestMapping(value = "/immerdata")
 public ModelAndView getImmerData() throws IOException {
     BufferedImage cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
     ModelAndView modelAndView = new ModelAndView("immerdata");
-    modelAndView.addObject( "message", getData(cachedImage));
+    modelAndView.addObject( "message", getImmerRestData(cachedImage).toString());
     return modelAndView;
 }
 
@@ -72,7 +86,7 @@ private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
     boolean levelTwo = getLightValueAnnDrawRedCross(154, 58 ,  bufferedImage);
     boolean levelThree = getLightValueAnnDrawRedCross( 172, 58 ,  bufferedImage);
 
-    boolean boilerOn = getLightValueAnnDrawRedCross( 225, 100 ,  bufferedImage);
+    boolean boilerOn = getLightValueAnnDrawRedCross( 212, 40 ,  bufferedImage);
 
     boolean digit1_1 = getLightValueAnnDrawRedCross(110, 124, bufferedImage);
     boolean digit1_2 = getLightValueAnnDrawRedCross(119, 112, bufferedImage);
@@ -93,6 +107,15 @@ private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
     int number1 = getNumber(digit1_1, digit1_2, digit1_3, digit1_4, digit1_5, digit1_6, digit1_7) * 10;
     int number2 = getNumber(digit2_1, digit2_2, digit2_3, digit2_4, digit2_5, digit2_6, digit2_7);
     int number = number1 + number2;
+
+    if (number > 500) {
+        number = previousTempValue;
+    }
+    if (!(20 < number && number < 60)) {
+        number = previousTempValue;
+    }
+
+    previousTempValue = number;
 
     ImmerRest immerRest = new ImmerRest();
     immerRest.setTemperaute(number);
@@ -103,65 +126,36 @@ private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
     return immerRest;
 }
 
-private String getData(BufferedImage bufferedImage) {
-    boolean kazanOn = getLightValueAnnDrawRedCross( 225, 100 ,  bufferedImage);
-    boolean levelOne = getLightValueAnnDrawRedCross( 136, 58 ,  bufferedImage);
-    boolean levelTwo = getLightValueAnnDrawRedCross(154, 58 ,  bufferedImage);
-    boolean levelThree = getLightValueAnnDrawRedCross( 172, 58 ,  bufferedImage);
-
-    boolean digit1_1 = getLightValueAnnDrawRedCross(110, 124, bufferedImage);
-    boolean digit1_2 = getLightValueAnnDrawRedCross(119, 112, bufferedImage);
-    boolean digit1_3 = getLightValueAnnDrawRedCross(119, 86, bufferedImage);
-    boolean digit1_4 = getLightValueAnnDrawRedCross(111, 74, bufferedImage);
-    boolean digit1_5 = getLightValueAnnDrawRedCross(102, 86, bufferedImage);
-    boolean digit1_6 = getLightValueAnnDrawRedCross(102, 112, bufferedImage);
-    boolean digit1_7 = getLightValueAnnDrawRedCross(109, 99, bufferedImage);
-
-    boolean digit2_1 = getLightValueAnnDrawRedCross(140, 124, bufferedImage);
-    boolean digit2_2 = getLightValueAnnDrawRedCross(149, 112, bufferedImage);
-    boolean digit2_3 = getLightValueAnnDrawRedCross(149, 86, bufferedImage);
-    boolean digit2_4 = getLightValueAnnDrawRedCross(141, 74, bufferedImage);
-    boolean digit2_5 = getLightValueAnnDrawRedCross(132, 86, bufferedImage);
-    boolean digit2_6 = getLightValueAnnDrawRedCross(132, 112, bufferedImage);
-    boolean digit2_7 = getLightValueAnnDrawRedCross(139, 99, bufferedImage);
-
-    int number1 = getNumber(digit1_1, digit1_2, digit1_3, digit1_4, digit1_5, digit1_6, digit1_7) * 10;
-    int number2 = getNumber(digit2_1, digit2_2, digit2_3, digit2_4, digit2_5, digit2_6, digit2_7);
-    int number = number1 + number2;
-
-    return "Kazan bekapcsolva toki: " + kazanOn + " Kazán teljesítmény: " + levelOne + levelTwo + levelThree + " Hőmérséklet: " + number;
-}
-
 public int getNumber(boolean digit1_1, boolean digit1_2, boolean digit1_3, boolean digit1_4, boolean digit1_5, boolean digit1_6, boolean digit1_7) {
-    int number = 0;
+    int number = 1000;
     if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && !digit1_7) {
         number = 0;
     }
-    if (digit1_1 && digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+    if (!digit1_1 && digit1_2 && digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
         number = 1;
     }
-    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
+    if (digit1_1 && !digit1_2 && digit1_3 && digit1_4 && !digit1_5 && digit1_6 && digit1_7) {
         number = 2;
     }
-    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && !digit1_5 && !digit1_6 && digit1_7) {
         number = 3;
     }
-    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+    if (!digit1_1 && digit1_2 && digit1_3 && !digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
         number = 4;
     }
     if (digit1_1 && digit1_2 && !digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
         number = 5;
     }
-    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+    if (digit1_1 && digit1_2 && !digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
         number = 6;
     }
-    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+    if (!digit1_1 && digit1_2 && digit1_3 && digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
         number = 7;
     }
-    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
         number = 8;
     }
-    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+    if (!digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
         number = 9;
     }
     return number;
