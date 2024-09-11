@@ -14,7 +14,4 @@
     <!-- Avoid unused local variables -->
     <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
 
-    <!-- Avoid duplicate literals -->
-    <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals"/>
-
 </ruleset>
