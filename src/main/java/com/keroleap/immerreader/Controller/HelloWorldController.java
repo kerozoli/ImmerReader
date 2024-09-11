@@ -55,13 +55,6 @@ public @ResponseBody byte[] getImage() throws IOException {
 public @ResponseBody byte[] getUncroppedImage() throws IOException {
     BufferedImage cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
     getImmerRestData(cachedImage);
-    int x1 = 90; // the x-coordinate of the top-left corner of the crop area
-    int y1 = 35; // the y-coordinate of the top-left corner of the crop area
-    int x2 = 240; // the x-coordinate of the bottom-right corner of the crop area
-    int y2 = 140; // the y-coordinate of the bottom-right corner of the crop area
-
-    int width = x2 - x1;
-    int height = y2 - y1;
 
     // Crop the image
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -121,7 +114,7 @@ private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
     if (!(20 < number && number < 60)) {
         number = previousTempValue;
     }
-    
+
     previousTempValue = number;
 
     ImmerRest immerRest = new ImmerRest();
