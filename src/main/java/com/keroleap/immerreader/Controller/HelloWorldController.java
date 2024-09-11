@@ -81,10 +81,10 @@ public ImmerRest getImmerRestData() throws IOException {
 
 private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
     boolean heating = getLightValueAnnDrawRedCross( 212, 97 ,  bufferedImage);
-    boolean levelZero = getLightValueAnnDrawRedCross( 110, 58 ,  bufferedImage);
-    boolean levelOne = getLightValueAnnDrawRedCross( 120, 58 ,  bufferedImage);
-    boolean levelTwo = getLightValueAnnDrawRedCross(140, 58 ,  bufferedImage);
-    boolean levelThree = getLightValueAnnDrawRedCross( 160, 58 ,  bufferedImage);
+    boolean levelOne = getLightValueAnnDrawRedCross( 110, 58 ,  bufferedImage);
+    boolean levelTwo = getLightValueAnnDrawRedCross( 120, 58 ,  bufferedImage);
+    boolean levelThree = getLightValueAnnDrawRedCross(140, 58 ,  bufferedImage);
+    boolean levelFour = getLightValueAnnDrawRedCross( 160, 58 ,  bufferedImage);
 
     boolean boilerOn = getLightValueAnnDrawRedCross( 212, 40 ,  bufferedImage);
 
@@ -121,9 +121,20 @@ private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
         number = 0;
     }
 
+    int throttle = 0;
+    if (levelOne) {
+        throttle = 1;
+    } else if (levelTwo) {
+        throttle = 2;
+    } else if (levelThree) {
+        throttle = 3;
+    } else if (levelFour) {
+        throttle = 4;
+    }
+
     ImmerRest immerRest = new ImmerRest();
     immerRest.setTemperaute(number);
-    immerRest.setThrottle(levelZero ? 0 : levelOne ? 1 : levelTwo ? 2 : levelThree ? 3 : 0);
+    immerRest.setThrottle(throttle);
     immerRest.setHeating(heating);
     immerRest.setBoilerOn(boilerOn);
 
