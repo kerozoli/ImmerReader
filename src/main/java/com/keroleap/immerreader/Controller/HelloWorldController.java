@@ -80,11 +80,11 @@ public ImmerRest getImmerRestData() throws IOException {
 }
 
 private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
-    boolean heating = getLightValueAnnDrawRedCross( 225, 100 ,  bufferedImage);
-    boolean levelZero = getLightValueAnnDrawRedCross( 122, 58 ,  bufferedImage);
-    boolean levelOne = getLightValueAnnDrawRedCross( 136, 58 ,  bufferedImage);
-    boolean levelTwo = getLightValueAnnDrawRedCross(154, 58 ,  bufferedImage);
-    boolean levelThree = getLightValueAnnDrawRedCross( 172, 58 ,  bufferedImage);
+    boolean heating = getLightValueAnnDrawRedCross( 212, 97 ,  bufferedImage);
+    boolean levelZero = getLightValueAnnDrawRedCross( 110, 58 ,  bufferedImage);
+    boolean levelOne = getLightValueAnnDrawRedCross( 120, 58 ,  bufferedImage);
+    boolean levelTwo = getLightValueAnnDrawRedCross(140, 58 ,  bufferedImage);
+    boolean levelThree = getLightValueAnnDrawRedCross( 160, 58 ,  bufferedImage);
 
     boolean boilerOn = getLightValueAnnDrawRedCross( 212, 40 ,  bufferedImage);
 
@@ -116,6 +116,10 @@ private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
     }
 
     previousTempValue = number;
+
+    if(!heating){
+        number = 0;
+    }
 
     ImmerRest immerRest = new ImmerRest();
     immerRest.setTemperaute(number);
