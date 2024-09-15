@@ -111,7 +111,7 @@ private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
     if (number > 500) {
         number = previousTempValue;
     }
-    if (!(20 < number && number < 60)) {
+    if (!(20 < number && number < 56)) {
         number = previousTempValue;
     }
 
@@ -173,7 +173,7 @@ public int getNumber(boolean digit1_1, boolean digit1_2, boolean digit1_3, boole
     if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
         number = 8;
     }
-    if (!digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
+    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
         number = 9;
     }
     return number;
