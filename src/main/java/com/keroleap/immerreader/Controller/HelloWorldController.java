@@ -124,11 +124,14 @@ private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
     int throttle = 0;
     if (levelOne) {
         throttle = 1;
-    } else if (levelTwo) {
+    } 
+    if (levelTwo) {
         throttle = 2;
-    } else if (levelThree) {
+    } 
+    if (levelThree) {
         throttle = 3;
-    } else if (levelFour) {
+    } 
+    if (levelFour) {
         throttle = 4;
     }
 
