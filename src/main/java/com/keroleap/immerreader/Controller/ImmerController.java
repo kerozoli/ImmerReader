@@ -23,7 +23,7 @@ import org.springframework.web.servlet.ModelAndView;
 import com.keroleap.immerreader.ImmerRest;
 
 @Controller
-@RequestMapping("/**")
+@RequestMapping("/Immer")
 public class ImmerController   
 {  
 
