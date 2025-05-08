@@ -24,10 +24,10 @@ import com.keroleap.immerreader.ImmerRest;
 
 @Controller
 @RequestMapping("/**")
-public class HelloWorldController   
+public class ImmerController   
 {  
 
-private static int LIGHT_THRESHOLD = -2500000;
+private static final int LIGHT_THRESHOLD = -2500000;
 private int previousTempValue;
 
 @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
