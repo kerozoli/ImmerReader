@@ -5,7 +5,7 @@ public class AristonRest {
 
 
 
-    public int getPeecentage() {
+    public int getPercentage() {
         return percentage;
     }
 
