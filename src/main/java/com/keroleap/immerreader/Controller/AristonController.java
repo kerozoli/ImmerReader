@@ -63,17 +63,17 @@ public @ResponseBody byte[] getUncroppedImage() throws IOException {
     return bytes;
 }
 
-@RequestMapping(value = "/immerdata")
-public ModelAndView getImmerData() throws IOException {
+@RequestMapping(value = "/aristondata")
+public ModelAndView getAristonData() throws IOException {
     BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
     ModelAndView modelAndView = new ModelAndView("immerdata");
     modelAndView.addObject( "message", getAristonRestData(cachedImage).toString());
     return modelAndView;
 }
 
-@RequestMapping(value = "/immerrestdata")
+@RequestMapping(value = "/aristonrestdata")
 @ResponseBody
-public AristonRest getImmerRestData() throws IOException {
+public AristonRest getAristonRestData() throws IOException {
     BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
     return getAristonRestData( cachedImage);
 }
