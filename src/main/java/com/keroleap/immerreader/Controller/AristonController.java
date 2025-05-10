@@ -20,24 +20,24 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
-import com.keroleap.immerreader.ImmerRest;
+import com.keroleap.immerreader.AristonRest;
 
 @Controller
 @RequestMapping("/Ariston")
 public class AristonController   
 {  
 
-private static final int LIGHT_THRESHOLD = -2500000;
+private static final int LIGHT_THRESHOLD = -7000000;
 private int previousTempValue;
 
 @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
 public @ResponseBody byte[] getImage() throws IOException {
     BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-    getImmerRestData(cachedImage);
-    int x1 = 90; // the x-coordinate of the top-left corner of the crop area
-    int y1 = 35; // the y-coordinate of the top-left corner of the crop area
-    int x2 = 240; // the x-coordinate of the bottom-right corner of the crop area
-    int y2 = 140; // the y-coordinate of the bottom-right corner of the crop area
+    getAristonRestData(cachedImage);
+    int x1 = 60; // the x-coordinate of the top-left corner of the crop area
+    int y1 = 115; // the y-coordinate of the top-left corner of the crop area
+    int x2 = 260; // the x-coordinate of the bottom-right corner of the crop area
+    int y2 = 230; // the y-coordinate of the bottom-right corner of the crop area
 
     int width = x2 - x1;
     int height = y2 - y1;
@@ -54,7 +54,7 @@ public @ResponseBody byte[] getImage() throws IOException {
 @GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
 public @ResponseBody byte[] getUncroppedImage() throws IOException {
     BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-    getImmerRestData(cachedImage);
+    getAristonRestData(cachedImage);
     // Crop the image
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     ImageIO.write(cachedImage, "jpg", baos);
@@ -67,116 +67,69 @@ public @ResponseBody byte[] getUncroppedImage() throws IOException {
 public ModelAndView getImmerData() throws IOException {
     BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
     ModelAndView modelAndView = new ModelAndView("immerdata");
-    modelAndView.addObject( "message", getImmerRestData(cachedImage).toString());
+    modelAndView.addObject( "message", getAristonRestData(cachedImage).toString());
     return modelAndView;
 }
 
 @RequestMapping(value = "/immerrestdata")
 @ResponseBody
-public ImmerRest getImmerRestData() throws IOException {
+public AristonRest getImmerRestData() throws IOException {
     BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-    return getImmerRestData( cachedImage);
+    return getAristonRestData( cachedImage);
 }
 
-private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
-    boolean heating = getLightValueAnnDrawRedCross( 212, 97 ,  bufferedImage);
-    boolean levelOne = getLightValueAnnDrawRedCross( 110, 58 ,  bufferedImage);
-    boolean levelTwo = getLightValueAnnDrawRedCross( 120, 58 ,  bufferedImage);
-    boolean levelThree = getLightValueAnnDrawRedCross(140, 58 ,  bufferedImage);
-    boolean levelFour = getLightValueAnnDrawRedCross( 160, 58 ,  bufferedImage);
+private AristonRest getAristonRestData(BufferedImage bufferedImage) {
+    boolean percent_0 = getLightValueAnnDrawRedCross( 160, 160 ,  bufferedImage);
+    boolean percent_5 = getLightValueAnnDrawRedCross( 163, 161 ,  bufferedImage);
+    boolean percent_10 = getLightValueAnnDrawRedCross( 166, 162 ,  bufferedImage);
+    boolean percent_15 = getLightValueAnnDrawRedCross( 169, 163 ,  bufferedImage);
+    boolean percent_20 = getLightValueAnnDrawRedCross( 172, 164 ,  bufferedImage);
+    boolean percent_25 = getLightValueAnnDrawRedCross( 175, 165 ,  bufferedImage);
+    boolean percent_30 = getLightValueAnnDrawRedCross( 178, 166 ,  bufferedImage);
+    boolean percent_35 = getLightValueAnnDrawRedCross( 181, 167 ,  bufferedImage);
+    boolean percent_40 = getLightValueAnnDrawRedCross( 184, 168 ,  bufferedImage);
+    boolean percent_45 = getLightValueAnnDrawRedCross( 187, 169 ,  bufferedImage);
+    boolean percent_50 = getLightValueAnnDrawRedCross( 190, 170 ,  bufferedImage);
+    boolean percent_55 = getLightValueAnnDrawRedCross( 193, 171 ,  bufferedImage);
+    boolean percent_60 = getLightValueAnnDrawRedCross( 196, 172 ,  bufferedImage);
+    boolean percent_65 = getLightValueAnnDrawRedCross( 199, 173 ,  bufferedImage);
+    boolean percent_70 = getLightValueAnnDrawRedCross( 202, 174 ,  bufferedImage);
+    boolean percent_75 = getLightValueAnnDrawRedCross( 205, 175 ,  bufferedImage);
+    boolean percent_80 = getLightValueAnnDrawRedCross( 208, 176 ,  bufferedImage);
+    boolean percent_85 = getLightValueAnnDrawRedCross( 211, 177 ,  bufferedImage);
+    boolean percent_90 = getLightValueAnnDrawRedCross( 214, 178 ,  bufferedImage);
+    boolean percent_95 = getLightValueAnnDrawRedCross( 217, 179 ,  bufferedImage);
+    boolean percent_100 = getLightValueAnnDrawRedCross( 220, 180 ,  bufferedImage);
 
-    boolean boilerOn = getLightValueAnnDrawRedCross( 212, 40 ,  bufferedImage);
+    int percentage = 0;
+    if(percent_0) percentage = 0;
+    if(percent_5) percentage = 5;
+    if(percent_10) percentage = 10;
+    if(percent_15) percentage = 15;
+    if(percent_20) percentage = 20;
+    if(percent_25) percentage = 25;
+    if(percent_30) percentage = 30;
+    if(percent_35) percentage = 35;
+    if(percent_40) percentage = 40;
+    if(percent_45) percentage = 45;
+    if(percent_50) percentage = 50;
+    if(percent_55) percentage = 55;
+    if(percent_60) percentage = 60;
+    if(percent_65) percentage = 65;
+    if(percent_70) percentage = 70;
+    if(percent_75) percentage = 75;
+    if(percent_80) percentage = 80;
+    if(percent_85) percentage = 85;
+    if(percent_90) percentage = 90;
+    if(percent_95) percentage = 95;
+    if(percent_100) percentage = 100;
 
-    boolean digit1_1 = getLightValueAnnDrawRedCross(110, 124, bufferedImage);
-    boolean digit1_2 = getLightValueAnnDrawRedCross(119, 112, bufferedImage);
-    boolean digit1_3 = getLightValueAnnDrawRedCross(119, 86, bufferedImage);
-    boolean digit1_4 = getLightValueAnnDrawRedCross(111, 74, bufferedImage);
-    boolean digit1_5 = getLightValueAnnDrawRedCross(102, 86, bufferedImage);
-    boolean digit1_6 = getLightValueAnnDrawRedCross(102, 112, bufferedImage);
-    boolean digit1_7 = getLightValueAnnDrawRedCross(109, 99, bufferedImage);
+    AristonRest aristonRest = new AristonRest();
+    aristonRest.setPercentage(percentage);
 
-    boolean digit2_1 = getLightValueAnnDrawRedCross(140, 124, bufferedImage);
-    boolean digit2_2 = getLightValueAnnDrawRedCross(149, 112, bufferedImage);
-    boolean digit2_3 = getLightValueAnnDrawRedCross(149, 86, bufferedImage);
-    boolean digit2_4 = getLightValueAnnDrawRedCross(141, 74, bufferedImage);
-    boolean digit2_5 = getLightValueAnnDrawRedCross(132, 86, bufferedImage);
-    boolean digit2_6 = getLightValueAnnDrawRedCross(132, 112, bufferedImage);
-    boolean digit2_7 = getLightValueAnnDrawRedCross(139, 99, bufferedImage);
-
-    int number1 = getNumber(digit1_1, digit1_2, digit1_3, digit1_4, digit1_5, digit1_6, digit1_7) * 10;
-    int number2 = getNumber(digit2_1, digit2_2, digit2_3, digit2_4, digit2_5, digit2_6, digit2_7);
-    int number = number1 + number2;
-
-    if (number > 500) {
-        number = previousTempValue;
-    }
-    if (!(20 < number && number < 56)) {
-        number = previousTempValue;
-    }
-
-    previousTempValue = number;
-
-    if(!heating){
-        number = 0;
-    }
-
-    int throttle = 0;
-    if (levelOne) {
-        throttle = 1;
-    } 
-    if (levelTwo) {
-        throttle = 2;
-    } 
-    if (levelThree) {
-        throttle = 3;
-    } 
-    if (levelFour) {
-        throttle = 4;
-    }
-
-    ImmerRest immerRest = new ImmerRest();
-    immerRest.setTemperaute(number);
-    immerRest.setThrottle(throttle);
-    immerRest.setHeating(heating);
-    immerRest.setBoilerOn(boilerOn);
-
-    return immerRest;
+    return aristonRest;
 }
 
-public int getNumber(boolean digit1_1, boolean digit1_2, boolean digit1_3, boolean digit1_4, boolean digit1_5, boolean digit1_6, boolean digit1_7) {
-    int number = 1000;
-    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && !digit1_7) {
-        number = 0;
-    }
-    if (!digit1_1 && digit1_2 && digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
-        number = 1;
-    }
-    if (digit1_1 && !digit1_2 && digit1_3 && digit1_4 && !digit1_5 && digit1_6 && digit1_7) {
-        number = 2;
-    }
-    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && !digit1_5 && !digit1_6 && digit1_7) {
-        number = 3;
-    }
-    if (!digit1_1 && digit1_2 && digit1_3 && !digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
-        number = 4;
-    }
-    if (digit1_1 && digit1_2 && !digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
-        number = 5;
-    }
-    if (digit1_1 && digit1_2 && !digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
-        number = 6;
-    }
-    if (!digit1_1 && digit1_2 && digit1_3 && digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
-        number = 7;
-    }
-    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
-        number = 8;
-    }
-    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
-        number = 9;
-    }
-    return number;
-}
 
 private BufferedImage getBufferedImage(String imageUrl) throws IOException {
 
@@ -219,7 +172,7 @@ private boolean getLightValueAnnDrawRedCross(int x, int y , BufferedImage image)
             lightValues.add(image.getRGB(x, b));
     }   
     double lightValue = lightValues.stream().mapToInt(Integer::intValue).average().getAsDouble();
-    boolean detected = (lightValue > LIGHT_THRESHOLD);
+    boolean detected = (lightValue < LIGHT_THRESHOLD);
     int color = detected ? 16711680 : 16777215;
     for (int a=x-5  ; a<x+5; a++) {
             image.setRGB(a, y, color);
