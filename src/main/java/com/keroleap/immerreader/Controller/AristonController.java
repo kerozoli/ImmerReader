@@ -7,6 +7,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.imageio.ImageIO;
 
@@ -71,18 +76,32 @@ public ModelAndView getAristonData() throws IOException {
     return modelAndView;
 }
 
+
 @RequestMapping(value = "/aristonrestdata")
 @ResponseBody
-public AristonRest getAristonRestData(){
-    BufferedImage cachedImage;
-    try {
-        cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
+public AristonRest getAristonRestData() {
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    Future<AristonRest> future = executor.submit(() -> {
+        BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
         aristonRest = getAristonRestData( cachedImage);
         return aristonRest;
+    });
+
+    try {
+        // Set timeout to 3 seconds (adjust as needed)
+        AristonRest result = future.get(20, TimeUnit.SECONDS);
+        executor.shutdown();
+        return result;
+    } catch (TimeoutException e) {
+        future.cancel(true);
+        executor.shutdownNow();
+        System.out.println("Timeout fetching Ariston data, returning default.");
+        return aristonRest;
     } catch (Exception e) {
+        executor.shutdownNow();
         System.out.println("Error fetching Ariston data: " + e.getMessage());
         return aristonRest;
-    }   
+    }
 }
 
 private AristonRest getAristonRestData(BufferedImage bufferedImage) {
