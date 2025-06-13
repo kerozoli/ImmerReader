@@ -89,7 +89,7 @@ public ImmerRest getImmerRestData() {
     });
 
     try {
-        ImmerRest result = future.get(3, TimeUnit.SECONDS);
+        ImmerRest result = future.get(5, TimeUnit.SECONDS);
         executor.shutdown();
         return result;
     } catch (TimeoutException e) {
