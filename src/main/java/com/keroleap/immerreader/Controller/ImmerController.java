@@ -7,6 +7,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.imageio.ImageIO;
 
@@ -76,16 +81,27 @@ public ModelAndView getImmerData() throws IOException {
 @RequestMapping(value = "/immerrestdata")
 @ResponseBody
 public ImmerRest getImmerRestData() {
-    BufferedImage cachedImage;
-    try {
-        cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-        immerRest = getImmerRestData( cachedImage);
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    Future<ImmerRest> future = executor.submit(() -> {
+        BufferedImage cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
+        immerRest = getImmerRestData(cachedImage);
         return immerRest;
-    } catch (IOException e) {
+    });
+
+    try {
+        ImmerRest result = future.get(3, TimeUnit.SECONDS);
+        executor.shutdown();
+        return result;
+    } catch (TimeoutException e) {
+        future.cancel(true);
+        executor.shutdownNow();
+        System.out.println("Timeout fetching Immer data, returning default.");
+        return immerRest;
+    } catch (Exception e) {
+        executor.shutdownNow();
         System.out.println("Error fetching Immer data: " + e.getMessage());
         return immerRest;
     }
-    
 }
 
 private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
