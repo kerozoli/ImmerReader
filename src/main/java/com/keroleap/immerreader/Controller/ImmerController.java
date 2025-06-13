@@ -29,6 +29,7 @@ public class ImmerController
 
 private static final int LIGHT_THRESHOLD = -2500000;
 private int previousTempValue;
+private ImmerRest immerRest;
 
 @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
 public @ResponseBody byte[] getImage() throws IOException {
@@ -74,9 +75,17 @@ public ModelAndView getImmerData() throws IOException {
 
 @RequestMapping(value = "/immerrestdata")
 @ResponseBody
-public ImmerRest getImmerRestData() throws IOException {
-    BufferedImage cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-    return getImmerRestData( cachedImage);
+public ImmerRest getImmerRestData() {
+    BufferedImage cachedImage;
+    try {
+        cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
+        immerRest = getImmerRestData( cachedImage);
+        return immerRest;
+    } catch (IOException e) {
+        System.out.println("Error fetching Immer data: " + e.getMessage());
+        return immerRest;
+    }
+    
 }
 
 private ImmerRest getImmerRestData(BufferedImage bufferedImage) {

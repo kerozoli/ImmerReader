@@ -28,7 +28,7 @@ public class AristonController
 {  
 
 private static final int LIGHT_THRESHOLD = -7000000;
-private int previousTempValue;
+private AristonRest aristonRest;
 
 @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
 public @ResponseBody byte[] getImage() throws IOException {
@@ -73,9 +73,16 @@ public ModelAndView getAristonData() throws IOException {
 
 @RequestMapping(value = "/aristonrestdata")
 @ResponseBody
-public AristonRest getAristonRestData() throws IOException {
-    BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-    return getAristonRestData( cachedImage);
+public AristonRest getAristonRestData(){
+    BufferedImage cachedImage;
+    try {
+        cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
+        aristonRest = getAristonRestData( cachedImage);
+        return aristonRest;
+    } catch (Exception e) {
+        System.out.println("Error fetching Ariston data: " + e.getMessage());
+        return aristonRest;
+    }   
 }
 
 private AristonRest getAristonRestData(BufferedImage bufferedImage) {
