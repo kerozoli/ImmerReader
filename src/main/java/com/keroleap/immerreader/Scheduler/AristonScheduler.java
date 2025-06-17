@@ -45,7 +45,6 @@ public class AristonScheduler {
         // Set timeout to 3 seconds (adjust as needed)
         aristonRest = future.get(20, TimeUnit.SECONDS);
         executor.shutdown();
-        System.out.println(aristonRest.getPercentage() + "%");
         aristonData.setAristonRest(aristonRest);
     } catch (TimeoutException e) {
         future.cancel(true);
