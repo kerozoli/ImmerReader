@@ -1,5 +1,6 @@
-package com.keroleap.immerreader.Controller;
+package com.keroleap.immerreader.Scheduler;
 
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,79 +16,49 @@ import java.util.concurrent.TimeoutException;
 
 import javax.imageio.ImageIO;
 
-import java.awt.image.BufferedImage;
-
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.servlet.ModelAndView;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
 import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.SharedData.ImmerData;
 
-@Controller
-@RequestMapping("/Immer")
-public class ImmerController   
-{  
+@Component
+public class ImmerScheduler {
+    @Autowired
+    private ImmerData immerData;
+    private ImmerRest immerRest;
 
-private static final int LIGHT_THRESHOLD = -2500000;
-private int previousTempValue;
-@Autowired
-private ImmerData immerData;
+    private int previousTempValue;
+    private static final int LIGHT_THRESHOLD = -2500000;
 
-@GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
-public @ResponseBody byte[] getImage() throws IOException {
-    BufferedImage cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-    getImmerRestData(cachedImage);
-    int x1 = 90; // the x-coordinate of the top-left corner of the crop area
-    int y1 = 35; // the y-coordinate of the top-left corner of the crop area
-    int x2 = 240; // the x-coordinate of the bottom-right corner of the crop area
-    int y2 = 140; // the y-coordinate of the bottom-right corner of the crop area
+    @Scheduled(fixedRate = 1000)
+    public void ImmerScheduledRead() {
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    Future<ImmerRest> future = executor.submit(() -> {
+        BufferedImage cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
+        return getImmerRestData(cachedImage);
+    });
 
-    int width = x2 - x1;
-    int height = y2 - y1;
+    try {
+        ImmerRest result = future.get(5, TimeUnit.SECONDS);
+        executor.shutdown();
+        immerData.setAristonRest(result);
+    } catch (TimeoutException e) {
+        future.cancel(true);
+        executor.shutdownNow();
+        System.out.println("Timeout fetching Immer data, returning default.");
+        immerData.setAristonRest(immerRest);
+    } catch (Exception e) {
+        executor.shutdownNow();
+        System.out.println("Error fetching Immer data: " + e.getMessage());
+        immerData.setAristonRest(immerRest);
+    }
+    }
 
-    // Crop the image
-    BufferedImage bufferedImage = cachedImage.getSubimage(x1, y1, width, height);
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    ImageIO.write(bufferedImage, "jpg", baos);
-    byte[] bytes = baos.toByteArray();
 
-    return bytes;
-}
-
-@GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
-public @ResponseBody byte[] getUncroppedImage() throws IOException {
-    BufferedImage cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-    getImmerRestData(cachedImage);
-
-    // Crop the image
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    ImageIO.write(cachedImage, "jpg", baos);
-    byte[] bytes = baos.toByteArray();
-
-    return bytes;
-}
-
-@RequestMapping(value = "/immerdata")
-public ModelAndView getImmerData() throws IOException {
-    BufferedImage cachedImage = getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-    ModelAndView modelAndView = new ModelAndView("immerdata");
-    modelAndView.addObject( "message", getImmerRestData(cachedImage).toString());
-    return modelAndView;
-}
-
-@RequestMapping(value = "/immerrestdata")
-@ResponseBody
-public ImmerRest getImmerRestData() {
-    return immerData.getAristonRest();
-}
-
-private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
+    private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
     boolean heating = getLightValueAnnDrawRedCross( 212, 97 ,  bufferedImage);
     boolean levelOne = getLightValueAnnDrawRedCross( 110, 58 ,  bufferedImage);
     boolean levelTwo = getLightValueAnnDrawRedCross( 120, 58 ,  bufferedImage);
@@ -151,7 +122,7 @@ private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
 
     return immerRest;
 }
-
+        
 public int getNumber(boolean digit1_1, boolean digit1_2, boolean digit1_3, boolean digit1_4, boolean digit1_5, boolean digit1_6, boolean digit1_7) {
     int number = 1000;
     if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && !digit1_7) {
