@@ -1,4 +1,4 @@
-package com.keroleap.immerreader.Controller;
+package com.keroleap.immerreader.Scheduler;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -7,79 +7,89 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.imageio.ImageIO;
 
-import java.awt.image.BufferedImage;
-
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.servlet.ModelAndView;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
 import com.keroleap.immerreader.AristonRest;
 import com.keroleap.immerreader.SharedData.AristonData;
-
-@Controller
-@RequestMapping("/Ariston")
-public class AristonController   
-{  
-private static final int LIGHT_THRESHOLD = -7000000;
-
-@Autowired
-private AristonData aristonData;
-
-@GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
-public @ResponseBody byte[] getImage() throws IOException {
-    BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-    getAristonRestData(cachedImage);
-    int x1 = 60; // the x-coordinate of the top-left corner of the crop area
-    int y1 = 115; // the y-coordinate of the top-left corner of the crop area
-    int x2 = 260; // the x-coordinate of the bottom-right corner of the crop area
-    int y2 = 230; // the y-coordinate of the bottom-right corner of the crop area
-
-    int width = x2 - x1;
-    int height = y2 - y1;
-
-    // Crop the image
-    BufferedImage bufferedImage = cachedImage.getSubimage(x1, y1, width, height);
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    ImageIO.write(bufferedImage, "jpg", baos);
-    byte[] bytes = baos.toByteArray();
-
-    return bytes;
-}
-
-@GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
-public @ResponseBody byte[] getUncroppedImage() throws IOException {
-    BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-    getAristonRestData(cachedImage);
-    // Crop the image
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    ImageIO.write(cachedImage, "jpg", baos);
-    byte[] bytes = baos.toByteArray();
-
-    return bytes;
-}
-
-@RequestMapping(value = "/aristondata")
-public ModelAndView getAristonData() throws IOException {
-    BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-    ModelAndView modelAndView = new ModelAndView("immerdata");
-    modelAndView.addObject( "message", getAristonRestData(cachedImage).toString());
-    return modelAndView;
-}
+import java.awt.image.BufferedImage;
 
 
-@RequestMapping(value = "/aristonrestdata")
-@ResponseBody
-public AristonRest getAristonRestData() {
-    return aristonData.getAristonRest();
+@Component
+public class AristonScheduler {
+    @Autowired
+    private AristonData aristonData;
+    private AristonRest aristonRest;
+    private static final int LIGHT_THRESHOLD = -7000000;
+
+
+    @Scheduled(fixedRate = 15000)
+    public void AristonScheduledRead() {
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    Future<AristonRest> future = executor.submit(() -> {
+        BufferedImage cachedImage = getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
+        return getAristonRestData( cachedImage);
+    });
+
+    try {
+        // Set timeout to 3 seconds (adjust as needed)
+        aristonRest = future.get(20, TimeUnit.SECONDS);
+        executor.shutdown();
+        System.out.println(aristonRest.getPercentage() + "%");
+        aristonData.setAristonRest(aristonRest);
+    } catch (TimeoutException e) {
+        future.cancel(true);
+        executor.shutdownNow();
+        System.out.println("Timeout fetching Ariston data, returning default.");
+        aristonData.setAristonRest(aristonRest);
+    } catch (Exception e) {
+        executor.shutdownNow();
+        System.out.println("Error fetching Ariston data: " + e.getMessage());
+        aristonData.setAristonRest(aristonRest);
+    }
+    }
+
+
+    private BufferedImage getBufferedImage(String imageUrl) throws IOException {
+
+    URL url = null;
+    try {
+        url = new URL(imageUrl);
+    } catch (MalformedURLException e) {
+        e.printStackTrace();
+    }
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+    try {
+        byte[] chunk = new byte[4096];
+        int bytesRead;
+        InputStream stream = url.openStream();
+
+        while ((bytesRead = stream.read(chunk)) > 0) {
+            outputStream.write(chunk, 0, bytesRead);
+        }
+
+        url.openStream().close();
+        byte[] data = outputStream.toByteArray();
+        ByteArrayInputStream input = new ByteArrayInputStream(data);
+        BufferedImage image = ImageIO.read(input);
+        outputStream.close();
+        return image;
+
+    } catch (IOException e) {
+        e.printStackTrace();
+        return null;
+    }
 }
 
 private AristonRest getAristonRestData(BufferedImage bufferedImage) {
@@ -134,39 +144,6 @@ private AristonRest getAristonRestData(BufferedImage bufferedImage) {
     return aristonRest;
 }
 
-
-private BufferedImage getBufferedImage(String imageUrl) throws IOException {
-
-    URL url = null;
-    try {
-        url = new URL(imageUrl);
-    } catch (MalformedURLException e) {
-        e.printStackTrace();
-    }
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-    try {
-        byte[] chunk = new byte[4096];
-        int bytesRead;
-        InputStream stream = url.openStream();
-
-        while ((bytesRead = stream.read(chunk)) > 0) {
-            outputStream.write(chunk, 0, bytesRead);
-        }
-
-        url.openStream().close();
-        byte[] data = outputStream.toByteArray();
-        ByteArrayInputStream input = new ByteArrayInputStream(data);
-        BufferedImage image = ImageIO.read(input);
-        outputStream.close();
-        return image;
-
-    } catch (IOException e) {
-        e.printStackTrace();
-        return null;
-    }
-}
-
 private boolean getLightValueAnnDrawRedCross(int x, int y , BufferedImage image) {
     List <Integer> lightValues = new ArrayList<Integer>();
     for (int a=x-3  ; a<x+3; a++) {
@@ -186,4 +163,5 @@ private boolean getLightValueAnnDrawRedCross(int x, int y , BufferedImage image)
     }
     return detected;
 }  
+
 }
