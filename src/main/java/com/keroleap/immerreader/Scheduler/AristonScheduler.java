@@ -78,7 +78,7 @@ public class AristonScheduler {
             outputStream.write(chunk, 0, bytesRead);
         }
 
-        url.openStream().close();
+        stream.close();
         byte[] data = outputStream.toByteArray();
         ByteArrayInputStream input = new ByteArrayInputStream(data);
         BufferedImage image = ImageIO.read(input);

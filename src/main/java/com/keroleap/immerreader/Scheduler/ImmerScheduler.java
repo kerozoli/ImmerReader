@@ -177,7 +177,7 @@ private BufferedImage getBufferedImage(String imageUrl) throws IOException {
             outputStream.write(chunk, 0, bytesRead);
         }
 
-        url.openStream().close();
+        stream.close();
         byte[] data = outputStream.toByteArray();
         ByteArrayInputStream input = new ByteArrayInputStream(data);
         BufferedImage image = ImageIO.read(input);
