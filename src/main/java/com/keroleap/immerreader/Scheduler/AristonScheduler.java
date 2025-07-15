@@ -3,7 +3,6 @@ package com.keroleap.immerreader.Scheduler;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,36 +59,25 @@ public class AristonScheduler {
 
 
     private BufferedImage getBufferedImage(String imageUrl) throws IOException {
+        try {
+            URL url = new URL(imageUrl);
+            try (InputStream stream = url.openStream();
+                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                byte[] chunk = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = stream.read(chunk)) > 0) {
+                    outputStream.write(chunk, 0, bytesRead);
+                }
 
-    URL url = null;
-    try {
-        url = new URL(imageUrl);
-    } catch (MalformedURLException e) {
-        e.printStackTrace();
-    }
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
-    try {
-        byte[] chunk = new byte[4096];
-        int bytesRead;
-        InputStream stream = url.openStream();
-
-        while ((bytesRead = stream.read(chunk)) > 0) {
-            outputStream.write(chunk, 0, bytesRead);
+                try (ByteArrayInputStream input = new ByteArrayInputStream(outputStream.toByteArray())) {
+                    return ImageIO.read(input);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
-
-        stream.close();
-        byte[] data = outputStream.toByteArray();
-        ByteArrayInputStream input = new ByteArrayInputStream(data);
-        BufferedImage image = ImageIO.read(input);
-        outputStream.close();
-        return image;
-
-    } catch (IOException e) {
-        e.printStackTrace();
-        return null;
     }
-}
 
 private AristonRest getAristonRestData(BufferedImage bufferedImage) {
     boolean percent_0 = getLightValueAnnDrawRedCross( 160, 160 ,  bufferedImage);
