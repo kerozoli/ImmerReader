@@ -82,29 +82,29 @@ public ImmerRest getImmerRestData() {
 }
 
 private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
-    boolean heating = getLightValueAnnDrawRedCross( 212, 97 ,  bufferedImage);
-    boolean levelOne = getLightValueAnnDrawRedCross( 110, 58 ,  bufferedImage);
-    boolean levelTwo = getLightValueAnnDrawRedCross( 120, 58 ,  bufferedImage);
-    boolean levelThree = getLightValueAnnDrawRedCross(140, 58 ,  bufferedImage);
-    boolean levelFour = getLightValueAnnDrawRedCross( 160, 58 ,  bufferedImage);
+    boolean heating = getLightValueAnnDrawRedCross( 495, 215 ,  bufferedImage);
+    boolean levelOne = getLightValueAnnDrawRedCross( 305, 150 ,  bufferedImage);
+    boolean levelTwo = getLightValueAnnDrawRedCross( 334, 150 ,  bufferedImage);
+    boolean levelThree = getLightValueAnnDrawRedCross(362, 150 ,  bufferedImage);
+    boolean levelFour = getLightValueAnnDrawRedCross( 390, 150 ,  bufferedImage);
 
-    boolean boilerOn = getLightValueAnnDrawRedCross( 212, 40 ,  bufferedImage);
+    boolean boilerOn = getLightValueAnnDrawRedCross( 490, 120 ,  bufferedImage);
 
-    boolean digit1_1 = getLightValueAnnDrawRedCross(110, 124, bufferedImage);
-    boolean digit1_2 = getLightValueAnnDrawRedCross(119, 112, bufferedImage);
-    boolean digit1_3 = getLightValueAnnDrawRedCross(119, 86, bufferedImage);
-    boolean digit1_4 = getLightValueAnnDrawRedCross(111, 74, bufferedImage);
-    boolean digit1_5 = getLightValueAnnDrawRedCross(102, 86, bufferedImage);
-    boolean digit1_6 = getLightValueAnnDrawRedCross(102, 112, bufferedImage);
-    boolean digit1_7 = getLightValueAnnDrawRedCross(109, 99, bufferedImage);
+    boolean digit1_1 = getLightValueAnnDrawRedCross(306, 175, bufferedImage);
+    boolean digit1_2 = getLightValueAnnDrawRedCross(291, 199, bufferedImage);
+    boolean digit1_3 = getLightValueAnnDrawRedCross(291, 243, bufferedImage);
+    boolean digit1_4 = getLightValueAnnDrawRedCross(306, 269, bufferedImage);
+    boolean digit1_5 = getLightValueAnnDrawRedCross(324, 243, bufferedImage);
+    boolean digit1_6 = getLightValueAnnDrawRedCross(324, 199, bufferedImage);
+    boolean digit1_7 = getLightValueAnnDrawRedCross(304, 220, bufferedImage);
 
-    boolean digit2_1 = getLightValueAnnDrawRedCross(140, 124, bufferedImage);
-    boolean digit2_2 = getLightValueAnnDrawRedCross(149, 112, bufferedImage);
-    boolean digit2_3 = getLightValueAnnDrawRedCross(149, 86, bufferedImage);
-    boolean digit2_4 = getLightValueAnnDrawRedCross(141, 74, bufferedImage);
-    boolean digit2_5 = getLightValueAnnDrawRedCross(132, 86, bufferedImage);
-    boolean digit2_6 = getLightValueAnnDrawRedCross(132, 112, bufferedImage);
-    boolean digit2_7 = getLightValueAnnDrawRedCross(139, 99, bufferedImage);
+    boolean digit2_1 = getLightValueAnnDrawRedCross(360, 175, bufferedImage);
+    boolean digit2_2 = getLightValueAnnDrawRedCross(344, 199, bufferedImage);
+    boolean digit2_3 = getLightValueAnnDrawRedCross(344, 243, bufferedImage);
+    boolean digit2_4 = getLightValueAnnDrawRedCross(360, 268, bufferedImage);
+    boolean digit2_5 = getLightValueAnnDrawRedCross(377, 243, bufferedImage);
+    boolean digit2_6 = getLightValueAnnDrawRedCross(377, 199, bufferedImage);
+    boolean digit2_7 = getLightValueAnnDrawRedCross(360, 224, bufferedImage);
 
     int number1 = getNumber(digit1_1, digit1_2, digit1_3, digit1_4, digit1_5, digit1_6, digit1_7) * 10;
     int number2 = getNumber(digit2_1, digit2_2, digit2_3, digit2_4, digit2_5, digit2_6, digit2_7);
