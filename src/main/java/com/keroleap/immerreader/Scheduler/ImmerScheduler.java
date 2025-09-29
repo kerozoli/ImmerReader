@@ -33,7 +33,7 @@ public class ImmerScheduler {
     private int previousTempValue;
     private static final int LIGHT_THRESHOLD = -2500000;
 
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 2000)
     public void ImmerScheduledRead() {
     ExecutorService executor = Executors.newSingleThreadExecutor();
     Future<ImmerRest> future = executor.submit(() -> {
@@ -42,7 +42,7 @@ public class ImmerScheduler {
     });
 
     try {
-        ImmerRest result = future.get(5, TimeUnit.SECONDS);
+        ImmerRest result = future.get(1500, TimeUnit.MILLISECONDS);
         executor.shutdown();
         immerData.setAristonRest(result);
     } catch (TimeoutException e) {
