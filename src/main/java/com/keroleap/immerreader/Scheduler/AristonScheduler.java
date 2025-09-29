@@ -42,8 +42,8 @@ public class AristonScheduler {
     });
 
     try {
-        // Set timeout to 3 seconds (adjust as needed)
-        aristonRest = future.get(20, TimeUnit.SECONDS);
+        // Set timeout to 10 seconds (adjust as needed)
+        aristonRest = future.get(10000, TimeUnit.MILLISECONDS);
         executor.shutdown();
         aristonData.setAristonRest(aristonRest);
     } catch (TimeoutException e) {
