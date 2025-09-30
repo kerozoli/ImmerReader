@@ -74,7 +74,7 @@ public class AristonScheduler {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error fetching image: " + e.getMessage());
             return null;
         }
     }
