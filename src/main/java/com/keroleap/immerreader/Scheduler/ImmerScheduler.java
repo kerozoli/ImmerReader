@@ -127,31 +127,31 @@ public int getNumber(boolean digit1_1, boolean digit1_2, boolean digit1_3, boole
     if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && !digit1_7) {
         number = 0;
     }
-    if (!digit1_1 && digit1_2 && digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+    if (!digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && digit1_5 && digit1_6 && !digit1_7) {
         number = 1;
     }
     if (digit1_1 && !digit1_2 && digit1_3 && digit1_4 && !digit1_5 && digit1_6 && digit1_7) {
         number = 2;
     }
-    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && !digit1_5 && !digit1_6 && digit1_7) {
+    if (digit1_1 && !digit1_2 && !digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
         number = 3;
     }
-    if (!digit1_1 && digit1_2 && digit1_3 && !digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
+    if (!digit1_1 && digit1_2 && !digit1_3 && !digit1_4 && digit1_5 && digit1_6 && digit1_7) {
         number = 4;
     }
     if (digit1_1 && digit1_2 && !digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
         number = 5;
     }
-    if (digit1_1 && digit1_2 && !digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
+    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
         number = 6;
     }
-    if (!digit1_1 && digit1_2 && digit1_3 && digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+    if (digit1_1 && !digit1_2 && !digit1_3 && !digit1_4 && digit1_5 && digit1_6 && !digit1_7) {
         number = 7;
     }
     if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
         number = 8;
     }
-    if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
+    if (digit1_1 && digit1_2 && !digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
         number = 9;
     }
     if (number == 1000) {
@@ -176,7 +176,7 @@ private BufferedImage getBufferedImage(String imageUrl) throws IOException {
             }
         }
     } catch (IOException e) {
-        System.out.println("Error fetching image: " + e.getMessage());
+        e.printStackTrace();
         return null;
     }
 }
