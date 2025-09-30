@@ -78,7 +78,7 @@ public ModelAndView getImmerData() throws IOException {
 @RequestMapping(value = "/immerrestdata")
 @ResponseBody
 public ImmerRest getImmerRestData() {
-    return immerData.getAristonRest();
+    return immerData.getImmerRest();
 }
 
 private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
@@ -90,15 +90,15 @@ private ImmerRest getImmerRestData(BufferedImage bufferedImage) {
 
     boolean boilerOn = getLightValueAnnDrawRedCross( 490, 120 ,  bufferedImage);
 
-    boolean digit1_1 = getLightValueAnnDrawRedCross(306, 175, bufferedImage);
+    boolean digit1_1 = getLightValueAnnDrawRedCross(306, 178, bufferedImage);
     boolean digit1_2 = getLightValueAnnDrawRedCross(291, 199, bufferedImage);
     boolean digit1_3 = getLightValueAnnDrawRedCross(291, 243, bufferedImage);
     boolean digit1_4 = getLightValueAnnDrawRedCross(306, 269, bufferedImage);
     boolean digit1_5 = getLightValueAnnDrawRedCross(324, 243, bufferedImage);
     boolean digit1_6 = getLightValueAnnDrawRedCross(324, 199, bufferedImage);
-    boolean digit1_7 = getLightValueAnnDrawRedCross(304, 220, bufferedImage);
+    boolean digit1_7 = getLightValueAnnDrawRedCross(304, 224, bufferedImage);
 
-    boolean digit2_1 = getLightValueAnnDrawRedCross(360, 175, bufferedImage);
+    boolean digit2_1 = getLightValueAnnDrawRedCross(360, 178, bufferedImage);
     boolean digit2_2 = getLightValueAnnDrawRedCross(344, 199, bufferedImage);
     boolean digit2_3 = getLightValueAnnDrawRedCross(344, 243, bufferedImage);
     boolean digit2_4 = getLightValueAnnDrawRedCross(360, 268, bufferedImage);
