@@ -3,7 +3,6 @@ package com.keroleap.immerreader.Controller;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -182,31 +181,20 @@ public int getNumber(boolean digit1_1, boolean digit1_2, boolean digit1_3, boole
 }
 
 private BufferedImage getBufferedImage(String imageUrl) throws IOException {
-
-    URL url = null;
     try {
-        url = new URL(imageUrl);
-    } catch (MalformedURLException e) {
-        e.printStackTrace();
-    }
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        URL url = new URL(imageUrl);
+        try (InputStream stream = url.openStream();
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            byte[] chunk = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = stream.read(chunk)) > 0) {
+                outputStream.write(chunk, 0, bytesRead);
+            }
 
-    try {
-        byte[] chunk = new byte[4096];
-        int bytesRead;
-        InputStream stream = url.openStream();
-
-        while ((bytesRead = stream.read(chunk)) > 0) {
-            outputStream.write(chunk, 0, bytesRead);
+            try (ByteArrayInputStream input = new ByteArrayInputStream(outputStream.toByteArray())) {
+                return ImageIO.read(input);
+            }
         }
-
-        url.openStream().close();
-        byte[] data = outputStream.toByteArray();
-        ByteArrayInputStream input = new ByteArrayInputStream(data);
-        BufferedImage image = ImageIO.read(input);
-        outputStream.close();
-        return image;
-
     } catch (IOException e) {
         e.printStackTrace();
         return null;
