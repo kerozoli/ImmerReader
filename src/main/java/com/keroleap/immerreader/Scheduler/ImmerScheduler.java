@@ -176,7 +176,7 @@ private BufferedImage getBufferedImage(String imageUrl) throws IOException {
             }
         }
     } catch (IOException e) {
-        e.printStackTrace();
+        System.out.println("Error fetching image: " + e.getMessage());
         return null;
     }
 }
