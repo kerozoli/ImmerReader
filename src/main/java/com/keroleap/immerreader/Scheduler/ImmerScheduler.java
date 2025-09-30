@@ -154,6 +154,9 @@ public int getNumber(boolean digit1_1, boolean digit1_2, boolean digit1_3, boole
     if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
         number = 9;
     }
+    if (number == 1000) {
+        System.out.println("Unknown digit detected: " + digit1_1 + digit1_2 + digit1_3 + digit1_4 + digit1_5 + digit1_6 + digit1_7);
+    }
     return number;
 }
 
@@ -173,7 +176,7 @@ private BufferedImage getBufferedImage(String imageUrl) throws IOException {
             }
         }
     } catch (IOException e) {
-        e.printStackTrace();
+        System.out.println("Error fetching image: " + e.getMessage());
         return null;
     }
 }
