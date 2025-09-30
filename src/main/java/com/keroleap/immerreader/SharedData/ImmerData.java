@@ -16,11 +16,11 @@ public class ImmerData {
         this.immerRest = new ImmerRest();
     }
 
-    public ImmerRest getAristonRest() {
+    public ImmerRest getImmerRest() {
         return immerRest;
     }
 
-    public void setAristonRest(ImmerRest immerRest) {
+    public void setImmerRest(ImmerRest immerRest) {
         this.immerRest = immerRest;
     }
 }

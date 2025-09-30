@@ -43,16 +43,16 @@ public class ImmerScheduler {
     try {
         ImmerRest result = future.get(1500, TimeUnit.MILLISECONDS);
         executor.shutdown();
-        immerData.setAristonRest(result);
+        immerData.setImmerRest(result);
     } catch (TimeoutException e) {
         future.cancel(true);
         executor.shutdownNow();
         System.out.println("Timeout fetching Immer data, returning default.");
-        immerData.setAristonRest(immerRest);
+        immerData.setImmerRest(immerRest);
     } catch (Exception e) {
         executor.shutdownNow();
         System.out.println("Error fetching Immer data: " + e.getMessage());
-        immerData.setAristonRest(immerRest);
+        immerData.setImmerRest(immerRest);
     }
     }
 
@@ -66,15 +66,15 @@ public class ImmerScheduler {
 
     boolean boilerOn = getLightValueAnnDrawRedCross( 490, 120 ,  bufferedImage);
 
-    boolean digit1_1 = getLightValueAnnDrawRedCross(306, 175, bufferedImage);
+    boolean digit1_1 = getLightValueAnnDrawRedCross(306, 178, bufferedImage);
     boolean digit1_2 = getLightValueAnnDrawRedCross(291, 199, bufferedImage);
     boolean digit1_3 = getLightValueAnnDrawRedCross(291, 243, bufferedImage);
     boolean digit1_4 = getLightValueAnnDrawRedCross(306, 269, bufferedImage);
     boolean digit1_5 = getLightValueAnnDrawRedCross(324, 243, bufferedImage);
     boolean digit1_6 = getLightValueAnnDrawRedCross(324, 199, bufferedImage);
-    boolean digit1_7 = getLightValueAnnDrawRedCross(304, 220, bufferedImage);
+    boolean digit1_7 = getLightValueAnnDrawRedCross(304, 224, bufferedImage);
 
-    boolean digit2_1 = getLightValueAnnDrawRedCross(360, 175, bufferedImage);
+    boolean digit2_1 = getLightValueAnnDrawRedCross(360, 178, bufferedImage);
     boolean digit2_2 = getLightValueAnnDrawRedCross(344, 199, bufferedImage);
     boolean digit2_3 = getLightValueAnnDrawRedCross(344, 243, bufferedImage);
     boolean digit2_4 = getLightValueAnnDrawRedCross(360, 268, bufferedImage);
