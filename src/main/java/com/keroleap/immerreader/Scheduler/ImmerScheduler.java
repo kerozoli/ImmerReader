@@ -155,6 +155,9 @@ public int getNumber(boolean digit1_1, boolean digit1_2, boolean digit1_3, boole
     if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && !digit1_6 && digit1_7) {
         number = 9;
     }
+    if(number == 1000) {
+        System.out.println("Undetected digit pattern" + digit1_1 + digit1_2 + digit1_3 + digit1_4 + digit1_5 + digit1_6 + digit1_7);
+    }
     return number;
 }
 
@@ -164,7 +167,7 @@ private BufferedImage getBufferedImage(String imageUrl) throws IOException {
     try {
         url = new URL(imageUrl);
     } catch (MalformedURLException e) {
-        e.printStackTrace();
+        System.out.println("Malformed URL: " + imageUrl);
     }
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -185,7 +188,7 @@ private BufferedImage getBufferedImage(String imageUrl) throws IOException {
         return image;
 
     } catch (IOException e) {
-        e.printStackTrace();
+        System.out.println("Error fetching image: " + e.getMessage());
         return null;
     }
 }

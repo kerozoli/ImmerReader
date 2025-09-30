@@ -65,7 +65,7 @@ public class AristonScheduler {
     try {
         url = new URL(imageUrl);
     } catch (MalformedURLException e) {
-        e.printStackTrace();
+        System.out.println("Malformed URL: " + imageUrl);
     }
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -86,7 +86,7 @@ public class AristonScheduler {
         return image;
 
     } catch (IOException e) {
-        e.printStackTrace();
+        System.out.println("Error fetching image: " + e.getMessage());
         return null;
     }
 }
