@@ -1,8 +1,10 @@
 package com.keroleap.immerreader.Scheduler;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +16,6 @@ import java.util.concurrent.TimeoutException;
 
 import javax.imageio.ImageIO;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -60,7 +61,7 @@ public class AristonScheduler {
 
     private BufferedImage getBufferedImage(String imageUrl) throws IOException {
         try {
-            URL url = new URL(imageUrl);
+            URL url = URI.create(imageUrl).toURL();
             try (InputStream stream = url.openStream();
                  ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
                 byte[] chunk = new byte[4096];
