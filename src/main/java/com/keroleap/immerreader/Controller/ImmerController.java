@@ -169,7 +169,7 @@ public int getNumber(boolean digit1_1, boolean digit1_2, boolean digit1_3, boole
     if (digit1_1 && digit1_2 && !digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
         number = 6;
     }
-    if (!digit1_1 && digit1_2 && digit1_3 && digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
+    if (digit1_1 && digit1_2 && digit1_3 && !digit1_4 && !digit1_5 && !digit1_6 && !digit1_7) {
         number = 7;
     }
     if (digit1_1 && digit1_2 && digit1_3 && digit1_4 && digit1_5 && digit1_6 && digit1_7) {
