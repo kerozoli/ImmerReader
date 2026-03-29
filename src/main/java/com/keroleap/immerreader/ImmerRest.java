@@ -1,7 +1,7 @@
 package com.keroleap.immerreader;
 
 public class ImmerRest {
-    private int temperaute;
+    private int temperature;
     private int throttle;
     private boolean heating;
     private boolean boilerOn;
@@ -14,12 +14,12 @@ public class ImmerRest {
         this.boilerOn = boilerOn;
     }
 
-    public int getTemperaute() {
-        return temperaute;
+    public int getTemperature() {
+        return temperature;
     }
 
-    public void setTemperaute(int temperaute) {
-        this.temperaute = temperaute;
+    public void setTemperature(int temperature) {
+        this.temperature = temperature;
     }
 
     public int getThrottle() {
