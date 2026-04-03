@@ -1,25 +1,27 @@
 package com.keroleap.immerreader.SharedData;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.springframework.stereotype.Component;
 
 @Component
 public class ImmerOffsetData {
-    private int offsetX = 0;
-    private int offsetY = 0;
+    private final AtomicInteger offsetX = new AtomicInteger(0);
+    private final AtomicInteger offsetY = new AtomicInteger(0);
 
     public int getOffsetX() {
-        return offsetX;
+        return offsetX.get();
     }
 
     public void setOffsetX(int offsetX) {
-        this.offsetX = offsetX;
+        this.offsetX.set(offsetX);
     }
 
     public int getOffsetY() {
-        return offsetY;
+        return offsetY.get();
     }
 
     public void setOffsetY(int offsetY) {
-        this.offsetY = offsetY;
+        this.offsetY.set(offsetY);
     }
 }

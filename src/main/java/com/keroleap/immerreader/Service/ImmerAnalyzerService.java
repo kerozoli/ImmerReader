@@ -10,6 +10,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.imageio.ImageIO;
 
 import org.springframework.stereotype.Service;
@@ -20,7 +22,7 @@ import com.keroleap.immerreader.ImmerRest;
 public class ImmerAnalyzerService {
 
     private static final int LIGHT_THRESHOLD = -2500000;
-    private int previousTempValue;
+    private final AtomicInteger previousTempValue = new AtomicInteger(0);
 
     public ImmerRest getImmerRestData(BufferedImage bufferedImage, int offsetX, int offsetY) {
         boolean heating = getLightValueAnnDrawRedCross(495 + offsetX, 215 + offsetY, bufferedImage);
@@ -52,13 +54,13 @@ public class ImmerAnalyzerService {
         int number = number1 + number2;
 
         if (number > 500) {
-            number = previousTempValue;
+            number = previousTempValue.get();
         }
         if (!(20 < number && number < 56)) {
-            number = previousTempValue;
+            number = previousTempValue.get();
         }
 
-        previousTempValue = number;
+        previousTempValue.set(number);
 
         if (!heating) {
             number = 0;
