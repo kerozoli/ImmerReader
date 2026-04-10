@@ -7,13 +7,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.imageio.ImageIO;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.keroleap.immerreader.ImmerRest;
@@ -21,6 +20,7 @@ import com.keroleap.immerreader.ImmerRest;
 @Service
 public class ImmerAnalyzerService {
 
+    private static final Logger logger = LoggerFactory.getLogger(ImmerAnalyzerService.class);
     private static final int LIGHT_THRESHOLD = -2500000;
     private final AtomicInteger previousTempValue = new AtomicInteger(0);
 
@@ -122,7 +122,7 @@ public class ImmerAnalyzerService {
             number = 9;
         }
         if (number == 1000) {
-            System.out.println("Unknown digit detected: " + digit1_1 + digit1_2 + digit1_3 + digit1_4 + digit1_5 + digit1_6 + digit1_7);
+            logger.warn("Unknown digit detected: {}{}{}{}{}{}{}", digit1_1, digit1_2, digit1_3, digit1_4, digit1_5, digit1_6, digit1_7);
         }
         return number;
     }
@@ -143,20 +143,20 @@ public class ImmerAnalyzerService {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error fetching image: " + e.getMessage());
+            logger.error("Error fetching image from {}: {}", imageUrl, e.getMessage());
             return null;
         }
     }
 
     private boolean getLightValueAnnDrawRedCross(int x, int y, BufferedImage image) {
-        List<Integer> lightValues = new ArrayList<Integer>();
+        long sum = 0;
         for (int a = x - 3; a < x + 3; a++) {
-            lightValues.add(image.getRGB(a, y));
+            sum += image.getRGB(a, y);
         }
         for (int b = y - 3; b < y + 3; b++) {
-            lightValues.add(image.getRGB(x, b));
+            sum += image.getRGB(x, b);
         }
-        double lightValue = lightValues.stream().mapToInt(Integer::intValue).average().getAsDouble();
+        double lightValue = sum / 12.0;
         boolean detected = (lightValue > LIGHT_THRESHOLD);
         int color = detected ? 16711680 : 16777215;
         for (int a = x - 5; a < x + 5; a++) {
