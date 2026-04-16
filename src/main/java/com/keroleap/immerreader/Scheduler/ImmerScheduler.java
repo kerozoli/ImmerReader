@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.Service.ImmerAnalyzerService;
 import com.keroleap.immerreader.SharedData.ImmerData;
-import com.keroleap.immerreader.SharedData.ImmerOffsetData;
+import com.keroleap.immerreader.SharedData.ImmerManagerData;
 
 import jakarta.annotation.PreDestroy;
 
@@ -32,14 +32,14 @@ public class ImmerScheduler {
     private ImmerAnalyzerService immerAnalyzerService;
 
     @Autowired
-    private ImmerOffsetData immerOffsetData;
+    private ImmerManagerData immerManagerData;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @Scheduled(fixedRate = 2000)
     public void ImmerScheduledRead() {
-        int offsetX = immerOffsetData.getOffsetX();
-        int offsetY = immerOffsetData.getOffsetY();
+        int offsetX = immerManagerData.getOffsetX();
+        int offsetY = immerManagerData.getOffsetY();
         Future<ImmerRest> future = executor.submit(() -> {
             BufferedImage cachedImage = immerAnalyzerService.getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
             return immerAnalyzerService.getImmerRestData(cachedImage, offsetX, offsetY);

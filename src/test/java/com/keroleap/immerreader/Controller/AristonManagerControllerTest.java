@@ -8,27 +8,27 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-import com.keroleap.immerreader.SharedData.ImmerOffsetData;
+import com.keroleap.immerreader.SharedData.AristonManagerData;
 
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ImmerOffsetController.class)
-class ImmerOffsetControllerTest {
+@WebMvcTest(AristonManagerController.class)
+class AristonManagerControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private ImmerOffsetData immerOffsetData;
+    private AristonManagerData aristonManagerData;
 
     @Test
     void getOffset_returnsCurrentValues() throws Exception {
-        when(immerOffsetData.getOffsetX()).thenReturn(5);
-        when(immerOffsetData.getOffsetY()).thenReturn(10);
+        when(aristonManagerData.getOffsetX()).thenReturn(5);
+        when(aristonManagerData.getOffsetY()).thenReturn(10);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/ImmerOffset"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/AristonManager"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.offsetX").value(5))
@@ -37,10 +37,10 @@ class ImmerOffsetControllerTest {
 
     @Test
     void getOffset_defaultZeroValues() throws Exception {
-        when(immerOffsetData.getOffsetX()).thenReturn(0);
-        when(immerOffsetData.getOffsetY()).thenReturn(0);
+        when(aristonManagerData.getOffsetX()).thenReturn(0);
+        when(aristonManagerData.getOffsetY()).thenReturn(0);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/ImmerOffset"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/AristonManager"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.offsetX").value(0))
                 .andExpect(jsonPath("$.offsetY").value(0));
@@ -48,10 +48,10 @@ class ImmerOffsetControllerTest {
 
     @Test
     void setOffset_updatesAndReturnsValues() throws Exception {
-        when(immerOffsetData.getOffsetX()).thenReturn(7);
-        when(immerOffsetData.getOffsetY()).thenReturn(3);
+        when(aristonManagerData.getOffsetX()).thenReturn(7);
+        when(aristonManagerData.getOffsetY()).thenReturn(3);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerOffset/set")
+        mockMvc.perform(MockMvcRequestBuilders.post("/AristonManager/set")
                         .param("x", "7")
                         .param("y", "3"))
                 .andExpect(status().isOk())
@@ -59,29 +59,29 @@ class ImmerOffsetControllerTest {
                 .andExpect(jsonPath("$.offsetX").value(7))
                 .andExpect(jsonPath("$.offsetY").value(3));
 
-        verify(immerOffsetData).setOffsetX(7);
-        verify(immerOffsetData).setOffsetY(3);
+        verify(aristonManagerData).setOffsetX(7);
+        verify(aristonManagerData).setOffsetY(3);
     }
 
     @Test
     void setOffset_negativeValues() throws Exception {
-        when(immerOffsetData.getOffsetX()).thenReturn(-5);
-        when(immerOffsetData.getOffsetY()).thenReturn(-10);
+        when(aristonManagerData.getOffsetX()).thenReturn(-5);
+        when(aristonManagerData.getOffsetY()).thenReturn(-10);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerOffset/set")
+        mockMvc.perform(MockMvcRequestBuilders.post("/AristonManager/set")
                         .param("x", "-5")
                         .param("y", "-10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.offsetX").value(-5))
                 .andExpect(jsonPath("$.offsetY").value(-10));
 
-        verify(immerOffsetData).setOffsetX(-5);
-        verify(immerOffsetData).setOffsetY(-10);
+        verify(aristonManagerData).setOffsetX(-5);
+        verify(aristonManagerData).setOffsetY(-10);
     }
 
     @Test
     void setOffset_missingParamReturnsBadRequest() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerOffset/set")
+        mockMvc.perform(MockMvcRequestBuilders.post("/AristonManager/set")
                         .param("x", "5"))
                 .andExpect(status().isBadRequest());
     }

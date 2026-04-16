@@ -11,7 +11,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.Service.ImmerAnalyzerService;
 import com.keroleap.immerreader.SharedData.ImmerData;
-import com.keroleap.immerreader.SharedData.ImmerOffsetData;
+import com.keroleap.immerreader.SharedData.ImmerManagerData;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -29,7 +29,7 @@ public class HelloWorldControllerTest {
     private ImmerAnalyzerService immerAnalyzerService;
 
     @MockitoBean
-    private ImmerOffsetData immerOffsetData;
+    private ImmerManagerData immerManagerData;
 
     @Test
     public void testGetImmerRestData_returnsJson() throws Exception {

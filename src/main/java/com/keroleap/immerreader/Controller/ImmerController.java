@@ -18,7 +18,7 @@ import org.springframework.web.servlet.ModelAndView;
 import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.Service.ImmerAnalyzerService;
 import com.keroleap.immerreader.SharedData.ImmerData;
-import com.keroleap.immerreader.SharedData.ImmerOffsetData;
+import com.keroleap.immerreader.SharedData.ImmerManagerData;
 
 @Controller
 @RequestMapping("/Immer")
@@ -32,12 +32,12 @@ private ImmerData immerData;
 private ImmerAnalyzerService immerAnalyzerService;
 
 @Autowired
-private ImmerOffsetData immerOffsetData;
+private ImmerManagerData immerManagerData;
 
 @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
 public @ResponseBody byte[] getImage() throws IOException {
     BufferedImage cachedImage = immerAnalyzerService.getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-    immerAnalyzerService.getImmerRestData(cachedImage, immerOffsetData.getOffsetX(), immerOffsetData.getOffsetY());
+    immerAnalyzerService.getImmerRestData(cachedImage, immerManagerData.getOffsetX(), immerManagerData.getOffsetY());
     int x1 = 90; // the x-coordinate of the top-left corner of the crop area
     int y1 = 35; // the y-coordinate of the top-left corner of the crop area
     int x2 = 240; // the x-coordinate of the bottom-right corner of the crop area
@@ -58,7 +58,7 @@ public @ResponseBody byte[] getImage() throws IOException {
 @GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
 public @ResponseBody byte[] getUncroppedImage() throws IOException {
     BufferedImage cachedImage = immerAnalyzerService.getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-    immerAnalyzerService.getImmerRestData(cachedImage, immerOffsetData.getOffsetX(), immerOffsetData.getOffsetY());
+    immerAnalyzerService.getImmerRestData(cachedImage, immerManagerData.getOffsetX(), immerManagerData.getOffsetY());
 
     // Crop the image
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -72,7 +72,7 @@ public @ResponseBody byte[] getUncroppedImage() throws IOException {
 public ModelAndView getImmerData() throws IOException {
     BufferedImage cachedImage = immerAnalyzerService.getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
     ModelAndView modelAndView = new ModelAndView("immerdata");
-    modelAndView.addObject("message", immerAnalyzerService.getImmerRestData(cachedImage, immerOffsetData.getOffsetX(), immerOffsetData.getOffsetY()).toString());
+    modelAndView.addObject("message", immerAnalyzerService.getImmerRestData(cachedImage, immerManagerData.getOffsetX(), immerManagerData.getOffsetY()).toString());
     return modelAndView;
 }
 
