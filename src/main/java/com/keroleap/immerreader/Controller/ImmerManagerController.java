@@ -9,34 +9,34 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
-import com.keroleap.immerreader.SharedData.ImmerOffsetData;
+import com.keroleap.immerreader.SharedData.ImmerManagerData;
 
 @Controller
-@RequestMapping("/ImmerOffset")
-public class ImmerOffsetController {
+@RequestMapping("/ImmerManager")
+public class ImmerManagerController {
 
     @Autowired
-    private ImmerOffsetData immerOffsetData;
+    private ImmerManagerData immerManagerData;
 
     @PostMapping("/set")
     @ResponseBody
-    public ImmerOffsetData setOffset(@RequestParam int x, @RequestParam int y) {
-        immerOffsetData.setOffsetX(x);
-        immerOffsetData.setOffsetY(y);
-        return immerOffsetData;
+    public ImmerManagerData setOffset(@RequestParam int x, @RequestParam int y) {
+        immerManagerData.setOffsetX(x);
+        immerManagerData.setOffsetY(y);
+        return immerManagerData;
     }
 
     @GetMapping
     @ResponseBody
-    public ImmerOffsetData getOffset() {
-        return immerOffsetData;
+    public ImmerManagerData getOffset() {
+        return immerManagerData;
     }
 
     @GetMapping("/adjust")
     public ModelAndView adjustOffset() {
-        ModelAndView modelAndView = new ModelAndView("offset-adjuster");
-        modelAndView.addObject("offsetX", immerOffsetData.getOffsetX());
-        modelAndView.addObject("offsetY", immerOffsetData.getOffsetY());
+        ModelAndView modelAndView = new ModelAndView("immer-manager");
+        modelAndView.addObject("offsetX", immerManagerData.getOffsetX());
+        modelAndView.addObject("offsetY", immerManagerData.getOffsetY());
         return modelAndView;
     }
 }

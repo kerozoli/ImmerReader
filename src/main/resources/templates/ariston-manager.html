@@ -1,0 +1,188 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Ariston Manager</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e;
+            color: #eee;
+        }
+        nav {
+            background: #0f3460;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+        nav a {
+            color: #eee;
+            text-decoration: none;
+            margin-right: 20px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        nav a:hover {
+            background: #e94560;
+        }
+        nav a.active {
+            background: #e94560;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            padding: 0 20px;
+        }
+        .controls {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 250px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 16px;
+        }
+        button {
+            background: #e94560;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background: #ff6b6b;
+        }
+        .image-container {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        img {
+            max-width: 800px;
+            border: 2px solid #0f3460;
+            border-radius: 4px;
+        }
+        .current-values {
+            margin-top: 15px;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 4px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .status.success {
+            background: #28a745;
+            display: block;
+        }
+        h1 {
+            padding: 0 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/ImmerManager/adjust">Immer Manager</a>
+        <a href="/AristonManager/adjust" class="active">Ariston Manager</a>
+    </nav>
+
+    <h1>Ariston Manager</h1>
+
+    <div class="container">
+        <div class="controls">
+            <form id="offsetForm">
+                <div class="form-group">
+                    <label for="offsetX">Offset X:</label>
+                    <input type="number" id="offsetX" name="x" th:value="${offsetX}" required>
+                </div>
+                <div class="form-group">
+                    <label for="offsetY">Offset Y:</label>
+                    <input type="number" id="offsetY" name="y" th:value="${offsetY}" required>
+                </div>
+                <button type="submit">Apply Offset</button>
+            </form>
+
+            <div class="current-values">
+                <strong>Current Values:</strong><br>
+                X: <span id="currentX" th:text="${offsetX}">0</span><br>
+                Y: <span id="currentY" th:text="${offsetY}">0</span>
+            </div>
+
+            <div id="status" class="status">Offset updated!</div>
+        </div>
+
+        <div class="image-container">
+            <h2>Live Preview</h2>
+            <img id="liveImage" src="/Ariston/uncroppedimage" alt="Ariston Camera Feed">
+            <p><small>Image refreshes automatically every 15 seconds</small></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('offsetForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const x = document.getElementById('offsetX').value;
+            const y = document.getElementById('offsetY').value;
+
+            fetch('/AristonManager/set', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `x=${x}&y=${y}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('currentX').textContent = data.offsetX;
+                document.getElementById('currentY').textContent = data.offsetY;
+
+                const status = document.getElementById('status');
+                status.textContent = 'Offset updated!';
+                status.className = 'status success';
+                setTimeout(() => {
+                    status.className = 'status';
+                }, 2000);
+
+                refreshImage();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+
+        function refreshImage() {
+            const img = document.getElementById('liveImage');
+            img.src = '/Ariston/uncroppedimage?t=' + new Date().getTime();
+        }
+
+        setInterval(refreshImage, 15000);
+    </script>
+</body>
+</html>

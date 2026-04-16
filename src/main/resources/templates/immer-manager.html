@@ -1,18 +1,42 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Immer Offset Adjuster</title>
+    <title>Immer Manager</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
             background-color: #1a1a2e;
             color: #eee;
+        }
+        nav {
+            background: #0f3460;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+        nav a {
+            color: #eee;
+            text-decoration: none;
+            margin-right: 20px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        nav a:hover {
+            background: #e94560;
+        }
+        nav a.active {
+            background: #e94560;
         }
         .container {
             display: flex;
             gap: 20px;
             align-items: flex-start;
+            padding: 0 20px;
         }
         .controls {
             background: #16213e;
@@ -76,10 +100,19 @@
             background: #28a745;
             display: block;
         }
+        h1 {
+            padding: 0 20px;
+        }
     </style>
 </head>
 <body>
-    <h1>Immer Offset Adjuster</h1>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/ImmerManager/adjust" class="active">Immer Manager</a>
+        <a href="/AristonManager/adjust">Ariston Manager</a>
+    </nav>
+
+    <h1>Immer Manager</h1>
 
     <div class="container">
         <div class="controls">
@@ -118,7 +151,7 @@
             const x = document.getElementById('offsetX').value;
             const y = document.getElementById('offsetY').value;
 
-            fetch('/ImmerOffset/set', {
+            fetch('/ImmerManager/set', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',

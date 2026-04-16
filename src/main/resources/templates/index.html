@@ -1,0 +1,106 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>ImmerReader - Home</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e;
+            color: #eee;
+        }
+        nav {
+            background: #0f3460;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+        nav a {
+            color: #eee;
+            text-decoration: none;
+            margin-right: 20px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        nav a:hover {
+            background: #e94560;
+        }
+        nav a.active {
+            background: #e94560;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .card-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .card {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 30px;
+            width: 300px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        .card h2 {
+            color: #e94560;
+            margin-bottom: 15px;
+        }
+        .card p {
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+        .card a {
+            display: inline-block;
+            background: #e94560;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        .card a:hover {
+            background: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="active">Home</a>
+        <a href="/ImmerManager/adjust">Immer Manager</a>
+        <a href="/AristonManager/adjust">Ariston Manager</a>
+    </nav>
+
+    <div class="container">
+        <h1>ImmerReader</h1>
+
+        <div class="card-container">
+            <div class="card">
+                <h2>Immer Manager</h2>
+                <p>Configure and monitor your Immergas heating system with live camera feed and offset adjustment.</p>
+                <a href="/ImmerManager/adjust">Open Immer Manager</a>
+            </div>
+
+            <div class="card">
+                <h2>Ariston Manager</h2>
+                <p>Configure and monitor your Ariston heating system with live camera feed and offset adjustment.</p>
+                <a href="/AristonManager/adjust">Open Ariston Manager</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

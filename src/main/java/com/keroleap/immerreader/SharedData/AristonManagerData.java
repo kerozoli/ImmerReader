@@ -14,9 +14,9 @@ import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
 
 @Component
-public class ImmerOffsetData {
-    private static final Logger logger = LoggerFactory.getLogger(ImmerOffsetData.class);
-    private static final String DATA_FILE = "/data/offset.properties";
+public class AristonManagerData {
+    private static final Logger logger = LoggerFactory.getLogger(AristonManagerData.class);
+    private static final String DATA_FILE = "/data/ariston.properties";
 
     private final AtomicInteger offsetX = new AtomicInteger(0);
     private final AtomicInteger offsetY = new AtomicInteger(0);
