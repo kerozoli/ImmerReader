@@ -74,12 +74,12 @@ class ImmerSchedulerTest {
     }
 
     @Test
-    void onReadError_increasesDelay() {
+    void onReadError_increasesDelay() throws Exception {
         // Test that errors increase the delay
         // The scheduler uses reflection to access private fields in production
         // Here we verify the error handling logic exists
         when(immerAnalyzerService.getBufferedImage(anyString()))
-                .thenThrow(new RuntimeException("Camera unavailable"));
+                .thenThrow(new IOException("Camera unavailable"));
 
         immerScheduler.init();
 
