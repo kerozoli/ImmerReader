@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.keroleap.immerreader.SharedData.AristonData;
 import com.keroleap.immerreader.SharedData.AristonManagerData;
 
 @Controller
@@ -17,6 +18,9 @@ public class AristonManagerController {
 
     @Autowired
     private AristonManagerData aristonManagerData;
+
+    @Autowired
+    private AristonData aristonData;
 
     @PostMapping("/set")
     @ResponseBody
@@ -37,6 +41,7 @@ public class AristonManagerController {
         ModelAndView modelAndView = new ModelAndView("ariston-manager");
         modelAndView.addObject("offsetX", aristonManagerData.getOffsetX());
         modelAndView.addObject("offsetY", aristonManagerData.getOffsetY());
+        modelAndView.addObject("aristonRest", aristonData.getAristonRest());
         return modelAndView;
     }
 }
