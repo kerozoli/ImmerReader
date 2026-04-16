@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.keroleap.immerreader.ImmerRest;
+import com.keroleap.immerreader.SharedData.ImmerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
 
 @Controller
@@ -17,6 +19,9 @@ public class ImmerManagerController {
 
     @Autowired
     private ImmerManagerData immerManagerData;
+
+    @Autowired
+    private ImmerData immerData;
 
     @PostMapping("/set")
     @ResponseBody
@@ -37,6 +42,7 @@ public class ImmerManagerController {
         ModelAndView modelAndView = new ModelAndView("immer-manager");
         modelAndView.addObject("offsetX", immerManagerData.getOffsetX());
         modelAndView.addObject("offsetY", immerManagerData.getOffsetY());
+        modelAndView.addObject("immerRest", immerData.getImmerRest());
         return modelAndView;
     }
 }

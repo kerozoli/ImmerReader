@@ -2,6 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Ariston Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -37,6 +38,7 @@
             gap: 20px;
             align-items: flex-start;
             padding: 0 20px;
+            flex-wrap: wrap;
         }
         .controls {
             background: #16213e;
@@ -103,6 +105,44 @@
         h1 {
             padding: 0 20px;
         }
+        .data-section {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .data-card {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .data-card h3 {
+            margin: 0 0 10px 0;
+            color: #aaa;
+            font-size: 14px;
+        }
+        .data-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .chart-container {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            height: 300px;
+        }
+        .full-width {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -113,6 +153,18 @@
     </nav>
 
     <h1>Ariston Manager</h1>
+
+    <div style="padding: 0 20px;">
+        <div class="data-section">
+            <h2>Detected Data</h2>
+            <div class="data-grid">
+                <div class="data-card">
+                    <h3>Power Level</h3>
+                    <div class="value"><span id="percentage" th:text="${aristonRest.percentage}">0</span>%</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="container">
         <div class="controls">
@@ -141,6 +193,15 @@
             <h2>Live Preview</h2>
             <img id="liveImage" src="/Ariston/uncroppedimage" alt="Ariston Camera Feed">
             <p><small>Image refreshes automatically every 15 seconds</small></p>
+        </div>
+    </div>
+
+    <div style="padding: 0 20px;">
+        <div class="data-section full-width">
+            <h2>Power Level History</h2>
+            <div class="chart-container">
+                <canvas id="percentageChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -183,6 +244,79 @@
         }
 
         setInterval(refreshImage, 15000);
+
+        // Data polling and chart
+        const percentageCtx = document.getElementById('percentageChart').getContext('2d');
+        const percentageChart = new Chart(percentageCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Power Level (%)',
+                    data: [],
+                    borderColor: '#e94560',
+                    backgroundColor: 'rgba(233, 69, 96, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            color: '#eee'
+                        },
+                        grid: {
+                            color: '#0f3460'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#eee'
+                        },
+                        grid: {
+                            color: '#0f3460'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#eee'
+                        }
+                    }
+                }
+            }
+        });
+
+        function updateData() {
+            fetch('/Ariston/aristonrestdata')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('percentage').textContent = data.percentage;
+
+                    const now = new Date().toLocaleTimeString();
+                    percentageChart.data.labels.push(now);
+                    percentageChart.data.datasets[0].data.push(data.percentage);
+
+                    if (percentageChart.data.labels.length > 30) {
+                        percentageChart.data.labels.shift();
+                        percentageChart.data.datasets[0].data.shift();
+                    }
+                    percentageChart.update();
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+        }
+
+        setInterval(updateData, 15000);
+        updateData();
     </script>
 </body>
 </html>

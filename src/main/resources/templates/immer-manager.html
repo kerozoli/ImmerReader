@@ -2,6 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Immer Manager</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -37,6 +38,7 @@
             gap: 20px;
             align-items: flex-start;
             padding: 0 20px;
+            flex-wrap: wrap;
         }
         .controls {
             background: #16213e;
@@ -103,6 +105,47 @@
         h1 {
             padding: 0 20px;
         }
+        .data-section {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .data-card {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .data-card h3 {
+            margin: 0 0 10px 0;
+            color: #aaa;
+            font-size: 14px;
+        }
+        .data-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .data-card .value.active {
+            color: #28a745;
+        }
+        .chart-container {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            height: 300px;
+        }
+        .full-width {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -113,6 +156,30 @@
     </nav>
 
     <h1>Immer Manager</h1>
+
+    <div style="padding: 0 20px;">
+        <div class="data-section">
+            <h2>Detected Data</h2>
+            <div class="data-grid">
+                <div class="data-card">
+                    <h3>Temperature</h3>
+                    <div class="value"><span id="temperature" th:text="${immerRest.temperaute}">0</span>°C</div>
+                </div>
+                <div class="data-card">
+                    <h3>Throttle Level</h3>
+                    <div class="value"><span id="throttle" th:text="${immerRest.throttle}">0</span>/4</div>
+                </div>
+                <div class="data-card">
+                    <h3>Heating</h3>
+                    <div class="value" id="heating" th:classappend="${immerRest.heating} ? 'active' : ''" th:text="${immerRest.heating} ? 'ON' : 'OFF'">OFF</div>
+                </div>
+                <div class="data-card">
+                    <h3>Boiler</h3>
+                    <div class="value" id="boiler" th:classappend="${immerRest.boilerOn} ? 'active' : ''" th:text="${immerRest.boilerOn} ? 'ON' : 'OFF'">OFF</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="container">
         <div class="controls">
@@ -141,6 +208,15 @@
             <h2>Live Preview</h2>
             <img id="liveImage" src="/Immer/uncroppedimage" alt="Immer Camera Feed">
             <p><small>Image refreshes automatically every 2 seconds</small></p>
+        </div>
+    </div>
+
+    <div style="padding: 0 20px;">
+        <div class="data-section full-width">
+            <h2>Temperature History</h2>
+            <div class="chart-container">
+                <canvas id="temperatureChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -183,6 +259,85 @@
         }
 
         setInterval(refreshImage, 2000);
+
+        // Data polling and chart
+        const temperatureCtx = document.getElementById('temperatureChart').getContext('2d');
+        const temperatureChart = new Chart(temperatureCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: [],
+                    borderColor: '#e94560',
+                    backgroundColor: 'rgba(233, 69, 96, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 15,
+                        max: 60,
+                        ticks: {
+                            color: '#eee'
+                        },
+                        grid: {
+                            color: '#0f3460'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#eee'
+                        },
+                        grid: {
+                            color: '#0f3460'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#eee'
+                        }
+                    }
+                }
+            }
+        });
+
+        function updateData() {
+            fetch('/Immer/immerrestdata')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('temperature').textContent = data.temperaute;
+                    document.getElementById('throttle').textContent = data.throttle;
+                    document.getElementById('heating').textContent = data.heating ? 'ON' : 'OFF';
+                    document.getElementById('heating').className = 'value ' + (data.heating ? 'active' : '');
+                    document.getElementById('boiler').textContent = data.boilerOn ? 'ON' : 'OFF';
+                    document.getElementById('boiler').className = 'value ' + (data.boilerOn ? 'active' : '');
+
+                    const now = new Date().toLocaleTimeString();
+                    temperatureChart.data.labels.push(now);
+                    temperatureChart.data.datasets[0].data.push(data.temperaute);
+
+                    if (temperatureChart.data.labels.length > 30) {
+                        temperatureChart.data.labels.shift();
+                        temperatureChart.data.datasets[0].data.shift();
+                    }
+                    temperatureChart.update();
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+        }
+
+        setInterval(updateData, 2000);
+        updateData();
     </script>
 </body>
 </html>
