@@ -11,6 +11,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.keroleap.immerreader.SharedData.AristonData;
 import com.keroleap.immerreader.SharedData.AristonManagerData;
+import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 @Controller
 @RequestMapping("/AristonManager")
@@ -21,6 +22,9 @@ public class AristonManagerController {
 
     @Autowired
     private AristonData aristonData;
+
+    @Autowired
+    private ErrorStatistics errorStatistics;
 
     @PostMapping("/set")
     @ResponseBody
@@ -42,6 +46,7 @@ public class AristonManagerController {
         modelAndView.addObject("offsetX", aristonManagerData.getOffsetX());
         modelAndView.addObject("offsetY", aristonManagerData.getOffsetY());
         modelAndView.addObject("aristonRest", aristonData.getAristonRest());
+        modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Ariston"));
         return modelAndView;
     }
 }
