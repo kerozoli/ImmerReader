@@ -10,7 +10,7 @@ mvn spring-boot:run         # Run app
 mvn versions:display-dependency-updates  # Check updates
 ```
 
-**Java version:** pom.xml specifies Java 25, but CI workflows use Java 21. Docker builds use Java 25.
+**Java version:** Java 25 throughout (pom.xml, CI workflows, Docker)
 
 ## Architecture
 
