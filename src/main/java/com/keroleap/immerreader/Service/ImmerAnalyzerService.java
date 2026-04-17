@@ -13,9 +13,11 @@ import javax.imageio.ImageIO;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.keroleap.immerreader.ImmerRest;
+import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 @Service
 public class ImmerAnalyzerService {
@@ -23,6 +25,9 @@ public class ImmerAnalyzerService {
     private static final Logger logger = LoggerFactory.getLogger(ImmerAnalyzerService.class);
     private static final int LIGHT_THRESHOLD = -2500000;
     private final AtomicInteger previousTempValue = new AtomicInteger(0);
+
+    @Autowired(required = false)
+    private ErrorStatistics errorStatistics;
 
     public ImmerRest getImmerRestData(BufferedImage bufferedImage, int offsetX, int offsetY) {
         boolean heating = getLightValueAnnDrawRedCross(495 + offsetX, 215 + offsetY, bufferedImage);
@@ -123,6 +128,9 @@ public class ImmerAnalyzerService {
         }
         if (number == 1000) {
             logger.warn("Unknown digit detected: {}{}{}{}{}{}{}", digit1_1, digit1_2, digit1_3, digit1_4, digit1_5, digit1_6, digit1_7);
+            if (errorStatistics != null) {
+                errorStatistics.recordError("Immer", "unknown_digit");
+            }
         }
         return number;
     }
