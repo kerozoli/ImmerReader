@@ -132,6 +132,28 @@
             font-weight: bold;
             color: #e94560;
         }
+        .error-stats {
+            margin-top: 20px;
+        }
+        .error-card {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-right: 10px;
+            display: inline-block;
+            min-width: 150px;
+        }
+        .error-card h4 {
+            margin: 0 0 5px 0;
+            color: #aaa;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .error-card .count {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e94560;
+        }
     </style>
 </head>
 <body>
@@ -150,6 +172,20 @@
                 <div class="data-card">
                     <h3>Power Level</h3>
                     <div class="value"><span id="percentage" th:text="${aristonRest.percentage}">0</span>%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-section">
+            <h2>Error Statistics (Last 24 Hours)</h2>
+            <div class="error-stats">
+                <div class="error-card">
+                    <h4>Timeout Errors</h4>
+                    <div class="count"><span id="timeoutErrors" th:text="${errorStats['timeout']} ?: 0">0</span></div>
+                </div>
+                <div class="error-card">
+                    <h4>General Errors</h4>
+                    <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
                 </div>
             </div>
         </div>

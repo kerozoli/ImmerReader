@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.keroleap.immerreader.SharedData.ImmerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
+import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -26,6 +27,9 @@ class ImmerManagerControllerTest {
 
     @MockitoBean
     private ImmerData immerData;
+
+    @MockitoBean
+    private ErrorStatistics errorStatistics;
 
     @Test
     void getOffset_returnsCurrentValues() throws Exception {

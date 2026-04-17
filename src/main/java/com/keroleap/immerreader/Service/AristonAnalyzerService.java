@@ -66,7 +66,7 @@ public class AristonAnalyzerService {
             sum += image.getRGB(x, b);
         }
         double lightValue = sum / 12.0;
-        boolean detected = (lightValue < LIGHT_THRESHOLD);
+        boolean detected = lightValue < LIGHT_THRESHOLD;
         int color = detected ? 16711680 : 16777215;
         for (int a = x - 5; a < x + 5; a++) {
             image.setRGB(a, y, color);

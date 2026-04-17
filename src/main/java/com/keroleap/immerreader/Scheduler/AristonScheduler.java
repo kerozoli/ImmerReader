@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import com.keroleap.immerreader.AristonRest;
 import com.keroleap.immerreader.Service.AristonAnalyzerService;
 import com.keroleap.immerreader.SharedData.AristonData;
+import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 import jakarta.annotation.PreDestroy;
 
@@ -29,6 +30,9 @@ public class AristonScheduler {
 
     @Autowired
     private AristonAnalyzerService aristonAnalyzerService;
+
+    @Autowired
+    private ErrorStatistics errorStatistics;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -45,8 +49,10 @@ public class AristonScheduler {
         } catch (TimeoutException e) {
             future.cancel(true);
             logger.warn("Timeout fetching Ariston data, keeping previous value.");
+            errorStatistics.recordError("Ariston", "timeout");
         } catch (Exception e) {
             logger.error("Error fetching Ariston data: {}", e.getMessage());
+            errorStatistics.recordError("Ariston", "error");
         }
     }
 

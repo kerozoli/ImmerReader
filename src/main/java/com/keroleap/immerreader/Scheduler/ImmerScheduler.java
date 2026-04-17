@@ -17,6 +17,7 @@ import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.Service.ImmerAnalyzerService;
 import com.keroleap.immerreader.SharedData.ImmerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
+import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -37,6 +38,9 @@ public class ImmerScheduler {
 
     @Autowired
     private ImmerManagerData immerManagerData;
+
+    @Autowired
+    private ErrorStatistics errorStatistics;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final AtomicInteger currentDelayMs = new AtomicInteger(DEFAULT_DELAY_MS);
@@ -65,9 +69,11 @@ public class ImmerScheduler {
         } catch (TimeoutException e) {
             future.cancel(true);
             logger.warn("Timeout fetching Immer data, keeping previous value.");
+            errorStatistics.recordError("Immer", "timeout");
             onReadError();
         } catch (Exception e) {
             logger.error("Error fetching Immer data: {}", e.getMessage());
+            errorStatistics.recordError("Immer", "error");
             onReadError();
         }
     }

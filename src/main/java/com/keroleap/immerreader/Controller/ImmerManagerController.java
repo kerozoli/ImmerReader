@@ -11,6 +11,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.keroleap.immerreader.SharedData.ImmerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
+import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 @Controller
 @RequestMapping("/ImmerManager")
@@ -21,6 +22,9 @@ public class ImmerManagerController {
 
     @Autowired
     private ImmerData immerData;
+
+    @Autowired
+    private ErrorStatistics errorStatistics;
 
     @PostMapping("/set")
     @ResponseBody
@@ -42,6 +46,7 @@ public class ImmerManagerController {
         modelAndView.addObject("offsetX", immerManagerData.getOffsetX());
         modelAndView.addObject("offsetY", immerManagerData.getOffsetY());
         modelAndView.addObject("immerRest", immerData.getImmerRest());
+        modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Immer"));
         return modelAndView;
     }
 }
