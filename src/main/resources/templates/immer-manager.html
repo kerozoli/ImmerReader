@@ -2,7 +2,6 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Immer Manager</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -136,16 +135,6 @@
         .data-card .value.active {
             color: #28a745;
         }
-        .chart-container {
-            background: #16213e;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            height: 300px;
-        }
-        .full-width {
-            width: 100%;
-        }
     </style>
 </head>
 <body>
@@ -211,15 +200,6 @@
         </div>
     </div>
 
-    <div style="padding: 0 20px;">
-        <div class="data-section full-width">
-            <h2>Temperature History</h2>
-            <div class="chart-container">
-                <canvas id="temperatureChart"></canvas>
-            </div>
-        </div>
-    </div>
-
     <script>
         document.getElementById('offsetForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -259,85 +239,6 @@
         }
 
         setInterval(refreshImage, 2000);
-
-        // Data polling and chart
-        const temperatureCtx = document.getElementById('temperatureChart').getContext('2d');
-        const temperatureChart = new Chart(temperatureCtx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Temperature (°C)',
-                    data: [],
-                    borderColor: '#e94560',
-                    backgroundColor: 'rgba(233, 69, 96, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        min: 15,
-                        max: 60,
-                        ticks: {
-                            color: '#eee'
-                        },
-                        grid: {
-                            color: '#0f3460'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            color: '#eee'
-                        },
-                        grid: {
-                            color: '#0f3460'
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: '#eee'
-                        }
-                    }
-                }
-            }
-        });
-
-        function updateData() {
-            fetch('/Immer/immerrestdata')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('temperature').textContent = data.temperaute;
-                    document.getElementById('throttle').textContent = data.throttle;
-                    document.getElementById('heating').textContent = data.heating ? 'ON' : 'OFF';
-                    document.getElementById('heating').className = 'value ' + (data.heating ? 'active' : '');
-                    document.getElementById('boiler').textContent = data.boilerOn ? 'ON' : 'OFF';
-                    document.getElementById('boiler').className = 'value ' + (data.boilerOn ? 'active' : '');
-
-                    const now = new Date().toLocaleTimeString();
-                    temperatureChart.data.labels.push(now);
-                    temperatureChart.data.datasets[0].data.push(data.temperaute);
-
-                    if (temperatureChart.data.labels.length > 30) {
-                        temperatureChart.data.labels.shift();
-                        temperatureChart.data.datasets[0].data.shift();
-                    }
-                    temperatureChart.update();
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                });
-        }
-
-        setInterval(updateData, 2000);
-        updateData();
     </script>
 </body>
 </html>
