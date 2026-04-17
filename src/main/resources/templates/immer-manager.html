@@ -157,6 +157,20 @@
             font-weight: bold;
             color: #e94560;
         }
+        .main-content {
+            display: flex;
+            gap: 20px;
+            padding: 0 20px;
+            flex-wrap: wrap;
+        }
+        .left-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .right-panel {
+            flex: 1;
+            min-width: 300px;
+        }
     </style>
 </head>
 <body>
@@ -191,22 +205,11 @@
             </div>
         </div>
 
-        <div class="data-section">
-            <h2>Error Statistics (Last 24 Hours)</h2>
-            <div class="error-stats">
-                <div class="error-card">
-                    <h4>Timeout Errors</h4>
-                    <div class="count"><span id="timeoutErrors" th:text="${errorStats['timeout']} ?: 0">0</span></div>
-                </div>
-                <div class="error-card">
-                    <h4>General Errors</h4>
-                    <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <div class="container">
+    <div class="main-content">
+        <div class="left-panel">
+            <div class="container">
         <div class="controls">
             <form id="offsetForm">
                 <div class="form-group">
@@ -233,6 +236,28 @@
             <h2>Live Preview</h2>
             <img id="liveImage" src="/Immer/uncroppedimage" alt="Immer Camera Feed">
             <p><small>Image refreshes automatically every 2 seconds</small></p>
+        </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="data-section">
+                <h2>Error Statistics (Last 24 Hours)</h2>
+                <div class="error-stats">
+                    <div class="error-card">
+                        <h4>Timeout Errors</h4>
+                        <div class="count"><span id="timeoutErrors" th:text="${errorStats['timeout']} ?: 0">0</span></div>
+                    </div>
+                    <div class="error-card">
+                        <h4>General Errors</h4>
+                        <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
+                    </div>
+                    <div class="error-card">
+                        <h4>Unknown Digit</h4>
+                        <div class="count"><span id="unknownDigitErrors" th:text="${errorStats['unknown_digit']} ?: 0">0</span></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
