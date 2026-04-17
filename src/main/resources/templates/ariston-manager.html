@@ -155,6 +155,20 @@
             font-weight: bold;
             color: #e94560;
         }
+        .main-content {
+            display: flex;
+            gap: 20px;
+            padding: 0 20px;
+            flex-wrap: wrap;
+        }
+        .left-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .right-panel {
+            flex: 1;
+            min-width: 300px;
+        }
     </style>
 </head>
 <body>
@@ -176,49 +190,55 @@
                 </div>
             </div>
         </div>
-
-        <div class="data-section">
-            <h2>Error Statistics (Last 24 Hours)</h2>
-            <div class="error-stats">
-                <div class="error-card">
-                    <h4>Timeout Errors</h4>
-                    <div class="count"><span id="timeoutErrors" th:text="${errorStats['timeout']} ?: 0">0</span></div>
-                </div>
-                <div class="error-card">
-                    <h4>General Errors</h4>
-                    <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <div class="container">
-        <div class="controls">
-            <form id="offsetForm">
-                <div class="form-group">
-                    <label for="offsetX">Offset X:</label>
-                    <input type="number" id="offsetX" name="x" th:value="${offsetX}" required>
-                </div>
-                <div class="form-group">
-                    <label for="offsetY">Offset Y:</label>
-                    <input type="number" id="offsetY" name="y" th:value="${offsetY}" required>
-                </div>
-                <button type="submit">Apply Offset</button>
-            </form>
+    <div class="main-content">
+        <div class="left-panel">
+            <div class="container">
+                <div class="controls">
+                    <form id="offsetForm">
+                        <div class="form-group">
+                            <label for="offsetX">Offset X:</label>
+                            <input type="number" id="offsetX" name="x" th:value="${offsetX}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="offsetY">Offset Y:</label>
+                            <input type="number" id="offsetY" name="y" th:value="${offsetY}" required>
+                        </div>
+                        <button type="submit">Apply Offset</button>
+                    </form>
 
-            <div class="current-values">
-                <strong>Current Values:</strong><br>
-                X: <span id="currentX" th:text="${offsetX}">0</span><br>
-                Y: <span id="currentY" th:text="${offsetY}">0</span>
+                    <div class="current-values">
+                        <strong>Current Values:</strong><br>
+                        X: <span id="currentX" th:text="${offsetX}">0</span><br>
+                        Y: <span id="currentY" th:text="${offsetY}">0</span>
+                    </div>
+
+                    <div id="status" class="status">Offset updated!</div>
+                </div>
+
+                <div class="image-container">
+                    <h2>Live Preview</h2>
+                    <img id="liveImage" src="/Ariston/uncroppedimage" alt="Ariston Camera Feed">
+                    <p><small>Image refreshes automatically every 15 seconds</small></p>
+                </div>
             </div>
-
-            <div id="status" class="status">Offset updated!</div>
         </div>
 
-        <div class="image-container">
-            <h2>Live Preview</h2>
-            <img id="liveImage" src="/Ariston/uncroppedimage" alt="Ariston Camera Feed">
-            <p><small>Image refreshes automatically every 15 seconds</small></p>
+        <div class="right-panel">
+            <div class="data-section">
+                <h2>Error Statistics (Last 24 Hours)</h2>
+                <div class="error-stats">
+                    <div class="error-card">
+                        <h4>Timeout Errors</h4>
+                        <div class="count"><span id="timeoutErrors" th:text="${errorStats['timeout']} ?: 0">0</span></div>
+                    </div>
+                    <div class="error-card">
+                        <h4>General Errors</h4>
+                        <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
