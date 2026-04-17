@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.keroleap.immerreader.SharedData.AristonData;
 import com.keroleap.immerreader.SharedData.AristonManagerData;
+import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -26,6 +27,9 @@ class AristonManagerControllerTest {
 
     @MockitoBean
     private AristonData aristonData;
+
+    @MockitoBean
+    private ErrorStatistics errorStatistics;
 
     @Test
     void getOffset_returnsCurrentValues() throws Exception {
