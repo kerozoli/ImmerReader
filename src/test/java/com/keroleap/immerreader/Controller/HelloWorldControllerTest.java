@@ -12,6 +12,7 @@ import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.Service.ImmerAnalyzerService;
 import com.keroleap.immerreader.SharedData.ImmerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
+import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,6 +31,9 @@ public class HelloWorldControllerTest {
 
     @MockitoBean
     private ImmerManagerData immerManagerData;
+
+    @MockitoBean
+    private ErrorStatistics errorStatistics;
 
     @Test
     public void testGetImmerRestData_returnsJson() throws Exception {
