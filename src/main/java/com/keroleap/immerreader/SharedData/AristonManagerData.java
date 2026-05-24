@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ public class AristonManagerData {
     private final AtomicInteger startY = new AtomicInteger(160);
     private final AtomicInteger endX = new AtomicInteger(220);
     private final AtomicInteger endY = new AtomicInteger(180);
+    private final AtomicBoolean enabled = new AtomicBoolean(true);
 
     @PostConstruct
     private void load() {
@@ -34,6 +36,7 @@ public class AristonManagerData {
                 startY.set(Integer.parseInt(props.getProperty("startY", "160")));
                 endX.set(Integer.parseInt(props.getProperty("endX", "220")));
                 endY.set(Integer.parseInt(props.getProperty("endY", "180")));
+                enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "true")));
             } catch (IOException | NumberFormatException e) {
                 logger.warn("Could not load offset data from {}: {}", DATA_FILE, e.getMessage());
             }
@@ -46,6 +49,7 @@ public class AristonManagerData {
         props.setProperty("startY", String.valueOf(startY.get()));
         props.setProperty("endX", String.valueOf(endX.get()));
         props.setProperty("endY", String.valueOf(endY.get()));
+        props.setProperty("enabled", String.valueOf(enabled.get()));
         File file = new File(DATA_FILE);
         File parent = file.getParentFile();
         if (!parent.exists() && !parent.mkdirs()) {
@@ -92,6 +96,15 @@ public class AristonManagerData {
 
     public void setEndY(int endY) {
         this.endY.set(endY);
+        save();
+    }
+
+    public boolean isEnabled() {
+        return enabled.get();
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled.set(enabled);
         save();
     }
 }

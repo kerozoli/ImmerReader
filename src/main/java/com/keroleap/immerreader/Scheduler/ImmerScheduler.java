@@ -55,6 +55,12 @@ public class ImmerScheduler {
     }
 
     private void ImmerScheduledRead() {
+        if (!immerManagerData.isEnabled()) {
+            currentDelayMs.set(DEFAULT_DELAY_MS);
+            scheduleNextRead();
+            return;
+        }
+
         int offsetX = immerManagerData.getOffsetX();
         int offsetY = immerManagerData.getOffsetY();
         Future<ImmerRest> future = Executors.newSingleThreadExecutor().submit(() -> {

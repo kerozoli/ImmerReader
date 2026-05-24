@@ -119,4 +119,28 @@ class AristonManagerControllerTest {
                         .param("endX", "15"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void toggleEnabled_flipsAndReturnsValue() throws Exception {
+        when(aristonManagerData.isEnabled()).thenReturn(true);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/AristonManager/toggle"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+        verify(aristonManagerData).setEnabled(false);
+    }
+
+    @Test
+    void getPoints_returnsEnabledState() throws Exception {
+        when(aristonManagerData.getStartX()).thenReturn(0);
+        when(aristonManagerData.getStartY()).thenReturn(0);
+        when(aristonManagerData.getEndX()).thenReturn(0);
+        when(aristonManagerData.getEndY()).thenReturn(0);
+        when(aristonManagerData.isEnabled()).thenReturn(false);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/AristonManager"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enabled").value(false));
+    }
 }

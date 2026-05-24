@@ -74,4 +74,25 @@ class ImmerManagerDataTest {
         assertEquals(7, data.getOffsetX());
         assertEquals(13, data.getOffsetY());
     }
+
+    @Test
+    void defaultEnabledIsTrue() {
+        assertTrue(newInstance().isEnabled());
+    }
+
+    @Test
+    void setAndGetEnabled() {
+        ImmerManagerData data = newInstance();
+        data.setEnabled(false);
+        assertFalse(data.isEnabled());
+    }
+
+    @Test
+    void setEnabledMultipleTimes() {
+        ImmerManagerData data = newInstance();
+        data.setEnabled(false);
+        data.setEnabled(true);
+        data.setEnabled(false);
+        assertFalse(data.isEnabled());
+    }
 }

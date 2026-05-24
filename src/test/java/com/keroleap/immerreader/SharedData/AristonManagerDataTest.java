@@ -99,4 +99,25 @@ class AristonManagerDataTest {
         assertEquals(25, data.getEndX());
         assertEquals(30, data.getEndY());
     }
+
+    @Test
+    void defaultEnabledIsTrue() {
+        assertTrue(newInstance().isEnabled());
+    }
+
+    @Test
+    void setAndGetEnabled() {
+        AristonManagerData data = newInstance();
+        data.setEnabled(false);
+        assertFalse(data.isEnabled());
+    }
+
+    @Test
+    void setEnabledMultipleTimes() {
+        AristonManagerData data = newInstance();
+        data.setEnabled(false);
+        data.setEnabled(true);
+        data.setEnabled(false);
+        assertFalse(data.isEnabled());
+    }
 }

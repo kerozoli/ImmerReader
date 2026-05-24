@@ -34,6 +34,13 @@ public class ImmerManagerController {
         return immerManagerData;
     }
 
+    @PostMapping("/toggle")
+    @ResponseBody
+    public ImmerManagerData toggleEnabled() {
+        immerManagerData.setEnabled(!immerManagerData.isEnabled());
+        return immerManagerData;
+    }
+
     @GetMapping
     @ResponseBody
     public ImmerManagerData getOffset() {
@@ -45,6 +52,7 @@ public class ImmerManagerController {
         ModelAndView modelAndView = new ModelAndView("immer-manager");
         modelAndView.addObject("offsetX", immerManagerData.getOffsetX());
         modelAndView.addObject("offsetY", immerManagerData.getOffsetY());
+        modelAndView.addObject("enabled", immerManagerData.isEnabled());
         modelAndView.addObject("immerRest", immerData.getImmerRest());
         modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Immer"));
         return modelAndView;

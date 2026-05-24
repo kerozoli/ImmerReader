@@ -42,6 +42,10 @@ public class AristonScheduler {
 
     @Scheduled(fixedRate = 15000)
     public void AristonScheduledRead() {
+        if (!aristonManagerData.isEnabled()) {
+            return;
+        }
+
         Future<AristonRest> future = executor.submit(() -> {
             BufferedImage cachedImage = aristonAnalyzerService.getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
             return aristonAnalyzerService.getAristonRestData(cachedImage,
