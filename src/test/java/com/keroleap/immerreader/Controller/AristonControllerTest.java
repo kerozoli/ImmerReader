@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import com.keroleap.immerreader.AristonRest;
 import com.keroleap.immerreader.Service.AristonAnalyzerService;
 import com.keroleap.immerreader.SharedData.AristonData;
+import com.keroleap.immerreader.SharedData.AristonManagerData;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -26,6 +27,9 @@ class AristonControllerTest {
 
     @MockitoBean
     private AristonAnalyzerService aristonAnalyzerService;
+
+    @MockitoBean
+    private AristonManagerData aristonManagerData;
 
     @Test
     void getAristonRestData_returnsJson() throws Exception {

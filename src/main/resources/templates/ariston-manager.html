@@ -76,15 +76,44 @@
         button:hover {
             background: #ff6b6b;
         }
+        button.secondary {
+            background: #0f3460;
+            margin-top: 8px;
+        }
+        button.secondary.active {
+            background: #28a745;
+        }
         .image-container {
             background: #16213e;
             padding: 20px;
             border-radius: 8px;
+            position: relative;
+        }
+        .image-wrapper {
+            position: relative;
+            display: inline-block;
         }
         img {
             max-width: 800px;
             border: 2px solid #0f3460;
             border-radius: 4px;
+            display: block;
+            cursor: crosshair;
+        }
+        .marker {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .marker.start {
+            background: #28a745;
+        }
+        .marker.end {
+            background: #e94560;
         }
         .current-values {
             margin-top: 15px;
@@ -196,31 +225,46 @@
         <div class="left-panel">
             <div class="container">
                 <div class="controls">
-                    <form id="offsetForm">
+                    <form id="pointForm">
                         <div class="form-group">
-                            <label for="offsetX">Offset X:</label>
-                            <input type="number" id="offsetX" name="x" th:value="${offsetX}" required>
+                            <label for="startX">Start X:</label>
+                            <input type="number" id="startX" name="startX" th:value="${startX}" required>
                         </div>
                         <div class="form-group">
-                            <label for="offsetY">Offset Y:</label>
-                            <input type="number" id="offsetY" name="y" th:value="${offsetY}" required>
+                            <label for="startY">Start Y:</label>
+                            <input type="number" id="startY" name="startY" th:value="${startY}" required>
                         </div>
-                        <button type="submit">Apply Offset</button>
+                        <div class="form-group">
+                            <label for="endX">End X:</label>
+                            <input type="number" id="endX" name="endX" th:value="${endX}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="endY">End Y:</label>
+                            <input type="number" id="endY" name="endY" th:value="${endY}" required>
+                        </div>
+                        <button type="submit">Apply Points</button>
                     </form>
+
+                    <button type="button" id="setStartBtn" class="secondary active">Set Start Point</button>
+                    <button type="button" id="setEndBtn" class="secondary">Set End Point</button>
 
                     <div class="current-values">
                         <strong>Current Values:</strong><br>
-                        X: <span id="currentX" th:text="${offsetX}">0</span><br>
-                        Y: <span id="currentY" th:text="${offsetY}">0</span>
+                        Start: (<span id="currentStartX" th:text="${startX}">0</span>, <span id="currentStartY" th:text="${startY}">0</span>)<br>
+                        End: (<span id="currentEndX" th:text="${endX}">0</span>, <span id="currentEndY" th:text="${endY}">0</span>)
                     </div>
 
-                    <div id="status" class="status">Offset updated!</div>
+                    <div id="status" class="status">Points updated!</div>
                 </div>
 
                 <div class="image-container">
                     <h2>Live Preview</h2>
-                    <img id="liveImage" src="/Ariston/uncroppedimage" alt="Ariston Camera Feed">
-                    <p><small>Image refreshes automatically every 15 seconds</small></p>
+                    <div class="image-wrapper" id="imageWrapper">
+                        <img id="liveImage" src="/Ariston/uncroppedimage" alt="Ariston Camera Feed">
+                        <div id="startMarker" class="marker start" style="display:none;"></div>
+                        <div id="endMarker" class="marker end" style="display:none;"></div>
+                    </div>
+                    <p><small>Image refreshes automatically every 15 seconds. Click on image to set active point.</small></p>
                 </div>
             </div>
         </div>
@@ -243,26 +287,99 @@
     </div>
 
     <script>
-        document.getElementById('offsetForm').addEventListener('submit', function(e) {
+        let activePoint = 'start';
+
+        const startXInput = document.getElementById('startX');
+        const startYInput = document.getElementById('startY');
+        const endXInput = document.getElementById('endX');
+        const endYInput = document.getElementById('endY');
+        const setStartBtn = document.getElementById('setStartBtn');
+        const setEndBtn = document.getElementById('setEndBtn');
+        const liveImage = document.getElementById('liveImage');
+        const imageWrapper = document.getElementById('imageWrapper');
+        const startMarker = document.getElementById('startMarker');
+        const endMarker = document.getElementById('endMarker');
+
+        function updateMarkers() {
+            const sx = parseInt(startXInput.value);
+            const sy = parseInt(startYInput.value);
+            const ex = parseInt(endXInput.value);
+            const ey = parseInt(endYInput.value);
+
+            const rect = liveImage.getBoundingClientRect();
+            const imgWidth = liveImage.naturalWidth || rect.width;
+            const imgHeight = liveImage.naturalHeight || rect.height;
+            const scaleX = rect.width / imgWidth;
+            const scaleY = rect.height / imgHeight;
+
+            startMarker.style.left = (sx * scaleX) + 'px';
+            startMarker.style.top = (sy * scaleY) + 'px';
+            startMarker.style.display = 'block';
+
+            endMarker.style.left = (ex * scaleX) + 'px';
+            endMarker.style.top = (ey * scaleY) + 'px';
+            endMarker.style.display = 'block';
+        }
+
+        liveImage.addEventListener('load', updateMarkers);
+        if (liveImage.complete) updateMarkers();
+
+        setStartBtn.addEventListener('click', () => {
+            activePoint = 'start';
+            setStartBtn.classList.add('active');
+            setEndBtn.classList.remove('active');
+        });
+
+        setEndBtn.addEventListener('click', () => {
+            activePoint = 'end';
+            setEndBtn.classList.add('active');
+            setStartBtn.classList.remove('active');
+        });
+
+        imageWrapper.addEventListener('click', function(e) {
+            const rect = liveImage.getBoundingClientRect();
+            const imgWidth = liveImage.naturalWidth || rect.width;
+            const imgHeight = liveImage.naturalHeight || rect.height;
+            const scaleX = imgWidth / rect.width;
+            const scaleY = imgHeight / rect.height;
+
+            const x = Math.round((e.clientX - rect.left) * scaleX);
+            const y = Math.round((e.clientY - rect.top) * scaleY);
+
+            if (activePoint === 'start') {
+                startXInput.value = x;
+                startYInput.value = y;
+            } else {
+                endXInput.value = x;
+                endYInput.value = y;
+            }
+            updateMarkers();
+        });
+
+        document.getElementById('pointForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const x = document.getElementById('offsetX').value;
-            const y = document.getElementById('offsetY').value;
+            const startX = startXInput.value;
+            const startY = startYInput.value;
+            const endX = endXInput.value;
+            const endY = endYInput.value;
 
             fetch('/AristonManager/set', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `x=${x}&y=${y}`
+                body: `startX=${startX}&startY=${startY}&endX=${endX}&endY=${endY}`
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById('currentX').textContent = data.offsetX;
-                document.getElementById('currentY').textContent = data.offsetY;
+                document.getElementById('currentStartX').textContent = data.startX;
+                document.getElementById('currentStartY').textContent = data.startY;
+                document.getElementById('currentEndX').textContent = data.endX;
+                document.getElementById('currentEndY').textContent = data.endY;
 
                 const status = document.getElementById('status');
-                status.textContent = 'Offset updated!';
+                status.textContent = 'Points updated!';
                 status.className = 'status success';
                 setTimeout(() => {
                     status.className = 'status';

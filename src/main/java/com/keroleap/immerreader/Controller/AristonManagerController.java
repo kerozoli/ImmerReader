@@ -28,23 +28,30 @@ public class AristonManagerController {
 
     @PostMapping("/set")
     @ResponseBody
-    public AristonManagerData setOffset(@RequestParam int x, @RequestParam int y) {
-        aristonManagerData.setOffsetX(x);
-        aristonManagerData.setOffsetY(y);
+    public AristonManagerData setPoints(@RequestParam int startX,
+                                         @RequestParam int startY,
+                                         @RequestParam int endX,
+                                         @RequestParam int endY) {
+        aristonManagerData.setStartX(startX);
+        aristonManagerData.setStartY(startY);
+        aristonManagerData.setEndX(endX);
+        aristonManagerData.setEndY(endY);
         return aristonManagerData;
     }
 
     @GetMapping
     @ResponseBody
-    public AristonManagerData getOffset() {
+    public AristonManagerData getPoints() {
         return aristonManagerData;
     }
 
     @GetMapping("/adjust")
-    public ModelAndView adjustOffset() {
+    public ModelAndView adjustPoints() {
         ModelAndView modelAndView = new ModelAndView("ariston-manager");
-        modelAndView.addObject("offsetX", aristonManagerData.getOffsetX());
-        modelAndView.addObject("offsetY", aristonManagerData.getOffsetY());
+        modelAndView.addObject("startX", aristonManagerData.getStartX());
+        modelAndView.addObject("startY", aristonManagerData.getStartY());
+        modelAndView.addObject("endX", aristonManagerData.getEndX());
+        modelAndView.addObject("endY", aristonManagerData.getEndY());
         modelAndView.addObject("aristonRest", aristonData.getAristonRest());
         modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Ariston"));
         return modelAndView;

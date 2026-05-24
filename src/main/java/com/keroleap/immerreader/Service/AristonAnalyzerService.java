@@ -21,17 +21,33 @@ public class AristonAnalyzerService {
 
     private static final Logger logger = LoggerFactory.getLogger(AristonAnalyzerService.class);
     private static final int LIGHT_THRESHOLD = -7000000;
+    private static final int POINT_COUNT = 50;
 
-    private static final int[] PERCENT_X = {160, 163, 166, 169, 172, 175, 178, 181, 184, 187, 190, 193, 196, 199, 202, 205, 208, 211, 214, 217, 220};
-    private static final int[] PERCENT_Y = {160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180};
+    public AristonRest getAristonRestData(BufferedImage bufferedImage,
+                                          int startX, int startY,
+                                          int endX, int endY) {
+        int[] xs = new int[POINT_COUNT];
+        int[] ys = new int[POINT_COUNT];
+        boolean[] detected = new boolean[POINT_COUNT];
+        int lastDetectedIndex = -1;
 
-    public AristonRest getAristonRestData(BufferedImage bufferedImage) {
-        int percentage = 0;
-        for (int i = 0; i < PERCENT_X.length; i++) {
-            if (getLightValueAndDrawRedCross(PERCENT_X[i], PERCENT_Y[i], bufferedImage)) {
-                percentage = i * 5;
+        for (int i = 0; i < POINT_COUNT; i++) {
+            double t = (double) i / (POINT_COUNT - 1);
+            xs[i] = (int) Math.round(startX + (endX - startX) * t);
+            ys[i] = (int) Math.round(startY + (endY - startY) * t);
+            detected[i] = detectLightValue(xs[i], ys[i], bufferedImage);
+            if (detected[i]) {
+                lastDetectedIndex = i;
             }
         }
+
+        for (int i = 0; i < POINT_COUNT; i++) {
+            drawRedCross(xs[i], ys[i], bufferedImage, detected[i]);
+        }
+
+        int percentage = lastDetectedIndex >= 0
+                ? (int) Math.round(lastDetectedIndex * 100.0 / (POINT_COUNT - 1))
+                : 0;
         AristonRest aristonRest = new AristonRest();
         aristonRest.setPercentage(percentage);
         return aristonRest;
@@ -57,7 +73,7 @@ public class AristonAnalyzerService {
         }
     }
 
-    private boolean getLightValueAndDrawRedCross(int x, int y, BufferedImage image) {
+    private boolean detectLightValue(int x, int y, BufferedImage image) {
         long sum = 0;
         for (int a = x - 3; a < x + 3; a++) {
             sum += image.getRGB(a, y);
@@ -66,7 +82,10 @@ public class AristonAnalyzerService {
             sum += image.getRGB(x, b);
         }
         double lightValue = sum / 12.0;
-        boolean detected = lightValue < LIGHT_THRESHOLD;
+        return lightValue < LIGHT_THRESHOLD;
+    }
+
+    private void drawRedCross(int x, int y, BufferedImage image, boolean detected) {
         int color = detected ? 16711680 : 16777215;
         for (int a = x - 5; a < x + 5; a++) {
             image.setRGB(a, y, color);
@@ -74,6 +93,5 @@ public class AristonAnalyzerService {
         for (int b = y - 5; b < y + 5; b++) {
             image.setRGB(x, b, color);
         }
-        return detected;
     }
 }

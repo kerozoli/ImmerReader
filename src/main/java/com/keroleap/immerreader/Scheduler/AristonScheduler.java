@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import com.keroleap.immerreader.AristonRest;
 import com.keroleap.immerreader.Service.AristonAnalyzerService;
 import com.keroleap.immerreader.SharedData.AristonData;
+import com.keroleap.immerreader.SharedData.AristonManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 import jakarta.annotation.PreDestroy;
@@ -32,6 +33,9 @@ public class AristonScheduler {
     private AristonAnalyzerService aristonAnalyzerService;
 
     @Autowired
+    private AristonManagerData aristonManagerData;
+
+    @Autowired
     private ErrorStatistics errorStatistics;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -40,7 +44,9 @@ public class AristonScheduler {
     public void AristonScheduledRead() {
         Future<AristonRest> future = executor.submit(() -> {
             BufferedImage cachedImage = aristonAnalyzerService.getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-            return aristonAnalyzerService.getAristonRestData(cachedImage);
+            return aristonAnalyzerService.getAristonRestData(cachedImage,
+                    aristonManagerData.getStartX(), aristonManagerData.getStartY(),
+                    aristonManagerData.getEndX(), aristonManagerData.getEndY());
         });
 
         try {
@@ -62,4 +68,3 @@ public class AristonScheduler {
         executor.shutdownNow();
     }
 }
-
