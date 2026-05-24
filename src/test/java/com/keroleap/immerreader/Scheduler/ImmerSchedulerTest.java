@@ -57,4 +57,10 @@ class ImmerSchedulerTest {
         immerScheduler.init();
         assertDoesNotThrow(() -> immerScheduler.destroy());
     }
+
+    @Test
+    void schedulerInitializesWhenDisabled() {
+        when(immerManagerData.isEnabled()).thenReturn(false);
+        assertDoesNotThrow(() -> immerScheduler.init());
+    }
 }

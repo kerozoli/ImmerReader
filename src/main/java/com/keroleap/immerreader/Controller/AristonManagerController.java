@@ -39,6 +39,13 @@ public class AristonManagerController {
         return aristonManagerData;
     }
 
+    @PostMapping("/toggle")
+    @ResponseBody
+    public AristonManagerData toggleEnabled() {
+        aristonManagerData.setEnabled(!aristonManagerData.isEnabled());
+        return aristonManagerData;
+    }
+
     @GetMapping
     @ResponseBody
     public AristonManagerData getPoints() {
@@ -52,6 +59,7 @@ public class AristonManagerController {
         modelAndView.addObject("startY", aristonManagerData.getStartY());
         modelAndView.addObject("endX", aristonManagerData.getEndX());
         modelAndView.addObject("endY", aristonManagerData.getEndY());
+        modelAndView.addObject("enabled", aristonManagerData.isEnabled());
         modelAndView.addObject("aristonRest", aristonData.getAristonRest());
         modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Ariston"));
         return modelAndView;

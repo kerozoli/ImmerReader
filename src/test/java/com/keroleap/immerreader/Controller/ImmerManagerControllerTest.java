@@ -93,4 +93,26 @@ class ImmerManagerControllerTest {
                         .param("x", "5"))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void toggleEnabled_flipsAndReturnsValue() throws Exception {
+        when(immerManagerData.isEnabled()).thenReturn(true);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/toggle"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+        verify(immerManagerData).setEnabled(false);
+    }
+
+    @Test
+    void getOffset_returnsEnabledState() throws Exception {
+        when(immerManagerData.getOffsetX()).thenReturn(0);
+        when(immerManagerData.getOffsetY()).thenReturn(0);
+        when(immerManagerData.isEnabled()).thenReturn(false);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/ImmerManager"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.enabled").value(false));
+    }
 }

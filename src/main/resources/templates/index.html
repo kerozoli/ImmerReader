@@ -52,6 +52,7 @@
             width: 300px;
             text-align: center;
             transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
         }
         .card:hover {
             transform: translateY(-5px);
@@ -77,6 +78,27 @@
         .card a:hover {
             background: #ff6b6b;
         }
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-badge.enabled {
+            background: #28a745;
+            color: white;
+        }
+        .status-badge.disabled {
+            background: #e94560;
+            color: white;
+        }
+        .card.disabled-card {
+            border: 2px solid #e94560;
+        }
     </style>
 </head>
 <body>
@@ -90,13 +112,15 @@
         <h1>ImmerReader</h1>
 
         <div class="card-container">
-            <div class="card">
+            <div class="card" th:classappend="${!immerEnabled} ? 'disabled-card' : ''">
+                <div class="status-badge" th:classappend="${immerEnabled} ? 'enabled' : 'disabled'" th:text="${immerEnabled} ? 'Enabled' : 'Disabled'">Enabled</div>
                 <h2>Immer Manager</h2>
                 <p>Configure and monitor your Immergas heating system with live camera feed and offset adjustment.</p>
                 <a href="/ImmerManager/adjust">Open Immer Manager</a>
             </div>
 
-            <div class="card">
+            <div class="card" th:classappend="${!aristonEnabled} ? 'disabled-card' : ''">
+                <div class="status-badge" th:classappend="${aristonEnabled} ? 'enabled' : 'disabled'" th:text="${aristonEnabled} ? 'Enabled' : 'Disabled'">Enabled</div>
                 <h2>Ariston Manager</h2>
                 <p>Configure and monitor your Ariston heating system with live camera feed and offset adjustment.</p>
                 <a href="/AristonManager/adjust">Open Ariston Manager</a>

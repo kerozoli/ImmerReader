@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ public class ImmerManagerData {
 
     private final AtomicInteger offsetX = new AtomicInteger(0);
     private final AtomicInteger offsetY = new AtomicInteger(0);
+    private final AtomicBoolean enabled = new AtomicBoolean(true);
 
     @PostConstruct
     private void load() {
@@ -30,6 +32,7 @@ public class ImmerManagerData {
                 props.load(fis);
                 offsetX.set(Integer.parseInt(props.getProperty("offsetX", "0")));
                 offsetY.set(Integer.parseInt(props.getProperty("offsetY", "0")));
+                enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "true")));
             } catch (IOException | NumberFormatException e) {
                 logger.warn("Could not load offset data from {}: {}", DATA_FILE, e.getMessage());
             }
@@ -40,6 +43,7 @@ public class ImmerManagerData {
         Properties props = new Properties();
         props.setProperty("offsetX", String.valueOf(offsetX.get()));
         props.setProperty("offsetY", String.valueOf(offsetY.get()));
+        props.setProperty("enabled", String.valueOf(enabled.get()));
         File file = new File(DATA_FILE);
         File parent = file.getParentFile();
         if (!parent.exists() && !parent.mkdirs()) {
@@ -68,6 +72,15 @@ public class ImmerManagerData {
 
     public void setOffsetY(int offsetY) {
         this.offsetY.set(offsetY);
+        save();
+    }
+
+    public boolean isEnabled() {
+        return enabled.get();
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled.set(enabled);
         save();
     }
 }
