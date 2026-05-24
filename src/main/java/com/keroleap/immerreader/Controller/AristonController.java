@@ -20,6 +20,7 @@ import org.springframework.web.servlet.ModelAndView;
 import com.keroleap.immerreader.AristonRest;
 import com.keroleap.immerreader.Service.AristonAnalyzerService;
 import com.keroleap.immerreader.SharedData.AristonData;
+import com.keroleap.immerreader.SharedData.AristonManagerData;
 
 @Controller
 @RequestMapping("/Ariston")
@@ -33,10 +34,15 @@ public class AristonController {
     @Autowired
     private AristonAnalyzerService aristonAnalyzerService;
 
+    @Autowired
+    private AristonManagerData aristonManagerData;
+
     @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[] getImage() throws IOException {
         BufferedImage cachedImage = aristonAnalyzerService.getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-        aristonAnalyzerService.getAristonRestData(cachedImage);
+        aristonAnalyzerService.getAristonRestData(cachedImage,
+                aristonManagerData.getStartX(), aristonManagerData.getStartY(),
+                aristonManagerData.getEndX(), aristonManagerData.getEndY());
         int x1 = 60;
         int y1 = 115;
         int x2 = 260;
@@ -54,7 +60,9 @@ public class AristonController {
     @GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[] getUncroppedImage() throws IOException {
         BufferedImage cachedImage = aristonAnalyzerService.getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-        aristonAnalyzerService.getAristonRestData(cachedImage);
+        aristonAnalyzerService.getAristonRestData(cachedImage,
+                aristonManagerData.getStartX(), aristonManagerData.getStartY(),
+                aristonManagerData.getEndX(), aristonManagerData.getEndY());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(cachedImage, "jpg", baos);
         return baos.toByteArray();
@@ -64,7 +72,9 @@ public class AristonController {
     public ModelAndView getAristonData() throws IOException {
         BufferedImage cachedImage = aristonAnalyzerService.getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
         ModelAndView modelAndView = new ModelAndView("immerdata");
-        modelAndView.addObject("message", aristonAnalyzerService.getAristonRestData(cachedImage).toString());
+        modelAndView.addObject("message", aristonAnalyzerService.getAristonRestData(cachedImage,
+                aristonManagerData.getStartX(), aristonManagerData.getStartY(),
+                aristonManagerData.getEndX(), aristonManagerData.getEndY()).toString());
         return modelAndView;
     }
 

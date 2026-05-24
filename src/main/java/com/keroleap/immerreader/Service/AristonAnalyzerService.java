@@ -21,16 +21,23 @@ public class AristonAnalyzerService {
 
     private static final Logger logger = LoggerFactory.getLogger(AristonAnalyzerService.class);
     private static final int LIGHT_THRESHOLD = -7000000;
+    private static final int POINT_COUNT = 50;
 
-    private static final int[] PERCENT_X = {160, 163, 166, 169, 172, 175, 178, 181, 184, 187, 190, 193, 196, 199, 202, 205, 208, 211, 214, 217, 220};
-    private static final int[] PERCENT_Y = {160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180};
-
-    public AristonRest getAristonRestData(BufferedImage bufferedImage) {
+    public AristonRest getAristonRestData(BufferedImage bufferedImage,
+                                          int startX, int startY,
+                                          int endX, int endY) {
         int percentage = 0;
-        for (int i = 0; i < PERCENT_X.length; i++) {
-            if (getLightValueAndDrawRedCross(PERCENT_X[i], PERCENT_Y[i], bufferedImage)) {
-                percentage = i * 5;
+        int lastDetectedIndex = -1;
+        for (int i = 0; i < POINT_COUNT; i++) {
+            double t = (double) i / (POINT_COUNT - 1);
+            int x = (int) Math.round(startX + (endX - startX) * t);
+            int y = (int) Math.round(startY + (endY - startY) * t);
+            if (getLightValueAndDrawRedCross(x, y, bufferedImage)) {
+                lastDetectedIndex = i;
             }
+        }
+        if (lastDetectedIndex >= 0) {
+            percentage = (int) Math.round(lastDetectedIndex * 100.0 / (POINT_COUNT - 1));
         }
         AristonRest aristonRest = new AristonRest();
         aristonRest.setPercentage(percentage);

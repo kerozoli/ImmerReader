@@ -32,65 +32,91 @@ class AristonManagerControllerTest {
     private ErrorStatistics errorStatistics;
 
     @Test
-    void getOffset_returnsCurrentValues() throws Exception {
-        when(aristonManagerData.getOffsetX()).thenReturn(5);
-        when(aristonManagerData.getOffsetY()).thenReturn(10);
+    void getPoints_returnsCurrentValues() throws Exception {
+        when(aristonManagerData.getStartX()).thenReturn(5);
+        when(aristonManagerData.getStartY()).thenReturn(10);
+        when(aristonManagerData.getEndX()).thenReturn(15);
+        when(aristonManagerData.getEndY()).thenReturn(20);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/AristonManager"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.offsetX").value(5))
-                .andExpect(jsonPath("$.offsetY").value(10));
+                .andExpect(jsonPath("$.startX").value(5))
+                .andExpect(jsonPath("$.startY").value(10))
+                .andExpect(jsonPath("$.endX").value(15))
+                .andExpect(jsonPath("$.endY").value(20));
     }
 
     @Test
-    void getOffset_defaultZeroValues() throws Exception {
-        when(aristonManagerData.getOffsetX()).thenReturn(0);
-        when(aristonManagerData.getOffsetY()).thenReturn(0);
+    void getPoints_defaultValues() throws Exception {
+        when(aristonManagerData.getStartX()).thenReturn(0);
+        when(aristonManagerData.getStartY()).thenReturn(0);
+        when(aristonManagerData.getEndX()).thenReturn(0);
+        when(aristonManagerData.getEndY()).thenReturn(0);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/AristonManager"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.offsetX").value(0))
-                .andExpect(jsonPath("$.offsetY").value(0));
+                .andExpect(jsonPath("$.startX").value(0))
+                .andExpect(jsonPath("$.startY").value(0))
+                .andExpect(jsonPath("$.endX").value(0))
+                .andExpect(jsonPath("$.endY").value(0));
     }
 
     @Test
-    void setOffset_updatesAndReturnsValues() throws Exception {
-        when(aristonManagerData.getOffsetX()).thenReturn(7);
-        when(aristonManagerData.getOffsetY()).thenReturn(3);
+    void setPoints_updatesAndReturnsValues() throws Exception {
+        when(aristonManagerData.getStartX()).thenReturn(7);
+        when(aristonManagerData.getStartY()).thenReturn(3);
+        when(aristonManagerData.getEndX()).thenReturn(14);
+        when(aristonManagerData.getEndY()).thenReturn(6);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/AristonManager/set")
-                        .param("x", "7")
-                        .param("y", "3"))
+                        .param("startX", "7")
+                        .param("startY", "3")
+                        .param("endX", "14")
+                        .param("endY", "6"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.offsetX").value(7))
-                .andExpect(jsonPath("$.offsetY").value(3));
+                .andExpect(jsonPath("$.startX").value(7))
+                .andExpect(jsonPath("$.startY").value(3))
+                .andExpect(jsonPath("$.endX").value(14))
+                .andExpect(jsonPath("$.endY").value(6));
 
-        verify(aristonManagerData).setOffsetX(7);
-        verify(aristonManagerData).setOffsetY(3);
+        verify(aristonManagerData).setStartX(7);
+        verify(aristonManagerData).setStartY(3);
+        verify(aristonManagerData).setEndX(14);
+        verify(aristonManagerData).setEndY(6);
     }
 
     @Test
-    void setOffset_negativeValues() throws Exception {
-        when(aristonManagerData.getOffsetX()).thenReturn(-5);
-        when(aristonManagerData.getOffsetY()).thenReturn(-10);
+    void setPoints_negativeValues() throws Exception {
+        when(aristonManagerData.getStartX()).thenReturn(-5);
+        when(aristonManagerData.getStartY()).thenReturn(-10);
+        when(aristonManagerData.getEndX()).thenReturn(-15);
+        when(aristonManagerData.getEndY()).thenReturn(-20);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/AristonManager/set")
-                        .param("x", "-5")
-                        .param("y", "-10"))
+                        .param("startX", "-5")
+                        .param("startY", "-10")
+                        .param("endX", "-15")
+                        .param("endY", "-20"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.offsetX").value(-5))
-                .andExpect(jsonPath("$.offsetY").value(-10));
+                .andExpect(jsonPath("$.startX").value(-5))
+                .andExpect(jsonPath("$.startY").value(-10))
+                .andExpect(jsonPath("$.endX").value(-15))
+                .andExpect(jsonPath("$.endY").value(-20));
 
-        verify(aristonManagerData).setOffsetX(-5);
-        verify(aristonManagerData).setOffsetY(-10);
+        verify(aristonManagerData).setStartX(-5);
+        verify(aristonManagerData).setStartY(-10);
+        verify(aristonManagerData).setEndX(-15);
+        verify(aristonManagerData).setEndY(-20);
     }
 
     @Test
-    void setOffset_missingParamReturnsBadRequest() throws Exception {
+    void setPoints_missingParamReturnsBadRequest() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/AristonManager/set")
-                        .param("x", "5"))
+                        .param("startX", "5")
+                        .param("startY", "10")
+                        .param("endX", "15"))
                 .andExpect(status().isBadRequest());
     }
 }

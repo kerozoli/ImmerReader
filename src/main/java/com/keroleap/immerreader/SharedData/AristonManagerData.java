@@ -18,8 +18,10 @@ public class AristonManagerData {
     private static final Logger logger = LoggerFactory.getLogger(AristonManagerData.class);
     private static final String DATA_FILE = "/data/ariston.properties";
 
-    private final AtomicInteger offsetX = new AtomicInteger(0);
-    private final AtomicInteger offsetY = new AtomicInteger(0);
+    private final AtomicInteger startX = new AtomicInteger(160);
+    private final AtomicInteger startY = new AtomicInteger(160);
+    private final AtomicInteger endX = new AtomicInteger(220);
+    private final AtomicInteger endY = new AtomicInteger(180);
 
     @PostConstruct
     private void load() {
@@ -28,8 +30,10 @@ public class AristonManagerData {
             Properties props = new Properties();
             try (FileInputStream fis = new FileInputStream(file)) {
                 props.load(fis);
-                offsetX.set(Integer.parseInt(props.getProperty("offsetX", "0")));
-                offsetY.set(Integer.parseInt(props.getProperty("offsetY", "0")));
+                startX.set(Integer.parseInt(props.getProperty("startX", "160")));
+                startY.set(Integer.parseInt(props.getProperty("startY", "160")));
+                endX.set(Integer.parseInt(props.getProperty("endX", "220")));
+                endY.set(Integer.parseInt(props.getProperty("endY", "180")));
             } catch (IOException | NumberFormatException e) {
                 logger.warn("Could not load offset data from {}: {}", DATA_FILE, e.getMessage());
             }
@@ -38,8 +42,10 @@ public class AristonManagerData {
 
     private void save() {
         Properties props = new Properties();
-        props.setProperty("offsetX", String.valueOf(offsetX.get()));
-        props.setProperty("offsetY", String.valueOf(offsetY.get()));
+        props.setProperty("startX", String.valueOf(startX.get()));
+        props.setProperty("startY", String.valueOf(startY.get()));
+        props.setProperty("endX", String.valueOf(endX.get()));
+        props.setProperty("endY", String.valueOf(endY.get()));
         File file = new File(DATA_FILE);
         File parent = file.getParentFile();
         if (!parent.exists() && !parent.mkdirs()) {
@@ -53,21 +59,39 @@ public class AristonManagerData {
         }
     }
 
-    public int getOffsetX() {
-        return offsetX.get();
+    public int getStartX() {
+        return startX.get();
     }
 
-    public void setOffsetX(int offsetX) {
-        this.offsetX.set(offsetX);
+    public void setStartX(int startX) {
+        this.startX.set(startX);
         save();
     }
 
-    public int getOffsetY() {
-        return offsetY.get();
+    public int getStartY() {
+        return startY.get();
     }
 
-    public void setOffsetY(int offsetY) {
-        this.offsetY.set(offsetY);
+    public void setStartY(int startY) {
+        this.startY.set(startY);
+        save();
+    }
+
+    public int getEndX() {
+        return endX.get();
+    }
+
+    public void setEndX(int endX) {
+        this.endX.set(endX);
+        save();
+    }
+
+    public int getEndY() {
+        return endY.get();
+    }
+
+    public void setEndY(int endY) {
+        this.endY.set(endY);
         save();
     }
 }

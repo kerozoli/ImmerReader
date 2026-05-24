@@ -9,7 +9,7 @@ class AristonManagerDataTest {
     /**
      * Directly instantiates AristonManagerData without a Spring context.
      * The @PostConstruct (load) is not invoked, but the AtomicInteger fields
-     * are initialised to 0 by their field declarations, so default-value
+     * are initialised to their declared defaults, so default-value
      * assertions are still meaningful.
      */
     private AristonManagerData newInstance() {
@@ -17,58 +17,86 @@ class AristonManagerDataTest {
     }
 
     @Test
-    void defaultOffsetXIsZero() {
-        assertEquals(0, newInstance().getOffsetX());
+    void defaultStartXIs160() {
+        assertEquals(160, newInstance().getStartX());
     }
 
     @Test
-    void defaultOffsetYIsZero() {
-        assertEquals(0, newInstance().getOffsetY());
+    void defaultStartYIs160() {
+        assertEquals(160, newInstance().getStartY());
     }
 
     @Test
-    void setAndGetOffsetX() {
+    void defaultEndXIs220() {
+        assertEquals(220, newInstance().getEndX());
+    }
+
+    @Test
+    void defaultEndYIs180() {
+        assertEquals(180, newInstance().getEndY());
+    }
+
+    @Test
+    void setAndGetStartX() {
         AristonManagerData data = newInstance();
-        data.setOffsetX(15);
-        assertEquals(15, data.getOffsetX());
+        data.setStartX(150);
+        assertEquals(150, data.getStartX());
     }
 
     @Test
-    void setAndGetOffsetY() {
+    void setAndGetStartY() {
         AristonManagerData data = newInstance();
-        data.setOffsetY(30);
-        assertEquals(30, data.getOffsetY());
+        data.setStartY(155);
+        assertEquals(155, data.getStartY());
     }
 
     @Test
-    void setOffsetXToNegative() {
+    void setAndGetEndX() {
         AristonManagerData data = newInstance();
-        data.setOffsetX(-5);
-        assertEquals(-5, data.getOffsetX());
+        data.setEndX(230);
+        assertEquals(230, data.getEndX());
     }
 
     @Test
-    void setOffsetYToNegative() {
+    void setAndGetEndY() {
         AristonManagerData data = newInstance();
-        data.setOffsetY(-10);
-        assertEquals(-10, data.getOffsetY());
+        data.setEndY(190);
+        assertEquals(190, data.getEndY());
     }
 
     @Test
-    void setOffsetXMultipleTimes() {
+    void setStartXToNegative() {
         AristonManagerData data = newInstance();
-        data.setOffsetX(10);
-        data.setOffsetX(20);
-        data.setOffsetX(5);
-        assertEquals(5, data.getOffsetX());
+        data.setStartX(-5);
+        assertEquals(-5, data.getStartX());
     }
 
     @Test
-    void xAndYAreIndependent() {
+    void setEndYToNegative() {
         AristonManagerData data = newInstance();
-        data.setOffsetX(7);
-        data.setOffsetY(13);
-        assertEquals(7, data.getOffsetX());
-        assertEquals(13, data.getOffsetY());
+        data.setEndY(-10);
+        assertEquals(-10, data.getEndY());
+    }
+
+    @Test
+    void setStartXMultipleTimes() {
+        AristonManagerData data = newInstance();
+        data.setStartX(10);
+        data.setStartX(20);
+        data.setStartX(5);
+        assertEquals(5, data.getStartX());
+    }
+
+    @Test
+    void coordinatesAreIndependent() {
+        AristonManagerData data = newInstance();
+        data.setStartX(7);
+        data.setStartY(13);
+        data.setEndX(25);
+        data.setEndY(30);
+        assertEquals(7, data.getStartX());
+        assertEquals(13, data.getStartY());
+        assertEquals(25, data.getEndX());
+        assertEquals(30, data.getEndY());
     }
 }
