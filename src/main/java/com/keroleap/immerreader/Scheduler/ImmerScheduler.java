@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.Service.ImmerAnalyzerService;
 import com.keroleap.immerreader.SharedData.ImmerData;
@@ -44,6 +45,8 @@ public class ImmerScheduler {
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final AtomicInteger currentDelayMs = new AtomicInteger(DEFAULT_DELAY_MS);
+    private final AtomicInteger consecutiveErrors = new AtomicInteger(0);
+    private volatile ErrorType lastErrorType = null;
 
     @PostConstruct
     public void init() {
@@ -57,6 +60,8 @@ public class ImmerScheduler {
     private void ImmerScheduledRead() {
         if (!immerManagerData.isEnabled()) {
             currentDelayMs.set(DEFAULT_DELAY_MS);
+            consecutiveErrors.set(0);
+            lastErrorType = null;
             scheduleNextRead();
             return;
         }
@@ -70,21 +75,23 @@ public class ImmerScheduler {
 
         try {
             ImmerRest result = future.get(1500, TimeUnit.MILLISECONDS);
+            result.setError(false);
+            result.setErrorType(null);
             immerData.setImmerRest(result);
             onReadSuccess();
         } catch (TimeoutException e) {
             future.cancel(true);
             logger.warn("Timeout fetching Immer data, keeping previous value.");
-            errorStatistics.recordError("Immer", "timeout");
-            onReadError();
+            handleError(ErrorType.TIMEOUT);
         } catch (Exception e) {
             logger.error("Error fetching Immer data: {}", e.getMessage());
-            errorStatistics.recordError("Immer", "error");
-            onReadError();
+            handleError(ErrorType.FETCH_ERROR);
         }
     }
 
     private void onReadSuccess() {
+        consecutiveErrors.set(0);
+        lastErrorType = null;
         currentDelayMs.set(DEFAULT_DELAY_MS);
         scheduleNextRead();
     }
@@ -94,6 +101,21 @@ public class ImmerScheduler {
         currentDelayMs.set(newDelay);
         logger.info("Increased delay to {} ms due to connection error", newDelay);
         scheduleNextRead();
+    }
+
+    private void handleError(ErrorType errorType) {
+        errorStatistics.recordError("Immer", errorType);
+        if (errorType.equals(lastErrorType)) {
+            consecutiveErrors.incrementAndGet();
+        } else {
+            lastErrorType = errorType;
+            consecutiveErrors.set(1);
+        }
+        if (consecutiveErrors.get() >= 5) {
+            immerData.getImmerRest().setError(true);
+            immerData.getImmerRest().setErrorType(errorType);
+        }
+        onReadError();
     }
 
     @PreDestroy

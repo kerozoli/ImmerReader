@@ -14,12 +14,15 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.keroleap.immerreader.AristonRest;
+import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.Service.AristonAnalyzerService;
 import com.keroleap.immerreader.SharedData.AristonData;
 import com.keroleap.immerreader.SharedData.AristonManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 import jakarta.annotation.PreDestroy;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class AristonScheduler {
@@ -39,10 +42,14 @@ public class AristonScheduler {
     private ErrorStatistics errorStatistics;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final AtomicInteger consecutiveErrors = new AtomicInteger(0);
+    private volatile ErrorType lastErrorType = null;
 
     @Scheduled(fixedRate = 15000)
     public void AristonScheduledRead() {
         if (!aristonManagerData.isEnabled()) {
+            consecutiveErrors.set(0);
+            lastErrorType = null;
             return;
         }
 
@@ -55,14 +62,32 @@ public class AristonScheduler {
 
         try {
             AristonRest result = future.get(10000, TimeUnit.MILLISECONDS);
+            result.setError(false);
+            result.setErrorType(null);
             aristonData.setAristonRest(result);
+            consecutiveErrors.set(0);
+            lastErrorType = null;
         } catch (TimeoutException e) {
             future.cancel(true);
             logger.warn("Timeout fetching Ariston data, keeping previous value.");
-            errorStatistics.recordError("Ariston", "timeout");
+            handleError(ErrorType.TIMEOUT);
         } catch (Exception e) {
             logger.error("Error fetching Ariston data: {}", e.getMessage());
-            errorStatistics.recordError("Ariston", "error");
+            handleError(ErrorType.FETCH_ERROR);
+        }
+    }
+
+    private void handleError(ErrorType errorType) {
+        errorStatistics.recordError("Ariston", errorType);
+        if (errorType.equals(lastErrorType)) {
+            consecutiveErrors.incrementAndGet();
+        } else {
+            lastErrorType = errorType;
+            consecutiveErrors.set(1);
+        }
+        if (consecutiveErrors.get() >= 5) {
+            aristonData.getAristonRest().setError(true);
+            aristonData.getAristonRest().setErrorType(errorType);
         }
     }
 
