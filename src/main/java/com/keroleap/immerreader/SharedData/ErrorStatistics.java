@@ -1,5 +1,6 @@
 package com.keroleap.immerreader.SharedData;
 
+import com.keroleap.immerreader.ErrorType;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -16,6 +17,12 @@ public class ErrorStatistics {
 
     public ErrorStatistics() {
         this.clock = Clock.systemDefaultZone();
+    }
+
+    public void recordError(String system, ErrorType errorType) {
+        String key = system + ":" + errorType.name();
+        errorCounts.computeIfAbsent(key, k -> new ErrorCounter()).increment();
+        cleanup();
     }
 
     public void recordError(String system, String errorType) {

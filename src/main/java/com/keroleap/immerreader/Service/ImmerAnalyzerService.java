@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
@@ -129,7 +130,7 @@ public class ImmerAnalyzerService {
         if (number == 1000) {
             logger.warn("Unknown digit detected: {}{}{}{}{}{}{}", digit1_1, digit1_2, digit1_3, digit1_4, digit1_5, digit1_6, digit1_7);
             if (errorStatistics != null) {
-                errorStatistics.recordError("Immer", "unknown_digit");
+                errorStatistics.recordError("Immer", ErrorType.UNKNOWN_DIGIT);
             }
         }
         return number;

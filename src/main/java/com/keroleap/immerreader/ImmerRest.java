@@ -5,6 +5,24 @@ public class ImmerRest {
     private int throttle;
     private boolean heating;
     private boolean boilerOn;
+    private boolean error;
+    private ErrorType errorType;
+
+    public boolean isError() {
+        return error;
+    }
+
+    public void setError(boolean error) {
+        this.error = error;
+    }
+
+    public ErrorType getErrorType() {
+        return errorType;
+    }
+
+    public void setErrorType(ErrorType errorType) {
+        this.errorType = errorType;
+    }
 
     public boolean isBoilerOn() {
         return boilerOn;
