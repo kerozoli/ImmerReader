@@ -42,6 +42,7 @@ public class AristonController {
         BufferedImage cachedImage = aristonAnalyzerService.getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
         aristonAnalyzerService.getAristonRestData(cachedImage,
                 aristonManagerData.getStartX(), aristonManagerData.getStartY(),
+                aristonManagerData.getControlX(), aristonManagerData.getControlY(),
                 aristonManagerData.getEndX(), aristonManagerData.getEndY());
         int x1 = 60;
         int y1 = 115;
@@ -62,6 +63,7 @@ public class AristonController {
         BufferedImage cachedImage = aristonAnalyzerService.getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
         aristonAnalyzerService.getAristonRestData(cachedImage,
                 aristonManagerData.getStartX(), aristonManagerData.getStartY(),
+                aristonManagerData.getControlX(), aristonManagerData.getControlY(),
                 aristonManagerData.getEndX(), aristonManagerData.getEndY());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(cachedImage, "jpg", baos);
@@ -74,6 +76,7 @@ public class AristonController {
         ModelAndView modelAndView = new ModelAndView("immerdata");
         modelAndView.addObject("message", aristonAnalyzerService.getAristonRestData(cachedImage,
                 aristonManagerData.getStartX(), aristonManagerData.getStartY(),
+                aristonManagerData.getControlX(), aristonManagerData.getControlY(),
                 aristonManagerData.getEndX(), aristonManagerData.getEndY()).toString());
         return modelAndView;
     }

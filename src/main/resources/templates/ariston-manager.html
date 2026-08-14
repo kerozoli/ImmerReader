@@ -115,6 +115,9 @@
         .marker.end {
             background: #e94560;
         }
+        .marker.control {
+            background: #ffd700;
+        }
         .current-values {
             margin-top: 15px;
             padding: 10px;
@@ -301,6 +304,14 @@
                                 <input type="number" id="startY" name="startY" th:value="${startY}" required>
                             </div>
                             <div class="form-group">
+                                <label for="controlX">Control X (curve):</label>
+                                <input type="number" id="controlX" name="controlX" th:value="${controlX}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="controlY">Control Y (curve):</label>
+                                <input type="number" id="controlY" name="controlY" th:value="${controlY}" required>
+                            </div>
+                            <div class="form-group">
                                 <label for="endX">End X:</label>
                                 <input type="number" id="endX" name="endX" th:value="${endX}" required>
                             </div>
@@ -312,11 +323,13 @@
                         </form>
 
                         <button type="button" id="setStartBtn" class="secondary active">Set Start Point</button>
+                        <button type="button" id="setControlBtn" class="secondary">Set Control Point</button>
                         <button type="button" id="setEndBtn" class="secondary">Set End Point</button>
 
                         <div class="current-values">
                             <strong>Current Values:</strong><br>
                             Start: (<span id="currentStartX" th:text="${startX}">0</span>, <span id="currentStartY" th:text="${startY}">0</span>)<br>
+                            Control: (<span id="currentControlX" th:text="${controlX}">0</span>, <span id="currentControlY" th:text="${controlY}">0</span>)<br>
                             End: (<span id="currentEndX" th:text="${endX}">0</span>, <span id="currentEndY" th:text="${endY}">0</span>)
                         </div>
                     </div>
@@ -334,6 +347,7 @@
                     <div class="image-wrapper" id="imageWrapper">
                         <img id="liveImage" src="/Ariston/uncroppedimage" alt="Ariston Camera Feed">
                         <div id="startMarker" class="marker start" style="display:none;"></div>
+                        <div id="controlMarker" class="marker control" style="display:none;"></div>
                         <div id="endMarker" class="marker end" style="display:none;"></div>
                     </div>
                     <p><small>Image refreshes automatically every 15 seconds. Click on image to set active point.</small></p>
@@ -363,18 +377,24 @@
 
         const startXInput = document.getElementById('startX');
         const startYInput = document.getElementById('startY');
+        const controlXInput = document.getElementById('controlX');
+        const controlYInput = document.getElementById('controlY');
         const endXInput = document.getElementById('endX');
         const endYInput = document.getElementById('endY');
         const setStartBtn = document.getElementById('setStartBtn');
+        const setControlBtn = document.getElementById('setControlBtn');
         const setEndBtn = document.getElementById('setEndBtn');
         const liveImage = document.getElementById('liveImage');
         const imageWrapper = document.getElementById('imageWrapper');
         const startMarker = document.getElementById('startMarker');
+        const controlMarker = document.getElementById('controlMarker');
         const endMarker = document.getElementById('endMarker');
 
         function updateMarkers() {
             const sx = parseInt(startXInput.value);
             const sy = parseInt(startYInput.value);
+            const cx = parseInt(controlXInput.value);
+            const cy = parseInt(controlYInput.value);
             const ex = parseInt(endXInput.value);
             const ey = parseInt(endYInput.value);
 
@@ -388,6 +408,10 @@
             startMarker.style.top = (sy * scaleY) + 'px';
             startMarker.style.display = 'block';
 
+            controlMarker.style.left = (cx * scaleX) + 'px';
+            controlMarker.style.top = (cy * scaleY) + 'px';
+            controlMarker.style.display = 'block';
+
             endMarker.style.left = (ex * scaleX) + 'px';
             endMarker.style.top = (ey * scaleY) + 'px';
             endMarker.style.display = 'block';
@@ -399,6 +423,14 @@
         setStartBtn.addEventListener('click', () => {
             activePoint = 'start';
             setStartBtn.classList.add('active');
+            setControlBtn.classList.remove('active');
+            setEndBtn.classList.remove('active');
+        });
+
+        setControlBtn.addEventListener('click', () => {
+            activePoint = 'control';
+            setControlBtn.classList.add('active');
+            setStartBtn.classList.remove('active');
             setEndBtn.classList.remove('active');
         });
 
@@ -406,6 +438,7 @@
             activePoint = 'end';
             setEndBtn.classList.add('active');
             setStartBtn.classList.remove('active');
+            setControlBtn.classList.remove('active');
         });
 
         imageWrapper.addEventListener('click', function(e) {
@@ -421,6 +454,9 @@
             if (activePoint === 'start') {
                 startXInput.value = x;
                 startYInput.value = y;
+            } else if (activePoint === 'control') {
+                controlXInput.value = x;
+                controlYInput.value = y;
             } else {
                 endXInput.value = x;
                 endYInput.value = y;
@@ -433,6 +469,8 @@
 
             const startX = startXInput.value;
             const startY = startYInput.value;
+            const controlX = controlXInput.value;
+            const controlY = controlYInput.value;
             const endX = endXInput.value;
             const endY = endYInput.value;
 
@@ -441,12 +479,14 @@
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `startX=${startX}&startY=${startY}&endX=${endX}&endY=${endY}`
+                body: `startX=${startX}&startY=${startY}&controlX=${controlX}&controlY=${controlY}&endX=${endX}&endY=${endY}`
             })
             .then(response => response.json())
             .then(data => {
                 document.getElementById('currentStartX').textContent = data.startX;
                 document.getElementById('currentStartY').textContent = data.startY;
+                document.getElementById('currentControlX').textContent = data.controlX;
+                document.getElementById('currentControlY').textContent = data.controlY;
                 document.getElementById('currentEndX').textContent = data.endX;
                 document.getElementById('currentEndY').textContent = data.endY;
 
