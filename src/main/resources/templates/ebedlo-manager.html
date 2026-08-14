@@ -315,8 +315,8 @@
             <h2>Detected Data</h2>
             <div class="data-grid">
                 <div class="data-card">
-                    <h3>Light</h3>
-                    <div class="value" id="light" th:classappend="${ebedloRest.on} ? 'active' : ''" th:text="${ebedloRest.on} ? 'ON' : 'OFF'">OFF</div>
+                    <h3>Terítő</h3>
+                    <div class="value" id="terito" th:classappend="${ebedloRest.on} ? 'active' : ''" th:text="${ebedloRest.on} ? 'ON' : 'OFF'">OFF</div>
                 </div>
                 <div class="data-card">
                     <h3>Average Value</h3>
@@ -362,7 +362,7 @@
 
                     <div id="stockPanel" class="stock-values" th:style="${enabled} ? 'display:none;' : ''">
                         <h3>Stock Values (Scheduler Disabled)</h3>
-                        <div>Light: OFF</div>
+                        <div>Terítő: OFF</div>
                     </div>
 
                     <div id="status" class="status">Settings updated!</div>
@@ -611,10 +611,10 @@
                     if (averageValueElement) {
                         averageValueElement.textContent = data.averageValue != null ? data.averageValue : '-';
                     }
-                    const lightElement = document.getElementById('light');
-                    if (lightElement) {
-                        lightElement.textContent = data.on ? 'ON' : 'OFF';
-                        lightElement.classList.toggle('active', data.on);
+                    const teritoElement = document.getElementById('terito');
+                    if (teritoElement) {
+                        teritoElement.textContent = data.on ? 'ON' : 'OFF';
+                        teritoElement.classList.toggle('active', data.on);
                     }
                 })
                 .catch(error => {
