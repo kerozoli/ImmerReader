@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Ariston Manager</title>
+    <title>Ebedlo Manager</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <style>
         * {
@@ -37,14 +37,13 @@
             display: flex;
             gap: 20px;
             align-items: flex-start;
-            padding: 0 20px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
         }
         .controls {
             background: #16213e;
             padding: 20px;
             border-radius: 8px;
-            min-width: 250px;
+            min-width: 280px;
         }
         .form-group {
             margin-bottom: 15px;
@@ -83,6 +82,17 @@
         button.secondary.active {
             background: #28a745;
         }
+        button.point-btn {
+            width: auto;
+            margin: 2px;
+            padding: 8px 12px;
+        }
+        .point-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
         .image-container {
             background: #16213e;
             padding: 20px;
@@ -94,7 +104,7 @@
             display: inline-block;
         }
         img {
-            max-width: 800px;
+            max-width: 500px;
             border: 2px solid #0f3460;
             border-radius: 4px;
             display: block;
@@ -102,24 +112,36 @@
         }
         .marker {
             position: absolute;
-            width: 12px;
-            height: 12px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             border: 2px solid #fff;
             transform: translate(-50%, -50%);
             pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
         }
-        .marker.start {
-            background: #28a745;
-        }
-        .marker.end {
+        .marker.point {
             background: #e94560;
+        }
+        .marker.point.active {
+            background: #28a745;
         }
         .current-values {
             margin-top: 15px;
             padding: 10px;
             background: #0f3460;
             border-radius: 4px;
+        }
+        .point-list {
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
         }
         .status {
             margin-top: 10px;
@@ -161,6 +183,9 @@
             font-size: 24px;
             font-weight: bold;
             color: #e94560;
+        }
+        .data-card .value.active {
+            color: #28a745;
         }
         .error-stats {
             margin-top: 20px;
@@ -254,25 +279,34 @@
             color: #e94560;
             font-size: 16px;
         }
+        .threshold-hint {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
     <nav>
         <a href="/">Home</a>
         <a href="/ImmerManager/adjust">Immer Manager</a>
-        <a href="/AristonManager/adjust" class="active">Ariston Manager</a>
-        <a href="/EbedloManager/adjust">Ebedlo Manager</a>
+        <a href="/AristonManager/adjust">Ariston Manager</a>
+        <a href="/EbedloManager/adjust" class="active">Ebedlo Manager</a>
     </nav>
 
-    <h1>Ariston Manager</h1>
+    <h1>Ebedlo Manager</h1>
 
     <div style="padding: 0 20px;">
         <div class="data-section" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
             <h2>Detected Data</h2>
             <div class="data-grid">
                 <div class="data-card">
-                    <h3>Power Level</h3>
-                    <div class="value"><span id="percentage" th:text="${aristonRest.percentage}">0</span>%</div>
+                    <h3>Light</h3>
+                    <div class="value" id="light" th:classappend="${ebedloRest.on} ? 'active' : ''" th:text="${ebedloRest.on} ? 'ON' : 'OFF'">OFF</div>
+                </div>
+                <div class="data-card">
+                    <h3>Average Value</h3>
+                    <div class="value" id="averageValue">-</div>
                 </div>
             </div>
         </div>
@@ -293,50 +327,39 @@
                     <div id="controlsPanel" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
                         <form id="pointForm">
                             <div class="form-group">
-                                <label for="startX">Start X:</label>
-                                <input type="number" id="startX" name="startX" th:value="${startX}" required>
+                                <label for="threshold">Brightness Threshold (HSV Value 0-255):</label>
+                                <input type="number" id="threshold" name="threshold" th:value="${threshold}" required>
+                                <div class="threshold-hint">Average HSV Value inside the polygon must be above this. Typical value: 80-150. Higher means brighter.</div>
                             </div>
+
                             <div class="form-group">
-                                <label for="startY">Start Y:</label>
-                                <input type="number" id="startY" name="startY" th:value="${startY}" required>
+                                <label>Active Point:</label>
+                                <div class="point-buttons" id="pointButtons"></div>
                             </div>
-                            <div class="form-group">
-                                <label for="endX">End X:</label>
-                                <input type="number" id="endX" name="endX" th:value="${endX}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="endY">End Y:</label>
-                                <input type="number" id="endY" name="endY" th:value="${endY}" required>
-                            </div>
-                            <button type="submit">Apply Points</button>
+
+                            <button type="submit">Apply Points &amp; Threshold</button>
                         </form>
 
-                        <button type="button" id="setStartBtn" class="secondary active">Set Start Point</button>
-                        <button type="button" id="setEndBtn" class="secondary">Set End Point</button>
-
                         <div class="current-values">
-                            <strong>Current Values:</strong><br>
-                            Start: (<span id="currentStartX" th:text="${startX}">0</span>, <span id="currentStartY" th:text="${startY}">0</span>)<br>
-                            End: (<span id="currentEndX" th:text="${endX}">0</span>, <span id="currentEndY" th:text="${endY}">0</span>)
+                            <strong>Current Points:</strong>
+                            <div class="point-list" id="pointList"></div>
                         </div>
                     </div>
 
                     <div id="stockPanel" class="stock-values" th:style="${enabled} ? 'display:none;' : ''">
                         <h3>Stock Values (Scheduler Disabled)</h3>
-                        <div>Power Level: 0%</div>
+                        <div>Light: OFF</div>
                     </div>
 
-                    <div id="status" class="status">Points updated!</div>
+                    <div id="status" class="status">Settings updated!</div>
                 </div>
 
                 <div class="image-container" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
                     <h2>Live Preview</h2>
                     <div class="image-wrapper" id="imageWrapper">
-                        <img id="liveImage" src="/Ariston/uncroppedimage" alt="Ariston Camera Feed">
-                        <div id="startMarker" class="marker start" style="display:none;"></div>
-                        <div id="endMarker" class="marker end" style="display:none;"></div>
+                        <img id="liveImage" src="/Ebedlo/uncroppedimage" alt="Ebedlo Camera Feed">
                     </div>
-                    <p><small>Image refreshes automatically every 15 seconds. Click on image to set active point.</small></p>
+                    <p><small>Image refreshes automatically every 10 seconds. Click on image to set the active point.</small></p>
                 </div>
             </div>
         </div>
@@ -358,100 +381,131 @@
         </div>
     </div>
 
-    <script>
-        let activePoint = 'start';
+    <script th:inline="javascript">
+        const pointCount = /*[[${#lists.size(xs)}]]*/ 10;
+        const initialXs = /*[[${xs}]]*/ [];
+        const initialYs = /*[[${ys}]]*/ [];
+        let xs = [...initialXs];
+        let ys = [...initialYs];
+        let activePoint = 0;
 
-        const startXInput = document.getElementById('startX');
-        const startYInput = document.getElementById('startY');
-        const endXInput = document.getElementById('endX');
-        const endYInput = document.getElementById('endY');
-        const setStartBtn = document.getElementById('setStartBtn');
-        const setEndBtn = document.getElementById('setEndBtn');
+        const pointButtonsContainer = document.getElementById('pointButtons');
+        const pointList = document.getElementById('pointList');
         const liveImage = document.getElementById('liveImage');
         const imageWrapper = document.getElementById('imageWrapper');
-        const startMarker = document.getElementById('startMarker');
-        const endMarker = document.getElementById('endMarker');
+        const markers = [];
+
+        for (let i = 0; i < pointCount; i++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'secondary point-btn';
+            btn.textContent = (i + 1);
+            btn.addEventListener('click', () => setActivePoint(i));
+            pointButtonsContainer.appendChild(btn);
+
+            const marker = document.createElement('div');
+            marker.className = 'marker point';
+            marker.textContent = (i + 1);
+            imageWrapper.appendChild(marker);
+            markers.push(marker);
+        }
+
+        function setActivePoint(index) {
+            activePoint = index;
+            updatePointButtons();
+        }
+
+        function updatePointButtons() {
+            const buttons = pointButtonsContainer.querySelectorAll('.point-btn');
+            buttons.forEach((btn, i) => {
+                if (i === activePoint) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            updateMarkers();
+        }
+
+        function updatePointList() {
+            pointList.innerHTML = xs.map((x, i) => {
+                const active = i === activePoint ? ' &lt;- active' : '';
+                return `P${i + 1}: (${x}, ${ys[i]})${active}`;
+            }).join('<br>');
+        }
 
         function updateMarkers() {
-            const sx = parseInt(startXInput.value);
-            const sy = parseInt(startYInput.value);
-            const ex = parseInt(endXInput.value);
-            const ey = parseInt(endYInput.value);
-
             const rect = liveImage.getBoundingClientRect();
             const imgWidth = liveImage.naturalWidth || rect.width;
             const imgHeight = liveImage.naturalHeight || rect.height;
+            if (imgWidth === 0 || imgHeight === 0) {
+                return;
+            }
             const scaleX = rect.width / imgWidth;
             const scaleY = rect.height / imgHeight;
 
-            startMarker.style.left = (sx * scaleX) + 'px';
-            startMarker.style.top = (sy * scaleY) + 'px';
-            startMarker.style.display = 'block';
-
-            endMarker.style.left = (ex * scaleX) + 'px';
-            endMarker.style.top = (ey * scaleY) + 'px';
-            endMarker.style.display = 'block';
+            markers.forEach((marker, i) => {
+                marker.style.left = (xs[i] * scaleX) + 'px';
+                marker.style.top = (ys[i] * scaleY) + 'px';
+                marker.style.display = (xs[i] !== 0 || ys[i] !== 0) ? 'flex' : 'none';
+                if (i === activePoint) {
+                    marker.classList.add('active');
+                } else {
+                    marker.classList.remove('active');
+                }
+            });
+            updatePointList();
         }
 
         liveImage.addEventListener('load', updateMarkers);
-        if (liveImage.complete) updateMarkers();
-
-        setStartBtn.addEventListener('click', () => {
-            activePoint = 'start';
-            setStartBtn.classList.add('active');
-            setEndBtn.classList.remove('active');
+        liveImage.addEventListener('load', function() {
+            console.log('Ebedlo image loaded, size:', this.naturalWidth, 'x', this.naturalHeight);
         });
-
-        setEndBtn.addEventListener('click', () => {
-            activePoint = 'end';
-            setEndBtn.classList.add('active');
-            setStartBtn.classList.remove('active');
-        });
+        if (liveImage.complete) {
+            updateMarkers();
+        }
 
         imageWrapper.addEventListener('click', function(e) {
             const rect = liveImage.getBoundingClientRect();
             const imgWidth = liveImage.naturalWidth || rect.width;
             const imgHeight = liveImage.naturalHeight || rect.height;
+            if (imgWidth === 0 || imgHeight === 0 || rect.width === 0 || rect.height === 0) {
+                console.warn('Image has no size yet, cannot set point');
+                return;
+            }
             const scaleX = imgWidth / rect.width;
             const scaleY = imgHeight / rect.height;
 
             const x = Math.round((e.clientX - rect.left) * scaleX);
             const y = Math.round((e.clientY - rect.top) * scaleY);
 
-            if (activePoint === 'start') {
-                startXInput.value = x;
-                startYInput.value = y;
-            } else {
-                endXInput.value = x;
-                endYInput.value = y;
-            }
+            xs[activePoint] = x;
+            ys[activePoint] = y;
             updateMarkers();
         });
 
         document.getElementById('pointForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const startX = startXInput.value;
-            const startY = startYInput.value;
-            const endX = endXInput.value;
-            const endY = endYInput.value;
+            const points = xs.map((x, i) => `${x},${ys[i]}`).join(',');
+            const threshold = document.getElementById('threshold').value;
 
-            fetch('/AristonManager/set', {
+            fetch('/EbedloManager/set', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `startX=${startX}&startY=${startY}&endX=${endX}&endY=${endY}`
+                body: `points=${encodeURIComponent(points)}&threshold=${threshold}`
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text); });
+                }
+                return response.json();
+            })
             .then(data => {
-                document.getElementById('currentStartX').textContent = data.startX;
-                document.getElementById('currentStartY').textContent = data.startY;
-                document.getElementById('currentEndX').textContent = data.endX;
-                document.getElementById('currentEndY').textContent = data.endY;
-
                 const status = document.getElementById('status');
-                status.textContent = 'Points updated!';
+                status.textContent = 'Points and threshold updated!';
                 status.className = 'status success';
                 setTimeout(() => {
                     status.className = 'status';
@@ -461,11 +515,14 @@
             })
             .catch(error => {
                 console.error('Error:', error);
+                const status = document.getElementById('status');
+                status.textContent = 'Error: ' + error.message;
+                status.className = 'status success';
             });
         });
 
         document.getElementById('schedulerToggle').addEventListener('change', function() {
-            fetch('/AristonManager/toggle', {
+            fetch('/EbedloManager/toggle', {
                 method: 'POST'
             })
             .then(response => response.json())
@@ -504,10 +561,33 @@
 
         function refreshImage() {
             const img = document.getElementById('liveImage');
-            img.src = '/Ariston/uncroppedimage?t=' + new Date().getTime();
+            const newSrc = '/Ebedlo/uncroppedimage?t=' + new Date().getTime();
+            img.src = newSrc;
+            console.log('Refreshing Ebedlo image:', newSrc);
         }
 
-        setInterval(refreshImage, 15000);
+        function fetchAverageValue() {
+            fetch('/Ebedlo/ebedlorestdata')
+                .then(response => response.json())
+                .then(data => {
+                    const averageValueElement = document.getElementById('averageValue');
+                    if (averageValueElement) {
+                        averageValueElement.textContent = data.averageValue != null ? data.averageValue : '-';
+                    }
+                    const lightElement = document.getElementById('light');
+                    if (lightElement) {
+                        lightElement.textContent = data.on ? 'ON' : 'OFF';
+                        lightElement.classList.toggle('active', data.on);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching Ebedlo data:', error);
+                });
+        }
+
+        setInterval(refreshImage, 10000);
+        setInterval(fetchAverageValue, 1000);
+        updatePointButtons();
     </script>
 </body>
 </html>

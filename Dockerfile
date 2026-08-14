@@ -6,7 +6,7 @@ RUN mvn dependency:go-offline
 COPY src ./src
 RUN mvn package -DskipTests
 
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:25-jre
 RUN mkdir -p /data
 VOLUME /data
 COPY --from=builder /app/target/immerreader-1.0.0.jar immerreader-1.0.0.jar

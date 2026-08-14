@@ -106,6 +106,7 @@
         <a href="/" class="active">Home</a>
         <a href="/ImmerManager/adjust">Immer Manager</a>
         <a href="/AristonManager/adjust">Ariston Manager</a>
+        <a href="/EbedloManager/adjust">Ebedlo Manager</a>
     </nav>
 
     <div class="container">
@@ -124,6 +125,13 @@
                 <h2>Ariston Manager</h2>
                 <p>Configure and monitor your Ariston heating system with live camera feed and offset adjustment.</p>
                 <a href="/AristonManager/adjust">Open Ariston Manager</a>
+            </div>
+
+            <div class="card" th:classappend="${!ebedloEnabled} ? 'disabled-card' : ''">
+                <div class="status-badge" th:classappend="${ebedloEnabled} ? 'enabled' : 'disabled'" th:text="${ebedloEnabled} ? 'Enabled' : 'Disabled'">Enabled</div>
+                <h2>Ebedlo Manager</h2>
+                <p>Configure and monitor the Ebedlo RTSP camera with 10 light detection points.</p>
+                <a href="/EbedloManager/adjust">Open Ebedlo Manager</a>
             </div>
         </div>
     </div>

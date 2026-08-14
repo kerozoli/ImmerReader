@@ -1,17 +1,10 @@
 package com.keroleap.immerreader.Service;
 
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URL;
-
-import javax.imageio.ImageIO;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.keroleap.immerreader.AristonRest;
@@ -22,6 +15,9 @@ public class AristonAnalyzerService {
     private static final Logger logger = LoggerFactory.getLogger(AristonAnalyzerService.class);
     private static final int LIGHT_THRESHOLD = -7000000;
     private static final int POINT_COUNT = 50;
+
+    @Autowired
+    private CameraImageService cameraImageService;
 
     public AristonRest getAristonRestData(BufferedImage bufferedImage,
                                           int startX, int startY,
@@ -53,24 +49,8 @@ public class AristonAnalyzerService {
         return aristonRest;
     }
 
-    public BufferedImage getBufferedImage(String imageUrl) throws IOException {
-        try {
-            URL url = URI.create(imageUrl).toURL();
-            try (InputStream stream = url.openStream();
-                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                byte[] chunk = new byte[4096];
-                int bytesRead;
-                while ((bytesRead = stream.read(chunk)) > 0) {
-                    outputStream.write(chunk, 0, bytesRead);
-                }
-                try (ByteArrayInputStream input = new ByteArrayInputStream(outputStream.toByteArray())) {
-                    return ImageIO.read(input);
-                }
-            }
-        } catch (IOException e) {
-            logger.error("Error fetching image from {}: {}", imageUrl, e.getMessage());
-            return null;
-        }
+    public BufferedImage getBufferedImage(String imageUrl) {
+        return cameraImageService.capture(imageUrl);
     }
 
     private boolean detectLightValue(int x, int y, BufferedImage image) {
