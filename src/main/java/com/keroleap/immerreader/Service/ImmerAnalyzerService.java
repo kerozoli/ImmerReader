@@ -1,15 +1,7 @@
 package com.keroleap.immerreader.Service;
 
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URL;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.imageio.ImageIO;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +21,9 @@ public class ImmerAnalyzerService {
 
     @Autowired(required = false)
     private ErrorStatistics errorStatistics;
+
+    @Autowired
+    private CameraImageService cameraImageService;
 
     public ImmerRest getImmerRestData(BufferedImage bufferedImage, int offsetX, int offsetY) {
         boolean heating = getLightValueAnnDrawRedCross(495 + offsetX, 215 + offsetY, bufferedImage);
@@ -136,25 +131,8 @@ public class ImmerAnalyzerService {
         return number;
     }
 
-    public BufferedImage getBufferedImage(String imageUrl) throws IOException {
-        try {
-            URL url = URI.create(imageUrl).toURL();
-            try (InputStream stream = url.openStream();
-                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                byte[] chunk = new byte[4096];
-                int bytesRead;
-                while ((bytesRead = stream.read(chunk)) > 0) {
-                    outputStream.write(chunk, 0, bytesRead);
-                }
-
-                try (ByteArrayInputStream input = new ByteArrayInputStream(outputStream.toByteArray())) {
-                    return ImageIO.read(input);
-                }
-            }
-        } catch (IOException e) {
-            logger.error("Error fetching image from {}: {}", imageUrl, e.getMessage());
-            return null;
-        }
+    public BufferedImage getBufferedImage(String imageUrl) {
+        return cameraImageService.capture(imageUrl);
     }
 
     private boolean getLightValueAnnDrawRedCross(int x, int y, BufferedImage image) {
