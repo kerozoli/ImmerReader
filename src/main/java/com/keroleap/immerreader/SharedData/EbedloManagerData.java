@@ -20,7 +20,7 @@ public class EbedloManagerData {
 
     private static final Logger logger = LoggerFactory.getLogger(EbedloManagerData.class);
     private static final String DATA_FILE = "/data/ebedlo.properties";
-    private static final int POINT_COUNT = 10;
+    private static final int POINT_COUNT = 4;
     private static final int DEFAULT_THRESHOLD = 100;
 
     private final AtomicIntegerArray xs = new AtomicIntegerArray(POINT_COUNT);
