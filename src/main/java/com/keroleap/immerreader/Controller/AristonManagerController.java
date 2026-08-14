@@ -30,10 +30,16 @@ public class AristonManagerController {
     @ResponseBody
     public AristonManagerData setPoints(@RequestParam int startX,
                                          @RequestParam int startY,
+                                         @RequestParam(required = false, defaultValue = "0") int controlX,
+                                         @RequestParam(required = false, defaultValue = "0") int controlY,
                                          @RequestParam int endX,
                                          @RequestParam int endY) {
         aristonManagerData.setStartX(startX);
         aristonManagerData.setStartY(startY);
+        if (controlX != 0 || controlY != 0) {
+            aristonManagerData.setControlX(controlX);
+            aristonManagerData.setControlY(controlY);
+        }
         aristonManagerData.setEndX(endX);
         aristonManagerData.setEndY(endY);
         return aristonManagerData;
@@ -57,6 +63,8 @@ public class AristonManagerController {
         ModelAndView modelAndView = new ModelAndView("ariston-manager");
         modelAndView.addObject("startX", aristonManagerData.getStartX());
         modelAndView.addObject("startY", aristonManagerData.getStartY());
+        modelAndView.addObject("controlX", aristonManagerData.getControlX());
+        modelAndView.addObject("controlY", aristonManagerData.getControlY());
         modelAndView.addObject("endX", aristonManagerData.getEndX());
         modelAndView.addObject("endY", aristonManagerData.getEndY());
         modelAndView.addObject("enabled", aristonManagerData.isEnabled());

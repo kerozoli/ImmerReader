@@ -35,6 +35,8 @@ class AristonSchedulerTest {
         MockitoAnnotations.openMocks(this);
         when(aristonManagerData.getStartX()).thenReturn(0);
         when(aristonManagerData.getStartY()).thenReturn(0);
+        when(aristonManagerData.getControlX()).thenReturn(50);
+        when(aristonManagerData.getControlY()).thenReturn(50);
         when(aristonManagerData.getEndX()).thenReturn(100);
         when(aristonManagerData.getEndY()).thenReturn(0);
     }
@@ -53,7 +55,7 @@ class AristonSchedulerTest {
         when(aristonAnalyzerService.getBufferedImage(anyString())).thenReturn(mockImage);
         AristonRest rest = new AristonRest();
         rest.setPercentage(50);
-        when(aristonAnalyzerService.getAristonRestData(any(), anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(rest);
+        when(aristonAnalyzerService.getAristonRestData(any(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(rest);
 
         assertDoesNotThrow(() -> aristonScheduler.AristonScheduledRead());
         verify(aristonAnalyzerService).getBufferedImage(anyString());
