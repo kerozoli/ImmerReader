@@ -1,0 +1,465 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Chicken Manager</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e;
+            color: #eee;
+        }
+        nav {
+            background: #0f3460;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+        nav a {
+            color: #eee;
+            text-decoration: none;
+            margin-right: 20px;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        nav a:hover {
+            background: #e94560;
+        }
+        nav a.active {
+            background: #e94560;
+        }
+        .main-content {
+            display: flex;
+            gap: 20px;
+            padding: 0 20px;
+            flex-wrap: wrap;
+        }
+        .left-panel, .right-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .controls {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 16px;
+        }
+        button {
+            background: #e94560;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #ff6b6b;
+        }
+        button.secondary {
+            background: #0f3460;
+        }
+        button.secondary.active {
+            background: #28a745;
+        }
+        .image-container {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .image-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        img {
+            max-width: 100%;
+            border: 2px solid #0f3460;
+            border-radius: 4px;
+            display: block;
+            cursor: crosshair;
+        }
+        .data-section {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .data-card {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .data-card h3 {
+            margin: 0 0 10px 0;
+            color: #aaa;
+            font-size: 14px;
+        }
+        .data-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .toggle-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #0f3460;
+            border-radius: 8px;
+        }
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #555;
+            border-radius: 13px;
+            transition: background 0.3s;
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+        input[type="checkbox"] {
+            display: none;
+        }
+        input[type="checkbox"]:checked + .toggle-switch {
+            background: #28a745;
+        }
+        input[type="checkbox"]:checked + .toggle-switch::after {
+            transform: translateX(24px);
+        }
+        .disabled-overlay {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .nest-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .hint {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 4px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .status.success {
+            background: #28a745;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">Home</a>
+        <a href="/ImmerManager/adjust">Immer Manager</a>
+        <a href="/AristonManager/adjust">Ariston Manager</a>
+        <a href="/EbedloManager/adjust">Ebedlo Manager</a>
+        <a href="/ChickenManager/adjust" class="active">Chicken Manager</a>
+    </nav>
+
+    <h1 style="padding: 0 20px;">Chicken Manager</h1>
+
+    <div style="padding: 0 20px;">
+        <div class="data-section" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
+            <h2>Detected Eggs</h2>
+            <div class="data-grid">
+                <div class="data-card">
+                    <h3>Fészek 1</h3>
+                    <div class="value" id="nest1">0</div>
+                </div>
+                <div class="data-card">
+                    <h3>Fészek 2</h3>
+                    <div class="value" id="nest2">0</div>
+                </div>
+                <div class="data-card">
+                    <h3>Fészek 3</h3>
+                    <div class="value" id="nest3">0</div>
+                </div>
+                <div class="data-card">
+                    <h3>Összesen</h3>
+                    <div class="value" id="total">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="left-panel">
+            <div class="controls">
+                <div class="toggle-section">
+                    <label class="toggle-label">
+                        <span>Scheduler <span id="schedulerStatus" th:text="${enabled} ? 'Enabled' : 'Disabled'">Enabled</span></span>
+                        <input type="checkbox" id="schedulerToggle" th:checked="${enabled}">
+                        <span class="toggle-switch"></span>
+                    </label>
+                </div>
+
+                <div id="controlsPanel" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
+                    <div class="form-group">
+                        <label>Active Nest:</label>
+                        <div class="nest-buttons">
+                            <button type="button" class="secondary nest-btn active" data-index="0">Fészek 1</button>
+                            <button type="button" class="secondary nest-btn" data-index="1">Fészek 2</button>
+                            <button type="button" class="secondary nest-btn" data-index="2">Fészek 3</button>
+                        </div>
+                    </div>
+
+                    <form id="nestForm">
+                        <div class="form-group">
+                            <label for="threshold">Threshold (0-255):</label>
+                            <input type="number" id="threshold" name="threshold" min="0" max="255" required>
+                            <div class="hint">Bright IR egg spots must exceed this. Start with ~180.</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="minArea">Min Area (px):</label>
+                            <input type="number" id="minArea" name="minArea" min="0" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxArea">Max Area (px):</label>
+                            <input type="number" id="maxArea" name="maxArea" min="0" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="minCircularity">Min Circularity (0.0-1.0):</label>
+                            <input type="number" id="minCircularity" name="minCircularity" min="0" max="1" step="0.05" required>
+                        </div>
+
+                        <button type="submit">Apply All Nests</button>
+                    </form>
+                </div>
+
+                <div id="status" class="status">Settings updated!</div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="image-container" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
+                <h2>Live Preview</h2>
+                <div class="image-wrapper" id="imageWrapper">
+                    <img id="liveImage" src="/Chicken/uncroppedimage" alt="Chicken Camera Feed">
+                </div>
+                <p><small>Click twice per nest: first top-left, then bottom-right. Rectangles refresh with the image.</small></p>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        const nestCount = 3;
+        const initialNests = /*[[${nests}]]*/ [{x:0,y:0,width:0,height:0,threshold:180,minArea:500,maxArea:8000,minCircularity:0.5},{x:0,y:0,width:0,height:0,threshold:180,minArea:500,maxArea:8000,minCircularity:0.5},{x:0,y:0,width:0,height:0,threshold:180,minArea:500,maxArea:8000,minCircularity:0.5}];
+        let nests = initialNests.map(n => ({...n}));
+        let activeNest = 0;
+        let clickStep = 0; // 0 = waiting for top-left, 1 = waiting for bottom-right
+
+        const liveImage = document.getElementById('liveImage');
+        const imageWrapper = document.getElementById('imageWrapper');
+        const nestButtons = document.querySelectorAll('.nest-btn');
+
+        function updateNestButtons() {
+            nestButtons.forEach((btn, i) => {
+                if (i === activeNest) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function updateForm() {
+            const nest = nests[activeNest];
+            document.getElementById('threshold').value = nest.threshold;
+            document.getElementById('minArea').value = nest.minArea;
+            document.getElementById('maxArea').value = nest.maxArea;
+            document.getElementById('minCircularity').value = nest.minCircularity;
+        }
+
+        nestButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                activeNest = parseInt(btn.dataset.index);
+                clickStep = 0;
+                updateNestButtons();
+                updateForm();
+            });
+        });
+
+        function toImageCoordinates(event) {
+            const rect = liveImage.getBoundingClientRect();
+            const imgWidth = liveImage.naturalWidth || rect.width;
+            const imgHeight = liveImage.naturalHeight || rect.height;
+            if (imgWidth === 0 || imgHeight === 0 || rect.width === 0 || rect.height === 0) {
+                return null;
+            }
+            const scaleX = imgWidth / rect.width;
+            const scaleY = imgHeight / rect.height;
+            return {
+                x: Math.round((event.clientX - rect.left) * scaleX),
+                y: Math.round((event.clientY - rect.top) * scaleY)
+            };
+        }
+
+        imageWrapper.addEventListener('click', function(e) {
+            const coords = toImageCoordinates(e);
+            if (!coords) {
+                console.warn('Image has no size yet, cannot set nest');
+                return;
+            }
+
+            const nest = nests[activeNest];
+            if (clickStep === 0) {
+                nest.x = coords.x;
+                nest.y = coords.y;
+                nest.width = 0;
+                nest.height = 0;
+                clickStep = 1;
+                showStatus('Top-left set. Click bottom-right corner.', true);
+            } else {
+                nest.width = Math.abs(coords.x - nest.x);
+                nest.height = Math.abs(coords.y - nest.y);
+                nest.x = Math.min(nest.x, coords.x);
+                nest.y = Math.min(nest.y, coords.y);
+                clickStep = 0;
+                showStatus('Nest ' + (activeNest + 1) + ' rectangle set.', true);
+                refreshImage();
+            }
+        });
+
+        document.getElementById('nestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const nest = nests[activeNest];
+            nest.threshold = parseInt(document.getElementById('threshold').value);
+            nest.minArea = parseInt(document.getElementById('minArea').value);
+            nest.maxArea = parseInt(document.getElementById('maxArea').value);
+            nest.minCircularity = parseFloat(document.getElementById('minCircularity').value);
+
+            const points = nests.map(n => `${n.x},${n.y},${n.width},${n.height}`).join(',');
+            const thresholds = nests.map(n => n.threshold).join(',');
+            const minAreas = nests.map(n => n.minArea).join(',');
+            const maxAreas = nests.map(n => n.maxArea).join(',');
+            const minCircularities = nests.map(n => n.minCircularity).join(',');
+
+            fetch('/ChickenManager/set', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `points=${encodeURIComponent(points)}&thresholds=${encodeURIComponent(thresholds)}&minAreas=${encodeURIComponent(minAreas)}&maxAreas=${encodeURIComponent(maxAreas)}&minCircularities=${encodeURIComponent(minCircularities)}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                showStatus('All nest settings updated!', true);
+                refreshImage();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showStatus('Error: ' + error.message, false);
+            });
+        });
+
+        document.getElementById('schedulerToggle').addEventListener('change', function() {
+            fetch('/ChickenManager/toggle', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                const enabled = data.enabled;
+                document.getElementById('schedulerStatus').textContent = enabled ? 'Enabled' : 'Disabled';
+                const controlsPanel = document.getElementById('controlsPanel');
+                const imageContainer = document.querySelector('.image-container');
+                const dataSection = document.querySelector('.data-section');
+                if (enabled) {
+                    controlsPanel.classList.remove('disabled-overlay');
+                    imageContainer.classList.remove('disabled-overlay');
+                    dataSection.classList.remove('disabled-overlay');
+                } else {
+                    controlsPanel.classList.add('disabled-overlay');
+                    imageContainer.classList.add('disabled-overlay');
+                    dataSection.classList.add('disabled-overlay');
+                }
+                showStatus(enabled ? 'Scheduler enabled!' : 'Scheduler disabled!', true);
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function showStatus(text, success) {
+            const status = document.getElementById('status');
+            status.textContent = text;
+            status.className = 'status ' + (success ? 'success' : '');
+            setTimeout(() => { status.className = 'status'; }, 3000);
+        }
+
+        function refreshImage() {
+            const img = document.getElementById('liveImage');
+            img.src = '/Chicken/uncroppedimage?t=' + new Date().getTime();
+        }
+
+        function fetchData() {
+            fetch('/Chicken/chickenrestdata')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('nest1').textContent = data.nest1Count != null ? data.nest1Count : 0;
+                    document.getElementById('nest2').textContent = data.nest2Count != null ? data.nest2Count : 0;
+                    document.getElementById('nest3').textContent = data.nest3Count != null ? data.nest3Count : 0;
+                    document.getElementById('total').textContent = data.totalCount != null ? data.totalCount : 0;
+                })
+                .catch(error => console.error('Error fetching Chicken data:', error));
+        }
+
+        liveImage.addEventListener('load', () => console.log('Chicken image loaded:', liveImage.naturalWidth, 'x', liveImage.naturalHeight));
+        updateNestButtons();
+        updateForm();
+        setInterval(refreshImage, 10000);
+        setInterval(fetchData, 5000);
+    </script>
+</body>
+</html>

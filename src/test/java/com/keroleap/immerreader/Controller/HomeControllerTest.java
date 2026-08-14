@@ -8,6 +8,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import com.keroleap.immerreader.SharedData.AristonManagerData;
+import com.keroleap.immerreader.SharedData.ChickenManagerData;
 import com.keroleap.immerreader.SharedData.EbedloManagerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
 
@@ -29,18 +30,23 @@ class HomeControllerTest {
     @MockitoBean
     private EbedloManagerData ebedloManagerData;
 
+    @MockitoBean
+    private ChickenManagerData chickenManagerData;
+
     @Test
     void home_returnsIndexWithAllEnabled() throws Exception {
         when(immerManagerData.isEnabled()).thenReturn(true);
         when(aristonManagerData.isEnabled()).thenReturn(true);
         when(ebedloManagerData.isEnabled()).thenReturn(true);
+        when(chickenManagerData.isEnabled()).thenReturn(true);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("index"))
                 .andExpect(model().attribute("immerEnabled", true))
                 .andExpect(model().attribute("aristonEnabled", true))
-                .andExpect(model().attribute("ebedloEnabled", true));
+                .andExpect(model().attribute("ebedloEnabled", true))
+                .andExpect(model().attribute("chickenEnabled", true));
     }
 
     @Test
@@ -48,12 +54,14 @@ class HomeControllerTest {
         when(immerManagerData.isEnabled()).thenReturn(false);
         when(aristonManagerData.isEnabled()).thenReturn(true);
         when(ebedloManagerData.isEnabled()).thenReturn(true);
+        when(chickenManagerData.isEnabled()).thenReturn(true);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/"))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("immerEnabled", false))
                 .andExpect(model().attribute("aristonEnabled", true))
-                .andExpect(model().attribute("ebedloEnabled", true));
+                .andExpect(model().attribute("ebedloEnabled", true))
+                .andExpect(model().attribute("chickenEnabled", true));
     }
 
     @Test
@@ -61,11 +69,13 @@ class HomeControllerTest {
         when(immerManagerData.isEnabled()).thenReturn(true);
         when(aristonManagerData.isEnabled()).thenReturn(false);
         when(ebedloManagerData.isEnabled()).thenReturn(true);
+        when(chickenManagerData.isEnabled()).thenReturn(true);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/"))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("immerEnabled", true))
                 .andExpect(model().attribute("aristonEnabled", false))
-                .andExpect(model().attribute("ebedloEnabled", true));
+                .andExpect(model().attribute("ebedloEnabled", true))
+                .andExpect(model().attribute("chickenEnabled", true));
     }
 }
