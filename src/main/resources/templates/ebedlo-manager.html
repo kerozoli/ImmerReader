@@ -110,6 +110,19 @@
             display: block;
             cursor: crosshair;
         }
+        .polygon-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .polygon-overlay polyline {
+            fill: rgba(233, 69, 96, 0.15);
+            stroke: #e94560;
+            stroke-width: 2;
+        }
         .marker {
             position: absolute;
             width: 24px;
@@ -359,6 +372,9 @@
                     <h2>Live Preview</h2>
                     <div class="image-wrapper" id="imageWrapper">
                         <img id="liveImage" src="/Ebedlo/uncroppedimage" alt="Ebedlo Camera Feed">
+                        <svg class="polygon-overlay" id="polygonOverlay" xmlns="http://www.w3.org/2000/svg">
+                            <polyline id="polygonPolyline" points=""/>
+                        </svg>
                     </div>
                     <p><small>Image refreshes automatically every 10 seconds. Click on image to set the active point.</small></p>
                 </div>
@@ -394,6 +410,8 @@
         const pointList = document.getElementById('pointList');
         const liveImage = document.getElementById('liveImage');
         const imageWrapper = document.getElementById('imageWrapper');
+        const polygonOverlay = document.getElementById('polygonOverlay');
+        const polygonPolyline = document.getElementById('polygonPolyline');
         const markers = [];
 
         for (let i = 0; i < pointCount; i++) {
@@ -455,6 +473,24 @@
                     marker.classList.remove('active');
                 }
             });
+
+            polygonOverlay.setAttribute('width', rect.width);
+            polygonOverlay.setAttribute('height', rect.height);
+            polygonOverlay.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+            const configuredIndices = [];
+            for (let i = 0; i < pointCount; i++) {
+                if (xs[i] !== 0 || ys[i] !== 0) {
+                    configuredIndices.push(i);
+                }
+            }
+            if (configuredIndices.length >= 3) {
+                const points = configuredIndices.map(i => `${xs[i] * scaleX},${ys[i] * scaleY}`).join(' ');
+                polygonPolyline.setAttribute('points', points + ' ' + points.split(' ')[0]);
+                polygonPolyline.style.display = 'block';
+            } else {
+                polygonPolyline.style.display = 'none';
+            }
+
             updatePointList();
         }
 
