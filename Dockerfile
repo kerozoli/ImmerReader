@@ -7,7 +7,7 @@ COPY src ./src
 RUN mvn package -DskipTests
 
 FROM eclipse-temurin:25-jre
-RUN mkdir -p /data
+RUN mkdir -p /data && apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 VOLUME /data
 COPY --from=builder /app/target/immerreader-1.0.0.jar immerreader-1.0.0.jar
 
