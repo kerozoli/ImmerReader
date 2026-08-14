@@ -20,9 +20,7 @@ public class ErrorStatistics {
     }
 
     public void recordError(String system, ErrorType errorType) {
-        String key = system + ":" + errorType.name();
-        errorCounts.computeIfAbsent(key, k -> new ErrorCounter()).increment();
-        cleanup();
+        recordError(system, errorType.name().toLowerCase());
     }
 
     public void recordError(String system, String errorType) {

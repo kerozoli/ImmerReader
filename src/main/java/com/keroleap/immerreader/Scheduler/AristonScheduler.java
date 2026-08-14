@@ -19,6 +19,7 @@ import com.keroleap.immerreader.Service.AristonAnalyzerService;
 import com.keroleap.immerreader.SharedData.AristonData;
 import com.keroleap.immerreader.SharedData.AristonManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
+import com.keroleap.immerreader.SharedData.SchedulerHealthTracker;
 
 import jakarta.annotation.PreDestroy;
 
@@ -44,6 +45,9 @@ public class AristonScheduler {
 
     @Autowired
     private ErrorStatistics errorStatistics;
+
+    @Autowired
+    private SchedulerHealthTracker schedulerHealthTracker;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final AtomicInteger consecutiveErrors = new AtomicInteger(0);
@@ -76,6 +80,7 @@ public class AristonScheduler {
             aristonData.setAristonRest(result);
             consecutiveErrors.set(0);
             lastErrorType = null;
+            schedulerHealthTracker.recordSuccess("Ariston");
         } catch (TimeoutException e) {
             future.cancel(true);
             logger.warn("Timeout fetching Ariston data, keeping previous value.");
@@ -88,6 +93,7 @@ public class AristonScheduler {
 
     private void handleError(ErrorType errorType) {
         errorStatistics.recordError("Ariston", errorType);
+        schedulerHealthTracker.recordError("Ariston", errorType);
         if (errorType.equals(lastErrorType)) {
             consecutiveErrors.incrementAndGet();
         } else {
