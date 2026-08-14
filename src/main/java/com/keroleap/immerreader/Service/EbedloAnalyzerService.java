@@ -120,7 +120,7 @@ public class EbedloAnalyzerService {
                 continue;
             }
             int next = (i + 1) % count;
-            while ((xs[next] == 0 && ys[next] == 0) && next != i) {
+            while (xs[next] == 0 && ys[next] == 0 && next != i) {
                 next = (next + 1) % count;
             }
             if (next != i) {
