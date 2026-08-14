@@ -19,6 +19,7 @@ import com.keroleap.immerreader.Service.ImmerAnalyzerService;
 import com.keroleap.immerreader.SharedData.ImmerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
+import com.keroleap.immerreader.SharedData.SchedulerHealthTracker;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -42,6 +43,9 @@ public class ImmerScheduler {
 
     @Autowired
     private ErrorStatistics errorStatistics;
+
+    @Autowired
+    private SchedulerHealthTracker schedulerHealthTracker;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final AtomicInteger currentDelayMs = new AtomicInteger(DEFAULT_DELAY_MS);
@@ -93,6 +97,7 @@ public class ImmerScheduler {
         consecutiveErrors.set(0);
         lastErrorType = null;
         currentDelayMs.set(DEFAULT_DELAY_MS);
+        schedulerHealthTracker.recordSuccess("Immer");
         scheduleNextRead();
     }
 
@@ -105,6 +110,7 @@ public class ImmerScheduler {
 
     private void handleError(ErrorType errorType) {
         errorStatistics.recordError("Immer", errorType);
+        schedulerHealthTracker.recordError("Immer", errorType);
         if (errorType.equals(lastErrorType)) {
             consecutiveErrors.incrementAndGet();
         } else {
