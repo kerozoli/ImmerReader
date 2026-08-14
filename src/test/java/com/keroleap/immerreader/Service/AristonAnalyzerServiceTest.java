@@ -23,6 +23,8 @@ class AristonAnalyzerServiceTest {
     // Horizontal line with ~14 px spacing between points (700 px / 49 gaps)
     private static final int START_X = 50;
     private static final int START_Y = 400;
+    private static final int CONTROL_X = 400;
+    private static final int CONTROL_Y = 200;
     private static final int END_X = 750;
     private static final int END_Y = 400;
 
@@ -62,15 +64,20 @@ class AristonAnalyzerServiceTest {
 
     private void setPointIndexBlack(BufferedImage img, int index) {
         double t = (double) index / (POINT_COUNT - 1);
-        int x = (int) Math.round(START_X + (END_X - START_X) * t);
-        int y = (int) Math.round(START_Y + (END_Y - START_Y) * t);
+        double oneMinusT = 1 - t;
+        int x = (int) Math.round(oneMinusT * oneMinusT * START_X
+                + 2 * oneMinusT * t * CONTROL_X
+                + t * t * END_X);
+        int y = (int) Math.round(oneMinusT * oneMinusT * START_Y
+                + 2 * oneMinusT * t * CONTROL_Y
+                + t * t * END_Y);
         setRegionBlack(img, x, y);
     }
 
     @Test
     void getAristonRestData_allWhite_percentageIsZero() {
         BufferedImage img = createWhiteImage();
-        AristonRest result = service.getAristonRestData(img, START_X, START_Y, END_X, END_Y);
+        AristonRest result = service.getAristonRestData(img, START_X, START_Y, CONTROL_X, CONTROL_Y, END_X, END_Y);
         assertEquals(0, result.getPercentage());
     }
 
@@ -78,7 +85,7 @@ class AristonAnalyzerServiceTest {
     void getAristonRestData_onlyFirstPointDark_percentage0() {
         BufferedImage img = createWhiteImage();
         setPointIndexBlack(img, 0);
-        AristonRest result = service.getAristonRestData(img, START_X, START_Y, END_X, END_Y);
+        AristonRest result = service.getAristonRestData(img, START_X, START_Y, CONTROL_X, CONTROL_Y, END_X, END_Y);
         assertEquals(0, result.getPercentage());
     }
 
@@ -86,7 +93,9 @@ class AristonAnalyzerServiceTest {
     void getAristonRestData_onlyLastPointDark_percentage100() {
         BufferedImage img = createWhiteImage();
         setPointIndexBlack(img, POINT_COUNT - 1);
-        AristonRest result = service.getAristonRestData(img, START_X, START_Y, END_X, END_Y);
+        setPointIndexBlack(img, POINT_COUNT - 2);
+        setPointIndexBlack(img, POINT_COUNT - 3);
+        AristonRest result = service.getAristonRestData(img, START_X, START_Y, CONTROL_X, CONTROL_Y, END_X, END_Y);
         assertEquals(100, result.getPercentage());
     }
 
@@ -96,7 +105,7 @@ class AristonAnalyzerServiceTest {
         for (int i = 0; i < POINT_COUNT; i++) {
             setPointIndexBlack(img, i);
         }
-        AristonRest result = service.getAristonRestData(img, START_X, START_Y, END_X, END_Y);
+        AristonRest result = service.getAristonRestData(img, START_X, START_Y, CONTROL_X, CONTROL_Y, END_X, END_Y);
         assertEquals(100, result.getPercentage());
     }
 
@@ -107,7 +116,7 @@ class AristonAnalyzerServiceTest {
         for (int i = 0; i <= lastDarkIndex; i++) {
             setPointIndexBlack(img, i);
         }
-        AristonRest result = service.getAristonRestData(img, START_X, START_Y, END_X, END_Y);
+        AristonRest result = service.getAristonRestData(img, START_X, START_Y, CONTROL_X, CONTROL_Y, END_X, END_Y);
         int expected = (int) Math.round(lastDarkIndex * 100.0 / (POINT_COUNT - 1));
         assertEquals(expected, result.getPercentage());
     }
@@ -121,14 +130,23 @@ class AristonAnalyzerServiceTest {
         int endX = 400;
         int endY = 650;
 
-        // Darken the point at index 25 (~midpoint)
-        double t = 25.0 / (POINT_COUNT - 1);
-        int expectedX = (int) Math.round(startX + (endX - startX) * t);
-        int expectedY = (int) Math.round(startY + (endY - startY) * t);
-        setRegionBlack(img, expectedX, expectedY);
+        // Darken a short run around index 25 (~midpoint)
+        int controlX = startX;
+        int controlY = (startY + endY) / 2;
+        for (int i = 24; i <= 26; i++) {
+            double t = i / (double) (POINT_COUNT - 1);
+            double oneMinusT = 1 - t;
+            int px = (int) Math.round(oneMinusT * oneMinusT * startX
+                    + 2 * oneMinusT * t * controlX
+                    + t * t * endX);
+            int py = (int) Math.round(oneMinusT * oneMinusT * startY
+                    + 2 * oneMinusT * t * controlY
+                    + t * t * endY);
+            setRegionBlack(img, px, py);
+        }
 
-        AristonRest result = service.getAristonRestData(img, startX, startY, endX, endY);
-        int expectedPercentage = (int) Math.round(25 * 100.0 / (POINT_COUNT - 1));
+        AristonRest result = service.getAristonRestData(img, startX, startY, controlX, controlY, endX, endY);
+        int expectedPercentage = (int) Math.round(26 * 100.0 / (POINT_COUNT - 1));
         assertEquals(expectedPercentage, result.getPercentage());
     }
 }
