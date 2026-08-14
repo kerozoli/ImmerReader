@@ -3,12 +3,17 @@ package com.keroleap.immerreader.Service;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.global.opencv_imgproc;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_core.MatVector;
+import org.bytedeco.opencv.opencv_core.Rect;
 import org.bytedeco.opencv.opencv_core.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,14 +28,12 @@ import com.keroleap.immerreader.SharedData.ChickenNest;
 public class ChickenAnalyzerService {
 
     private static final Logger logger = LoggerFactory.getLogger(ChickenAnalyzerService.class);
-    private static final int NEST_COUNT = 3;
     private static final int BLUR_SIZE = 5;
     private static final int MORPH_SIZE = 3;
-    private static final int[] NEST_COLORS = { 16711680, 65280, 255 };
+    private static final int[] NEST_COLORS = { 16711680, 65280, 255, 16776960, 16711935 };
 
     @Autowired
     private CameraImageService cameraImageService;
-
 
     public BufferedImage getBufferedImage(String cameraUrl) {
         return cameraImageService.capture(cameraUrl);
@@ -43,19 +46,18 @@ public class ChickenAnalyzerService {
             return chickenRest;
         }
 
-        int[] counts = new int[NEST_COUNT];
-        ChickenNest[] nests = managerData.getNests();
-        for (int i = 0; i < NEST_COUNT; i++) {
-            ChickenNest nest = nests[i];
+        List<Integer> counts = new ArrayList<>();
+        List<ChickenNest> nests = managerData.getNests();
+        for (ChickenNest nest : nests) {
             if (nest.isConfigured()) {
-                counts[i] = countEggsInNest(image, nest);
+                counts.add(countEggsInNest(image, nest));
+            } else {
+                counts.add(0);
             }
         }
 
-        chickenRest.setNest1Count(counts[0]);
-        chickenRest.setNest2Count(counts[1]);
-        chickenRest.setNest3Count(counts[2]);
-        chickenRest.setTotalCount(counts[0] + counts[1] + counts[2]);
+        chickenRest.setNestCounts(counts);
+        chickenRest.setTotalCount(counts.stream().mapToInt(Integer::intValue).sum());
         return chickenRest;
     }
 
@@ -66,28 +68,32 @@ public class ChickenAnalyzerService {
         BufferedImage copy = deepCopy(image);
         Graphics2D graphics = copy.createGraphics();
         graphics.setStroke(new BasicStroke(3));
-        ChickenNest[] nests = managerData.getNests();
-        for (int i = 0; i < NEST_COUNT; i++) {
-            ChickenNest nest = nests[i];
+        List<ChickenNest> nests = managerData.getNests();
+        for (int i = 0; i < nests.size(); i++) {
+            ChickenNest nest = nests.get(i);
             if (!nest.isConfigured()) {
                 continue;
             }
-            graphics.setColor(new Color(NEST_COLORS[i]));
-            graphics.drawRect(nest.getX(), nest.getY(), nest.getWidth(), nest.getHeight());
-            graphics.drawString("F" + (i + 1), nest.getX() + 4, nest.getY() + 16);
+            int[] xs = nest.getXs();
+            int[] ys = nest.getYs();
+            graphics.setColor(new Color(NEST_COLORS[i % NEST_COLORS.length]));
+            graphics.drawPolygon(xs, ys, xs.length);
+            graphics.drawString("F" + (i + 1), xs[0] + 4, ys[0] + 16);
         }
         graphics.dispose();
         return copy;
     }
 
     private int countEggsInNest(BufferedImage image, ChickenNest nest) {
-        Rectangle roi = new Rectangle(nest.getX(), nest.getY(), nest.getWidth(), nest.getHeight());
-        roi = roi.intersection(new Rectangle(0, 0, image.getWidth(), image.getHeight()));
-        if (roi.width <= 0 || roi.height <= 0) {
+        int[] xs = nest.getXs();
+        int[] ys = nest.getYs();
+        Rectangle bounds = computeBounds(xs, ys, image.getWidth(), image.getHeight());
+        if (bounds.width <= 0 || bounds.height <= 0) {
             return 0;
         }
 
-        Mat gray = bufferedImageToGrayMat(image, roi);
+        Polygon polygon = new Polygon(xs, ys, xs.length);
+        Mat gray = bufferedImageToGrayMat(image, bounds);
         try {
             Mat blurred = new Mat();
             opencv_imgproc.GaussianBlur(gray, blurred, new Size(BLUR_SIZE, BLUR_SIZE), 0);
@@ -118,7 +124,12 @@ public class ChickenAnalyzerService {
                 if (circularity < nest.getMinCircularity()) {
                     continue;
                 }
-                count++;
+                int[] center = contourCenter(contour);
+                int imageX = bounds.x + center[0];
+                int imageY = bounds.y + center[1];
+                if (polygon.contains(imageX, imageY)) {
+                    count++;
+                }
             }
 
             return count;
@@ -127,11 +138,36 @@ public class ChickenAnalyzerService {
         }
     }
 
-    private Mat bufferedImageToGrayMat(BufferedImage image, Rectangle roi) {
-        Mat roiMat = new Mat(roi.height, roi.width, opencv_core.CV_8UC3);
-        for (int y = 0; y < roi.height; y++) {
-            for (int x = 0; x < roi.width; x++) {
-                int rgb = image.getRGB(roi.x + x, roi.y + y);
+    private Rectangle computeBounds(int[] xs, int[] ys, int maxWidth, int maxHeight) {
+        int minX = Integer.MAX_VALUE;
+        int minY = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE;
+        int maxY = Integer.MIN_VALUE;
+        for (int i = 0; i < xs.length; i++) {
+            minX = Math.min(minX, xs[i]);
+            minY = Math.min(minY, ys[i]);
+            maxX = Math.max(maxX, xs[i]);
+            maxY = Math.max(maxY, ys[i]);
+        }
+        minX = Math.max(0, minX);
+        minY = Math.max(0, minY);
+        maxX = Math.min(maxWidth, maxX);
+        maxY = Math.min(maxHeight, maxY);
+        return new Rectangle(minX, minY, maxX - minX, maxY - minY);
+    }
+
+    private int[] contourCenter(Mat contour) {
+        Rect rect = opencv_imgproc.boundingRect(contour);
+        int cx = rect.x() + rect.width() / 2;
+        int cy = rect.y() + rect.height() / 2;
+        return new int[] { cx, cy };
+    }
+
+    private Mat bufferedImageToGrayMat(BufferedImage image, Rectangle bounds) {
+        Mat roiMat = new Mat(bounds.height, bounds.width, opencv_core.CV_8UC3);
+        for (int y = 0; y < bounds.height; y++) {
+            for (int x = 0; x < bounds.width; x++) {
+                int rgb = image.getRGB(bounds.x + x, bounds.y + y);
                 int r = (rgb >> 16) & 0xFF;
                 int g = (rgb >> 8) & 0xFF;
                 int b = rgb & 0xFF;

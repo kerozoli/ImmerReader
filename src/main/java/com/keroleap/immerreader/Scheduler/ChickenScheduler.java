@@ -1,6 +1,7 @@
 package com.keroleap.immerreader.Scheduler;
 
 import java.awt.image.BufferedImage;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -23,7 +24,6 @@ import jakarta.annotation.PreDestroy;
 public class ChickenScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(ChickenScheduler.class);
-    private static final int NEST_COUNT = 3;
     private static final long INITIAL_DELAY_SECONDS = 5;
     private static final long PERIOD_SECONDS = 30;
 
@@ -55,10 +55,8 @@ public class ChickenScheduler {
         try {
             BufferedImage image = chickenAnalyzerService.getBufferedImage(cameraUrl);
             ChickenRest rest = chickenAnalyzerService.getChickenRestData(image, chickenManagerData);
-            int[] counts = new int[NEST_COUNT];
-            counts[0] = rest.getNest1Count();
-            counts[1] = rest.getNest2Count();
-            counts[2] = rest.getNest3Count();
+            List<Integer> counts = rest.getNestCounts();
+            chickenData.setConfiguredCount(counts.size());
             chickenData.addCounts(counts);
         } catch (Exception e) {
             logger.error("Error fetching Chicken data: {}", e.getMessage(), e);

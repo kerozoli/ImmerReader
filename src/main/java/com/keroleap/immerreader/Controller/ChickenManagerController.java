@@ -1,6 +1,7 @@
 package com.keroleap.immerreader.Controller;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ import com.keroleap.immerreader.SharedData.ErrorStatistics;
 @RequestMapping("/ChickenManager")
 public class ChickenManagerController {
 
-    private static final int NEST_COUNT = 3;
+    private static final int POINT_COUNT = 4;
 
     @Autowired
     private ChickenManagerData chickenManagerData;
@@ -35,7 +36,8 @@ public class ChickenManagerController {
 
     @PostMapping("/set")
     @ResponseBody
-    public ResponseEntity<?> setNests(@RequestParam String points,
+    public ResponseEntity<?> setNests(@RequestParam int count,
+                                      @RequestParam String points,
                                       @RequestParam String thresholds,
                                       @RequestParam String minAreas,
                                       @RequestParam String maxAreas,
@@ -46,29 +48,37 @@ public class ChickenManagerController {
         String[] maxAreaParts = maxAreas.split(",");
         String[] circularityParts = minCircularities.split(",");
 
-        if (pointParts.length != NEST_COUNT * 4
-                || thresholdParts.length != NEST_COUNT
-                || minAreaParts.length != NEST_COUNT
-                || maxAreaParts.length != NEST_COUNT
-                || circularityParts.length != NEST_COUNT) {
-            return ResponseEntity.badRequest().body("Expected " + NEST_COUNT + " nest definitions (4 coords + filters each).");
+        if (count < 1 || count > 5) {
+            return ResponseEntity.badRequest().body("Nest count must be between 1 and 5.");
+        }
+        int expectedPoints = count * POINT_COUNT * 2;
+        if (pointParts.length != expectedPoints
+                || thresholdParts.length != count
+                || minAreaParts.length != count
+                || maxAreaParts.length != count
+                || circularityParts.length != count) {
+            return ResponseEntity.badRequest().body("Expected " + count + " nests with " + POINT_COUNT + " points each and per-nest filters.");
         }
 
         try {
-            for (int i = 0; i < NEST_COUNT; i++) {
-                int x = Integer.parseInt(pointParts[i * 4].trim());
-                int y = Integer.parseInt(pointParts[i * 4 + 1].trim());
-                int width = Integer.parseInt(pointParts[i * 4 + 2].trim());
-                int height = Integer.parseInt(pointParts[i * 4 + 3].trim());
+            chickenManagerData.setNestCount(count);
+            for (int i = 0; i < count; i++) {
+                int[] xs = new int[POINT_COUNT];
+                int[] ys = new int[POINT_COUNT];
+                for (int p = 0; p < POINT_COUNT; p++) {
+                    xs[p] = Integer.parseInt(pointParts[i * POINT_COUNT * 2 + p * 2].trim());
+                    ys[p] = Integer.parseInt(pointParts[i * POINT_COUNT * 2 + p * 2 + 1].trim());
+                }
                 int threshold = Integer.parseInt(thresholdParts[i].trim());
                 int minArea = Integer.parseInt(minAreaParts[i].trim());
                 int maxArea = Integer.parseInt(maxAreaParts[i].trim());
                 double minCircularity = Double.parseDouble(circularityParts[i].trim());
 
-                chickenManagerData.setNest(i, x, y, width, height);
+                chickenManagerData.setNestPoints(i, xs, ys);
                 chickenManagerData.setNestThreshold(i, threshold);
                 chickenManagerData.setNestFilters(i, minArea, maxArea, minCircularity);
             }
+            chickenData.setConfiguredCount(count);
             return ResponseEntity.ok(chickenManagerData.getNests());
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body("Invalid number format: " + e.getMessage());
@@ -98,8 +108,9 @@ public class ChickenManagerController {
 
     private void addCommonAttributes(ModelAndView modelAndView) {
         modelAndView.addObject("enabled", chickenManagerData.isEnabled());
+        modelAndView.addObject("nestCount", chickenManagerData.getNestCount());
         modelAndView.addObject("chickenRest", chickenData.getChickenRest());
-        ChickenNest[] nests = chickenManagerData.getNests();
+        List<ChickenNest> nests = chickenManagerData.getNests();
         modelAndView.addObject("nests", nests);
         modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("chicken"));
     }

@@ -66,6 +66,15 @@
             color: #eee;
             font-size: 16px;
         }
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 16px;
+        }
         button {
             background: #e94560;
             color: white;
@@ -84,6 +93,11 @@
         button.secondary.active {
             background: #28a745;
         }
+        button.point-btn {
+            width: auto;
+            margin: 2px;
+            padding: 8px 12px;
+        }
         .image-container {
             background: #16213e;
             padding: 20px;
@@ -99,6 +113,21 @@
             border-radius: 4px;
             display: block;
             cursor: crosshair;
+        }
+        .marker {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: white;
         }
         .data-section {
             background: #16213e;
@@ -176,6 +205,12 @@
             display: flex;
             gap: 10px;
             margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .point-buttons {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 15px;
         }
         .hint {
             font-size: 12px;
@@ -208,23 +243,8 @@
     <div style="padding: 0 20px;">
         <div class="data-section" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
             <h2>Detected Eggs</h2>
-            <div class="data-grid">
-                <div class="data-card">
-                    <h3>Fészek 1</h3>
-                    <div class="value" id="nest1">0</div>
-                </div>
-                <div class="data-card">
-                    <h3>Fészek 2</h3>
-                    <div class="value" id="nest2">0</div>
-                </div>
-                <div class="data-card">
-                    <h3>Fészek 3</h3>
-                    <div class="value" id="nest3">0</div>
-                </div>
-                <div class="data-card">
-                    <h3>Összesen</h3>
-                    <div class="value" id="total">0</div>
-                </div>
+            <div class="data-grid" id="dataGrid">
+                <!-- Filled dynamically -->
             </div>
         </div>
     </div>
@@ -242,12 +262,24 @@
 
                 <div id="controlsPanel" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
                     <div class="form-group">
+                        <label for="nestCount">Number of Nests:</label>
+                        <select id="nestCount" name="nestCount">
+                            <option value="1" th:selected="${nestCount} == 1">1</option>
+                            <option value="2" th:selected="${nestCount} == 2">2</option>
+                            <option value="3" th:selected="${nestCount} == 3">3</option>
+                            <option value="4" th:selected="${nestCount} == 4">4</option>
+                            <option value="5" th:selected="${nestCount} == 5">5</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label>Active Nest:</label>
-                        <div class="nest-buttons">
-                            <button type="button" class="secondary nest-btn active" data-index="0">Fészek 1</button>
-                            <button type="button" class="secondary nest-btn" data-index="1">Fészek 2</button>
-                            <button type="button" class="secondary nest-btn" data-index="2">Fészek 3</button>
-                        </div>
+                        <div class="nest-buttons" id="nestButtons"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Active Point:</label>
+                        <div class="point-buttons" id="pointButtons"></div>
                     </div>
 
                     <form id="nestForm">
@@ -286,30 +318,96 @@
                 <div class="image-wrapper" id="imageWrapper">
                     <img id="liveImage" src="/Chicken/uncroppedimage" alt="Chicken Camera Feed">
                 </div>
-                <p><small>Click twice per nest: first top-left, then bottom-right. Rectangles refresh with the image.</small></p>
+                <p><small>Select a nest and a point, then click on the image to place the 4 polygon corners. Polygons refresh with the image.</small></p>
             </div>
         </div>
     </div>
 
     <script th:inline="javascript">
-        const nestCount = 3;
-        const initialNests = /*[[${nests}]]*/ [{x:0,y:0,width:0,height:0,threshold:180,minArea:500,maxArea:8000,minCircularity:0.5},{x:0,y:0,width:0,height:0,threshold:180,minArea:500,maxArea:8000,minCircularity:0.5},{x:0,y:0,width:0,height:0,threshold:180,minArea:500,maxArea:8000,minCircularity:0.5}];
-        let nests = initialNests.map(n => ({...n}));
+        const POINT_COUNT = 4;
+        const POINT_COLORS = ['#e94560', '#28a745', '#00bfff', '#ff8c00'];
+        const NEST_COLORS = ['#e94560', '#28a745', '#00bfff', '#ffff00', '#ff00ff'];
+
+        const initialNestCount = /*[[${nestCount}]]*/ 3;
+        const initialNests = /*[[${nests}]]*/ [];
+
+        let nestCount = initialNestCount;
+        let nests = [];
         let activeNest = 0;
-        let clickStep = 0; // 0 = waiting for top-left, 1 = waiting for bottom-right
+        let activePoint = 0;
 
         const liveImage = document.getElementById('liveImage');
         const imageWrapper = document.getElementById('imageWrapper');
-        const nestButtons = document.querySelectorAll('.nest-btn');
+        const nestButtonsContainer = document.getElementById('nestButtons');
+        const pointButtonsContainer = document.getElementById('pointButtons');
+        const dataGrid = document.getElementById('dataGrid');
+        const nestCountSelect = document.getElementById('nestCount');
 
-        function updateNestButtons() {
-            nestButtons.forEach((btn, i) => {
-                if (i === activeNest) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
+        function initializeNests() {
+            nests = [];
+            for (let i = 0; i < nestCount; i++) {
+                let source = (initialNests && initialNests[i]) ? initialNests[i] : null;
+                let xs = source && source.xs ? source.xs.slice(0, POINT_COUNT) : new Array(POINT_COUNT).fill(0);
+                let ys = source && source.ys ? source.ys.slice(0, POINT_COUNT) : new Array(POINT_COUNT).fill(0);
+                while (xs.length < POINT_COUNT) xs.push(0);
+                while (ys.length < POINT_COUNT) ys.push(0);
+                nests.push({
+                    xs: xs,
+                    ys: ys,
+                    threshold: source ? source.threshold : 180,
+                    minArea: source ? source.minArea : 500,
+                    maxArea: source ? source.maxArea : 8000,
+                    minCircularity: source ? source.minCircularity : 0.5
+                });
+            }
+        }
+
+        function renderNestButtons() {
+            nestButtonsContainer.innerHTML = '';
+            for (let i = 0; i < nestCount; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'secondary nest-btn' + (i === activeNest ? ' active' : '');
+                btn.textContent = 'Fészek ' + (i + 1);
+                btn.addEventListener('click', () => {
+                    activeNest = i;
+                    activePoint = 0;
+                    renderNestButtons();
+                    renderPointButtons();
+                    updateForm();
+                });
+                nestButtonsContainer.appendChild(btn);
+            }
+        }
+
+        function renderPointButtons() {
+            pointButtonsContainer.innerHTML = '';
+            for (let p = 0; p < POINT_COUNT; p++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'secondary point-btn' + (p === activePoint ? ' active' : '');
+                btn.textContent = 'P' + (p + 1);
+                btn.style.backgroundColor = p === activePoint ? POINT_COLORS[p] : '';
+                btn.addEventListener('click', () => {
+                    activePoint = p;
+                    renderPointButtons();
+                });
+                pointButtonsContainer.appendChild(btn);
+            }
+        }
+
+        function renderDataCards() {
+            dataGrid.innerHTML = '';
+            for (let i = 0; i < nestCount; i++) {
+                const card = document.createElement('div');
+                card.className = 'data-card';
+                card.innerHTML = `<h3>Fészek ${i + 1}</h3><div class="value" id="nest${i + 1}">0</div>`;
+                dataGrid.appendChild(card);
+            }
+            const totalCard = document.createElement('div');
+            totalCard.className = 'data-card';
+            totalCard.innerHTML = '<h3>Összesen</h3><div class="value" id="total">0</div>';
+            dataGrid.appendChild(totalCard);
         }
 
         function updateForm() {
@@ -319,15 +417,6 @@
             document.getElementById('maxArea').value = nest.maxArea;
             document.getElementById('minCircularity').value = nest.minCircularity;
         }
-
-        nestButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                activeNest = parseInt(btn.dataset.index);
-                clickStep = 0;
-                updateNestButtons();
-                updateForm();
-            });
-        });
 
         function toImageCoordinates(event) {
             const rect = liveImage.getBoundingClientRect();
@@ -347,27 +436,18 @@
         imageWrapper.addEventListener('click', function(e) {
             const coords = toImageCoordinates(e);
             if (!coords) {
-                console.warn('Image has no size yet, cannot set nest');
+                console.warn('Image has no size yet, cannot set point');
                 return;
             }
 
             const nest = nests[activeNest];
-            if (clickStep === 0) {
-                nest.x = coords.x;
-                nest.y = coords.y;
-                nest.width = 0;
-                nest.height = 0;
-                clickStep = 1;
-                showStatus('Top-left set. Click bottom-right corner.', true);
-            } else {
-                nest.width = Math.abs(coords.x - nest.x);
-                nest.height = Math.abs(coords.y - nest.y);
-                nest.x = Math.min(nest.x, coords.x);
-                nest.y = Math.min(nest.y, coords.y);
-                clickStep = 0;
-                showStatus('Nest ' + (activeNest + 1) + ' rectangle set.', true);
-                refreshImage();
-            }
+            nest.xs[activePoint] = coords.x;
+            nest.ys[activePoint] = coords.y;
+            showStatus(`Fészek ${activeNest + 1} P${activePoint + 1} set at (${coords.x}, ${coords.y})`, true);
+
+            activePoint = (activePoint + 1) % POINT_COUNT;
+            renderPointButtons();
+            refreshImage();
         });
 
         document.getElementById('nestForm').addEventListener('submit', function(e) {
@@ -379,7 +459,7 @@
             nest.maxArea = parseInt(document.getElementById('maxArea').value);
             nest.minCircularity = parseFloat(document.getElementById('minCircularity').value);
 
-            const points = nests.map(n => `${n.x},${n.y},${n.width},${n.height}`).join(',');
+            const points = nests.map(n => n.xs.map((x, p) => `${x},${n.ys[p]}`).join(',')).join(',');
             const thresholds = nests.map(n => n.threshold).join(',');
             const minAreas = nests.map(n => n.minArea).join(',');
             const maxAreas = nests.map(n => n.maxArea).join(',');
@@ -390,7 +470,7 @@
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `points=${encodeURIComponent(points)}&thresholds=${encodeURIComponent(thresholds)}&minAreas=${encodeURIComponent(minAreas)}&maxAreas=${encodeURIComponent(maxAreas)}&minCircularities=${encodeURIComponent(minCircularities)}`
+                body: `count=${nestCount}&points=${encodeURIComponent(points)}&thresholds=${encodeURIComponent(thresholds)}&minAreas=${encodeURIComponent(minAreas)}&maxAreas=${encodeURIComponent(maxAreas)}&minCircularities=${encodeURIComponent(minCircularities)}`
             })
             .then(response => {
                 if (!response.ok) {
@@ -406,6 +486,22 @@
                 console.error('Error:', error);
                 showStatus('Error: ' + error.message, false);
             });
+        });
+
+        nestCountSelect.addEventListener('change', function() {
+            const newCount = parseInt(this.value);
+            if (newCount === nestCount) {
+                return;
+            }
+            nestCount = newCount;
+            activeNest = 0;
+            activePoint = 0;
+            initializeNests();
+            renderNestButtons();
+            renderPointButtons();
+            renderDataCards();
+            updateForm();
+            showStatus(`Nest count changed to ${nestCount}. Click Apply All Nests to save.`, true);
         });
 
         document.getElementById('schedulerToggle').addEventListener('change', function() {
@@ -447,16 +543,27 @@
             fetch('/Chicken/chickenrestdata')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('nest1').textContent = data.nest1Count != null ? data.nest1Count : 0;
-                    document.getElementById('nest2').textContent = data.nest2Count != null ? data.nest2Count : 0;
-                    document.getElementById('nest3').textContent = data.nest3Count != null ? data.nest3Count : 0;
-                    document.getElementById('total').textContent = data.totalCount != null ? data.totalCount : 0;
+                    const counts = data.nestCounts || [];
+                    for (let i = 0; i < nestCount; i++) {
+                        const el = document.getElementById('nest' + (i + 1));
+                        if (el) {
+                            el.textContent = counts[i] != null ? counts[i] : 0;
+                        }
+                    }
+                    const totalEl = document.getElementById('total');
+                    if (totalEl) {
+                        totalEl.textContent = data.totalCount != null ? data.totalCount : 0;
+                    }
                 })
                 .catch(error => console.error('Error fetching Chicken data:', error));
         }
 
         liveImage.addEventListener('load', () => console.log('Chicken image loaded:', liveImage.naturalWidth, 'x', liveImage.naturalHeight));
-        updateNestButtons();
+
+        initializeNests();
+        renderNestButtons();
+        renderPointButtons();
+        renderDataCards();
         updateForm();
         setInterval(refreshImage, 10000);
         setInterval(fetchData, 5000);

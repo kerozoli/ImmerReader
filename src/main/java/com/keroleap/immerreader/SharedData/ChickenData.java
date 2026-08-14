@@ -1,8 +1,10 @@
 package com.keroleap.immerreader.SharedData;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
@@ -13,41 +15,52 @@ import com.keroleap.immerreader.ChickenRest;
 public class ChickenData {
 
     private static final int HISTORY_SIZE = 5;
-    private static final int NEST_COUNT = 3;
 
     private ChickenRest chickenRest = new ChickenRest();
-    private final Deque<Integer>[] history = new ArrayDeque[NEST_COUNT];
+    private final List<Deque<Integer>> history = new ArrayList<>();
+    private int configuredCount = 0;
 
     public ChickenData() {
-        for (int i = 0; i < NEST_COUNT; i++) {
-            history[i] = new ArrayDeque<>();
-        }
+        resizeHistory(3);
     }
 
-    public synchronized void addCounts(int[] counts) {
-        for (int i = 0; i < NEST_COUNT; i++) {
-            Deque<Integer> deque = history[i];
-            deque.addLast(counts[i]);
+    public synchronized void addCounts(List<Integer> counts) {
+        resizeHistory(counts.size());
+        for (int i = 0; i < counts.size(); i++) {
+            Deque<Integer> deque = history.get(i);
+            deque.addLast(counts.get(i));
             while (deque.size() > HISTORY_SIZE) {
                 deque.removeFirst();
             }
         }
 
-        int[] smoothed = new int[NEST_COUNT];
-        for (int i = 0; i < NEST_COUNT; i++) {
-            smoothed[i] = mode(history[i]);
+        List<Integer> smoothed = new ArrayList<>();
+        for (Deque<Integer> deque : history) {
+            smoothed.add(mode(deque));
         }
 
         ChickenRest rest = new ChickenRest();
-        rest.setNest1Count(smoothed[0]);
-        rest.setNest2Count(smoothed[1]);
-        rest.setNest3Count(smoothed[2]);
-        rest.setTotalCount(smoothed[0] + smoothed[1] + smoothed[2]);
+        rest.setNestCounts(smoothed);
+        rest.setTotalCount(smoothed.stream().mapToInt(Integer::intValue).sum());
         this.chickenRest = rest;
     }
 
     public synchronized ChickenRest getChickenRest() {
         return chickenRest;
+    }
+
+    public synchronized void setConfiguredCount(int count) {
+        this.configuredCount = count;
+        resizeHistory(count);
+    }
+
+    private void resizeHistory(int count) {
+        while (history.size() < count) {
+            history.add(new ArrayDeque<>());
+        }
+        while (history.size() > count) {
+            history.remove(history.size() - 1);
+        }
     }
 
     private int mode(Deque<Integer> deque) {
