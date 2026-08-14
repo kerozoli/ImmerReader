@@ -18,7 +18,7 @@ import com.keroleap.immerreader.SharedData.ErrorStatistics;
 @RequestMapping("/EbedloManager")
 public class EbedloManagerController {
 
-    private static final int POINT_COUNT = 10;
+    private static final int POINT_COUNT = 4;
 
     @Autowired
     private EbedloManagerData ebedloManagerData;
