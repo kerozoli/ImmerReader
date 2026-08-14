@@ -12,6 +12,7 @@ import com.keroleap.immerreader.AristonRest;
 import com.keroleap.immerreader.Service.AristonAnalyzerService;
 import com.keroleap.immerreader.SharedData.AristonManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
+import com.keroleap.immerreader.SharedData.SchedulerHealthTracker;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -26,6 +27,9 @@ class AristonSchedulerTest {
 
     @Mock
     private ErrorStatistics errorStatistics;
+
+    @Mock
+    private SchedulerHealthTracker schedulerHealthTracker;
 
     @InjectMocks
     private AristonScheduler aristonScheduler;

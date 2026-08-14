@@ -11,4 +11,7 @@ RUN mkdir -p /data
 VOLUME /data
 COPY --from=builder /app/target/immerreader-1.0.0.jar immerreader-1.0.0.jar
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8099/actuator/health || exit 1
+
 ENTRYPOINT ["java","-jar","/immerreader-1.0.0.jar"]
