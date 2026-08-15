@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.keroleap.immerreader.ChickenRest;
@@ -20,6 +21,9 @@ public class ChickenData {
     private final List<Deque<Integer>> history = new ArrayList<>();
     private int configuredCount = 0;
     private int intervalSeconds = 30;
+
+    @Autowired
+    private ChickenManagerData chickenManagerData;
 
     public ChickenData() {
         resizeHistory(3);
@@ -44,11 +48,15 @@ public class ChickenData {
         rest.setNestCounts(smoothed);
         rest.setTotalCount(smoothed.stream().mapToInt(Integer::intValue).sum());
         rest.setIntervalSeconds(this.intervalSeconds);
+        rest.setEnabled(chickenManagerData.isEnabled());
+        rest.setThresholdMaskEnabled(chickenManagerData.isThresholdMaskEnabled());
         this.chickenRest = rest;
     }
 
     public synchronized ChickenRest getChickenRest() {
         chickenRest.setIntervalSeconds(this.intervalSeconds);
+        chickenRest.setEnabled(chickenManagerData.isEnabled());
+        chickenRest.setThresholdMaskEnabled(chickenManagerData.isThresholdMaskEnabled());
         return chickenRest;
     }
 

@@ -10,6 +10,8 @@ public class ChickenRest {
     private boolean error;
     private ErrorType errorType;
     private int intervalSeconds;
+    private boolean enabled;
+    private boolean thresholdMaskEnabled;
 
     public List<Integer> getNestCounts() {
         return nestCounts;
@@ -49,6 +51,22 @@ public class ChickenRest {
 
     public void setIntervalSeconds(int intervalSeconds) {
         this.intervalSeconds = intervalSeconds;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public boolean isThresholdMaskEnabled() {
+        return thresholdMaskEnabled;
+    }
+
+    public void setThresholdMaskEnabled(boolean thresholdMaskEnabled) {
+        this.thresholdMaskEnabled = thresholdMaskEnabled;
     }
 
     @Override
