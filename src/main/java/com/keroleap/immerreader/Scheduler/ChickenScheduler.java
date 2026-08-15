@@ -90,6 +90,7 @@ public class ChickenScheduler {
             }
             List<Integer> counts = rest.getNestCounts();
             chickenData.setConfiguredCount(counts.size());
+            chickenData.setIntervalSeconds(chickenManagerData.getIntervalSeconds());
             chickenData.addCounts(counts);
             consecutiveErrors.set(0);
             lastErrorType = null;

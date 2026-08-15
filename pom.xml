@@ -56,6 +56,11 @@
 			<artifactId>ffmpeg-platform</artifactId>
 			<version>7.1-1.5.11</version>
 		</dependency>
+		<dependency>
+			<groupId>org.bytedeco</groupId>
+			<artifactId>opencv-platform</artifactId>
+			<version>4.10.0-1.5.11</version>
+		</dependency>
  </dependencies>
 
 	<build>
@@ -68,6 +73,9 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<jvmArguments>--enable-native-access=ALL-UNNAMED</jvmArguments>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

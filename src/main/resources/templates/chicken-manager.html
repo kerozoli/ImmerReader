@@ -249,6 +249,33 @@
             background: #28a745;
             display: block;
         }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #aaa;
+        }
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .legend-color {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+        .legend-color.green { background: #28a745; }
+        .legend-color.orange { background: #ffa500; }
+        .legend-color.yellow { background: #ffff00; }
+        .legend-color.red { background: #e94560; }
+        .legend-color.blue { background: #008cff; }
+        .legend-color.dark-orange { background: #c86400; }
+        .legend-color.light-green { background: #80ff80; }
+        .legend-color.purple { background: #b400dc; }
     </style>
 </head>
 <body>
@@ -282,6 +309,22 @@
                     </label>
                 </div>
 
+                <div class="toggle-section">
+                    <label class="toggle-label">
+                        <span>Debug Overlay <span id="debugStatus">Off</span></span>
+                        <input type="checkbox" id="debugToggle">
+                        <span class="toggle-switch"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-section">
+                    <label class="toggle-label">
+                        <span>Threshold Mask Overlay <span id="thresholdMaskStatus">Off</span></span>
+                        <input type="checkbox" id="thresholdMaskGlobalToggle" th:checked="${thresholdMaskEnabled}">
+                        <span class="toggle-switch"></span>
+                    </label>
+                </div>
+
                 <div id="controlsPanel" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
                     <div class="form-group">
                         <label for="nestCount">Number of Nests:</label>
@@ -306,9 +349,17 @@
 
                     <form id="nestForm">
                         <div class="form-group">
+                            <label class="toggle-label" style="margin-bottom: 8px;">
+                                <span>Auto Threshold (Otsu)</span>
+                                <input type="checkbox" id="autoThresholdToggle">
+                                <span class="toggle-switch"></span>
+                            </label>
                             <label for="threshold">Threshold (0-255):</label>
                             <input type="number" id="threshold" name="threshold" min="0" max="255" required>
-                            <div class="hint">Bright IR egg spots must exceed this. Start with ~180.</div>
+                            <div class="hint">If Auto is on, Otsu computes this per nest. Manual value is still saved.</div>
+                            <label for="otsuOffset" style="margin-top: 10px;">Otsu Offset (±255):</label>
+                            <input type="number" id="otsuOffset" name="otsuOffset" min="-255" max="255" required>
+                            <div class="hint">Add this value to the computed Otsu threshold for this nest. Use positive values to raise threshold (helps separate merged eggs).</div>
                         </div>
 
                         <div class="form-group">
@@ -346,6 +397,13 @@
                     <img id="liveImage" src="/Chicken/uncroppedimage" alt="Chicken Camera Feed">
                 </div>
                 <p><small>Image refreshes automatically every <span id="previewIntervalSeconds" th:text="${intervalSeconds}">30</span> seconds. Select a nest and a point, then click on the image to place the 4 polygon corners.</small></p>
+                <div class="legend">
+                    <span><span class="legend-color blue"></span> Nest polygon</span>
+                    <span><span class="legend-color green"></span> Counted egg</span>
+                    <span><span class="legend-color dark-orange"></span> Rejected contour</span>
+                    <span><span class="legend-color light-green"></span> Threshold mask</span>
+                    <span><span class="legend-color purple"></span> Merged / unsplit</span>
+                </div>
             </div>
 
             <div class="data-section">
@@ -387,6 +445,22 @@
         const pointButtonsContainer = document.getElementById('pointButtons');
         const dataGrid = document.getElementById('dataGrid');
         const nestCountSelect = document.getElementById('nestCount');
+        const debugToggle = document.getElementById('debugToggle');
+
+        function getImageUrl() {
+            const base = debugToggle.checked ? '/Chicken/debugimage' : '/Chicken/uncroppedimage';
+            return base + '?t=' + new Date().getTime();
+        }
+
+        function updateDebugUrlState() {
+            const url = new URL(window.location.href);
+            if (debugToggle.checked) {
+                url.searchParams.set('debug', '1');
+            } else {
+                url.searchParams.delete('debug');
+            }
+            window.history.replaceState({}, '', url.toString());
+        }
 
         function initializeNests() {
             nests = [];
@@ -402,7 +476,10 @@
                     threshold: source ? source.threshold : 180,
                     minArea: source ? source.minArea : 500,
                     maxArea: source ? source.maxArea : 8000,
-                    minCircularity: source ? source.minCircularity : 0.5
+                    minCircularity: source ? source.minCircularity : 0.5,
+                    autoThreshold: source ? (source.autoThreshold === true || source.autoThreshold === 'true') : true,
+                    thresholdMask: source ? (source.thresholdMask === true || source.thresholdMask === 'true') : false,
+                    otsuOffset: source ? source.otsuOffset : 0
                 });
             }
         }
@@ -461,6 +538,8 @@
             document.getElementById('minArea').value = nest.minArea;
             document.getElementById('maxArea').value = nest.maxArea;
             document.getElementById('minCircularity').value = nest.minCircularity;
+            document.getElementById('autoThresholdToggle').checked = nest.autoThreshold;
+            document.getElementById('otsuOffset').value = nest.otsuOffset;
         }
 
         function toImageCoordinates(event) {
@@ -503,12 +582,17 @@
             nest.minArea = parseInt(document.getElementById('minArea').value);
             nest.maxArea = parseInt(document.getElementById('maxArea').value);
             nest.minCircularity = parseFloat(document.getElementById('minCircularity').value);
+            nest.autoThreshold = document.getElementById('autoThresholdToggle').checked;
+            nest.otsuOffset = parseInt(document.getElementById('otsuOffset').value || '0');
 
             const points = nests.map(n => n.xs.map((x, p) => `${x},${n.ys[p]}`).join(',')).join(',');
             const thresholds = nests.map(n => n.threshold).join(',');
             const minAreas = nests.map(n => n.minArea).join(',');
             const maxAreas = nests.map(n => n.maxArea).join(',');
             const minCircularities = nests.map(n => n.minCircularity).join(',');
+            const autoThresholds = nests.map(n => n.autoThreshold ? 'true' : 'false').join(',');
+            const thresholdMasks = nests.map(n => n.thresholdMask ? 'true' : 'false').join(',');
+            const otsuOffsets = nests.map(n => n.otsuOffset).join(',');
             const intervalSeconds = document.getElementById('intervalSeconds').value;
 
             fetch('/ChickenManager/set', {
@@ -516,7 +600,7 @@
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `count=${nestCount}&points=${encodeURIComponent(points)}&thresholds=${encodeURIComponent(thresholds)}&minAreas=${encodeURIComponent(minAreas)}&maxAreas=${encodeURIComponent(maxAreas)}&minCircularities=${encodeURIComponent(minCircularities)}&intervalSeconds=${intervalSeconds}`
+                body: `count=${nestCount}&points=${encodeURIComponent(points)}&thresholds=${encodeURIComponent(thresholds)}&minAreas=${encodeURIComponent(minAreas)}&maxAreas=${encodeURIComponent(maxAreas)}&minCircularities=${encodeURIComponent(minCircularities)}&autoThresholds=${encodeURIComponent(autoThresholds)}&thresholdMasks=${encodeURIComponent(thresholdMasks)}&otsuOffsets=${encodeURIComponent(otsuOffsets)}&intervalSeconds=${intervalSeconds}`
             })
             .then(response => {
                 if (!response.ok) {
@@ -551,6 +635,44 @@
             showStatus(`Nest count changed to ${nestCount}. Click Apply All Nests to save.`, true);
         });
 
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('debug') === '1') {
+            debugToggle.checked = true;
+            document.getElementById('debugStatus').textContent = 'On';
+        }
+
+        const thresholdMaskGlobalToggle = document.getElementById('thresholdMaskGlobalToggle');
+        const thresholdMaskStatus = document.getElementById('thresholdMaskStatus');
+
+        function updateThresholdMaskStatus() {
+            thresholdMaskStatus.textContent = thresholdMaskGlobalToggle.checked ? 'On' : 'Off';
+        }
+
+        thresholdMaskGlobalToggle.addEventListener('change', function() {
+            updateThresholdMaskStatus();
+            fetch('/ChickenManager/toggleThresholdMask', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                showStatus('Threshold mask ' + (data.thresholdMaskEnabled ? 'enabled' : 'disabled') + ' for all nests!', true);
+                refreshImage();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showStatus('Error: ' + error.message, false);
+            });
+        });
+
+        updateThresholdMaskStatus();
+
+        document.getElementById('debugToggle').addEventListener('change', function() {
+            const enabled = this.checked;
+            document.getElementById('debugStatus').textContent = enabled ? 'On' : 'Off';
+            updateDebugUrlState();
+            refreshImage();
+        });
+
+        document.getElementById('previewIntervalSeconds').textContent = document.getElementById('intervalSeconds').value || '30';
+
         document.getElementById('schedulerToggle').addEventListener('change', function() {
             fetch('/ChickenManager/toggle', { method: 'POST' })
             .then(response => response.json())
@@ -583,7 +705,7 @@
 
         function refreshImage() {
             const img = document.getElementById('liveImage');
-            img.src = '/Chicken/uncroppedimage?t=' + new Date().getTime();
+            img.src = getImageUrl();
         }
 
         function fetchData() {
@@ -601,8 +723,66 @@
                     if (totalEl) {
                         totalEl.textContent = data.totalCount != null ? data.totalCount : 0;
                     }
+                    if (data.intervalSeconds != null) {
+                        const previewSpan = document.getElementById('previewIntervalSeconds');
+                        const input = document.getElementById('intervalSeconds');
+                        if (previewSpan && previewSpan.textContent !== String(data.intervalSeconds)) {
+                            previewSpan.textContent = data.intervalSeconds;
+                        }
+                        if (input && input.value !== String(data.intervalSeconds)) {
+                            input.value = data.intervalSeconds;
+                        }
+                    }
                 })
                 .catch(error => console.error('Error fetching Chicken data:', error));
+            fetchContourData();
+        }
+
+        function fetchContourData() {
+            fetch('/Chicken/contourdata')
+                .then(response => response.json())
+                .then(data => {
+                    renderContourTable(data);
+                })
+                .catch(error => console.error('Error fetching contour data:', error));
+        }
+
+        function renderContourTable(data) {
+            let container = document.getElementById('contourTableContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'contourTableContainer';
+                container.className = 'data-section';
+                container.innerHTML = '<h2>Detected Contours</h2><div id="contourTableWrapper" style="overflow-x:auto;"></div>';
+                const rightPanel = document.querySelector('.right-panel');
+                if (rightPanel) {
+                    rightPanel.appendChild(container);
+                }
+            }
+            const wrapper = document.getElementById('contourTableWrapper');
+            if (!data || data.length === 0) {
+                wrapper.innerHTML = '<p style="color:#aaa;">No contours detected.</p>';
+                return;
+            }
+            const headers = Object.keys(data[0]);
+            let html = '<table style="width:100%; border-collapse:collapse; font-size:12px;"><thead><tr>';
+            headers.forEach(h => html += `<th style="border:1px solid #0f3460; padding:6px; text-align:left;">${h}</th>`);
+            html += '</tr></thead><tbody>';
+            data.forEach(row => {
+                html += '<tr>';
+                headers.forEach(h => {
+                    let val = row[h];
+                    if (h === 'counted') {
+                        val = val ? '✅' : '❌';
+                    } else if (h === 'merged') {
+                        val = val ? 'Merged' : '';
+                    }
+                    html += `<td style="border:1px solid #0f3460; padding:6px;">${val != null ? val : ''}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            wrapper.innerHTML = html;
         }
 
         liveImage.addEventListener('load', () => console.log('Chicken image loaded:', liveImage.naturalWidth, 'x', liveImage.naturalHeight));

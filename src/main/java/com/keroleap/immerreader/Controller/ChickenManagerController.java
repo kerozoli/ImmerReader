@@ -42,12 +42,18 @@ public class ChickenManagerController {
                                       @RequestParam String minAreas,
                                       @RequestParam String maxAreas,
                                       @RequestParam String minCircularities,
+                                      @RequestParam(required = false, defaultValue = "") String autoThresholds,
+                                      @RequestParam(required = false, defaultValue = "") String thresholdMasks,
+                                      @RequestParam(required = false, defaultValue = "") String otsuOffsets,
                                       @RequestParam(required = false, defaultValue = "30") int intervalSeconds) {
         String[] pointParts = points.split(",");
         String[] thresholdParts = thresholds.split(",");
         String[] minAreaParts = minAreas.split(",");
         String[] maxAreaParts = maxAreas.split(",");
         String[] circularityParts = minCircularities.split(",");
+        String[] autoThresholdParts = autoThresholds.isEmpty() ? new String[0] : autoThresholds.split(",");
+        String[] thresholdMaskParts = thresholdMasks.isEmpty() ? new String[0] : thresholdMasks.split(",");
+        String[] otsuOffsetParts = otsuOffsets.isEmpty() ? new String[0] : otsuOffsets.split(",");
 
         if (count < 1 || count > 5) {
             return ResponseEntity.badRequest().body("Nest count must be between 1 and 5.");
@@ -74,14 +80,21 @@ public class ChickenManagerController {
                 int minArea = Integer.parseInt(minAreaParts[i].trim());
                 int maxArea = Integer.parseInt(maxAreaParts[i].trim());
                 double minCircularity = Double.parseDouble(circularityParts[i].trim());
+                boolean autoThreshold = autoThresholdParts.length > i ? Boolean.parseBoolean(autoThresholdParts[i].trim()) : true;
+                boolean thresholdMask = thresholdMaskParts.length > i ? Boolean.parseBoolean(thresholdMaskParts[i].trim()) : false;
+                int otsuOffset = otsuOffsetParts.length > i ? Integer.parseInt(otsuOffsetParts[i].trim()) : 0;
 
                 chickenManagerData.setNestPoints(i, xs, ys);
                 chickenManagerData.setNestThreshold(i, threshold);
-                chickenManagerData.setNestFilters(i, minArea, maxArea, minCircularity);
+                chickenManagerData.setNestFilters(i, minArea, maxArea, minCircularity, autoThreshold, thresholdMask, otsuOffset);
             }
             chickenData.setConfiguredCount(count);
             chickenManagerData.setIntervalSeconds(intervalSeconds);
-            return ResponseEntity.ok(chickenManagerData.getNests());
+            chickenData.setIntervalSeconds(intervalSeconds);
+            Map<String, Object> response = new HashMap<>();
+            response.put("nests", chickenManagerData.getNests());
+            response.put("intervalSeconds", intervalSeconds);
+            return ResponseEntity.ok(response);
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body("Invalid number format: " + e.getMessage());
         }
@@ -114,6 +127,15 @@ public class ChickenManagerController {
         return response;
     }
 
+    @PostMapping("/toggleThresholdMask")
+    @ResponseBody
+    public Map<String, Object> toggleThresholdMask() {
+        chickenManagerData.setThresholdMaskEnabled(!chickenManagerData.isThresholdMaskEnabled());
+        Map<String, Object> response = new HashMap<>();
+        response.put("thresholdMaskEnabled", chickenManagerData.isThresholdMaskEnabled());
+        return response;
+    }
+
     @GetMapping
     public ModelAndView adjust() {
         ModelAndView modelAndView = new ModelAndView("chicken-manager");
@@ -128,6 +150,7 @@ public class ChickenManagerController {
 
     private void addCommonAttributes(ModelAndView modelAndView) {
         modelAndView.addObject("enabled", chickenManagerData.isEnabled());
+        modelAndView.addObject("thresholdMaskEnabled", chickenManagerData.isThresholdMaskEnabled());
         modelAndView.addObject("nestCount", chickenManagerData.getNestCount());
         modelAndView.addObject("chickenRest", chickenData.getChickenRest());
         List<ChickenNest> nests = chickenManagerData.getNests();

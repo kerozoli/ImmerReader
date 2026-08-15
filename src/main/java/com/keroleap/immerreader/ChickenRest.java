@@ -9,6 +9,7 @@ public class ChickenRest {
     private int totalCount;
     private boolean error;
     private ErrorType errorType;
+    private int intervalSeconds;
 
     public List<Integer> getNestCounts() {
         return nestCounts;
@@ -40,6 +41,14 @@ public class ChickenRest {
 
     public void setErrorType(ErrorType errorType) {
         this.errorType = errorType;
+    }
+
+    public int getIntervalSeconds() {
+        return intervalSeconds;
+    }
+
+    public void setIntervalSeconds(int intervalSeconds) {
+        this.intervalSeconds = intervalSeconds;
     }
 
     @Override
