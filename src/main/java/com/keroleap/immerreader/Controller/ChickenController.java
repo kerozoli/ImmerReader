@@ -3,6 +3,7 @@ package com.keroleap.immerreader.Controller;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -106,5 +107,11 @@ public class ChickenController {
     @ResponseBody
     public List<Map<String, Object>> getContourData() {
         return chickenAnalyzerService.getLastContourData();
+    }
+
+    @RequestMapping(value = "/thresholddetails")
+    @ResponseBody
+    public List<Map<String, Object>> getThresholdDetails() {
+        return chickenAnalyzerService.getLastThresholdDetails();
     }
 }

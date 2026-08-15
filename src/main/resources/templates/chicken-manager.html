@@ -351,21 +351,16 @@
                         <div class="form-group">
                             <label class="toggle-label" style="margin-bottom: 8px;">
                                 <span>Auto Threshold (Otsu)</span>
-                                <input type="checkbox" id="autoThresholdToggle">
+                                <input type="checkbox" id="autoThresholdToggle" checked disabled>
                                 <span class="toggle-switch"></span>
                             </label>
-                            <label for="threshold">Threshold (0-255):</label>
-                            <input type="number" id="threshold" name="threshold" min="0" max="255" required>
-                            <div class="hint">If Auto is on, Otsu computes this per nest. Manual value is still saved.</div>
-                            <label for="otsuOffset" style="margin-top: 10px;">Otsu Offset (±255):</label>
-                            <input type="number" id="otsuOffset" name="otsuOffset" min="-255" max="255" required>
-                            <div class="hint">Add this value to the computed Otsu threshold for this nest. Use positive values to raise threshold (helps separate merged eggs).</div>
+                            <div class="hint">Threshold is always computed automatically per nest using Otsu + automatic corrections.</div>
                             <label class="toggle-label" style="margin-top: 10px; margin-bottom: 8px;">
                                 <span>Auto Threshold Correction</span>
-                                <input type="checkbox" id="autoCorrectionToggle">
+                                <input type="checkbox" id="autoCorrectionToggle" checked disabled>
                                 <span class="toggle-switch"></span>
                             </label>
-                            <div class="hint">When on, the analyzer automatically adjusts the threshold per image based on brightness, mask coverage and contour quality.</div>
+                            <div class="hint">Automatic coverage-based correction is always enabled. Threshold is raised until mask coverage drops below 25%.</div>
                         </div>
 
                         <div class="form-group">
@@ -409,6 +404,13 @@
                     <span><span class="legend-color dark-orange"></span> Rejected contour</span>
                     <span><span class="legend-color light-green"></span> Threshold mask</span>
                     <span><span class="legend-color purple"></span> Merged / unsplit</span>
+                </div>
+            </div>
+
+            <div class="data-section">
+                <h2>Per-Nest Otsu Threshold Details</h2>
+                <div id="thresholdDetailsTable" style="overflow-x:auto;">
+                    <p style="color:#aaa;">No threshold data yet. Enable scheduler and wait for the next analysis cycle.</p>
                 </div>
             </div>
 
@@ -479,14 +481,14 @@
                 nests.push({
                     xs: xs,
                     ys: ys,
-                    threshold: source ? source.threshold : 180,
+                    threshold: 180,
                     minArea: source ? source.minArea : 500,
                     maxArea: source ? source.maxArea : 8000,
                     minCircularity: source ? source.minCircularity : 0.5,
-                    autoThreshold: source ? (source.autoThreshold === true || source.autoThreshold === 'true') : true,
+                    autoThreshold: true,
                     thresholdMask: source ? (source.thresholdMask === true || source.thresholdMask === 'true') : false,
-                    otsuOffset: source ? source.otsuOffset : 0,
-                    autoCorrection: source ? (source.autoCorrection === true || source.autoCorrection === 'true' || source.autoCorrection == null) : true
+                    otsuOffset: 0,
+                    autoCorrection: true
                 });
             }
         }
@@ -541,13 +543,9 @@
 
         function updateForm() {
             const nest = nests[activeNest];
-            document.getElementById('threshold').value = nest.threshold;
             document.getElementById('minArea').value = nest.minArea;
             document.getElementById('maxArea').value = nest.maxArea;
             document.getElementById('minCircularity').value = nest.minCircularity;
-            document.getElementById('autoThresholdToggle').checked = nest.autoThreshold;
-            document.getElementById('otsuOffset').value = nest.otsuOffset;
-            document.getElementById('autoCorrectionToggle').checked = nest.autoCorrection;
         }
 
         function toImageCoordinates(event) {
@@ -586,23 +584,23 @@
             e.preventDefault();
 
             const nest = nests[activeNest];
-            nest.threshold = parseInt(document.getElementById('threshold').value);
+            nest.threshold = 180;
             nest.minArea = parseInt(document.getElementById('minArea').value);
             nest.maxArea = parseInt(document.getElementById('maxArea').value);
             nest.minCircularity = parseFloat(document.getElementById('minCircularity').value);
-            nest.autoThreshold = document.getElementById('autoThresholdToggle').checked;
-            nest.otsuOffset = parseInt(document.getElementById('otsuOffset').value || '0');
-            nest.autoCorrection = document.getElementById('autoCorrectionToggle').checked;
+            nest.autoThreshold = true;
+            nest.otsuOffset = 0;
+            nest.autoCorrection = true;
 
             const points = nests.map(n => n.xs.map((x, p) => `${x},${n.ys[p]}`).join(',')).join(',');
             const thresholds = nests.map(n => n.threshold).join(',');
             const minAreas = nests.map(n => n.minArea).join(',');
             const maxAreas = nests.map(n => n.maxArea).join(',');
             const minCircularities = nests.map(n => n.minCircularity).join(',');
-            const autoThresholds = nests.map(n => n.autoThreshold ? 'true' : 'false').join(',');
+            const autoThresholds = nests.map(n => 'true').join(',');
             const thresholdMasks = nests.map(n => n.thresholdMask ? 'true' : 'false').join(',');
-            const otsuOffsets = nests.map(n => n.otsuOffset).join(',');
-            const autoCorrections = nests.map(n => n.autoCorrection ? 'true' : 'false').join(',');
+            const otsuOffsets = nests.map(n => 0).join(',');
+            const autoCorrections = nests.map(n => 'true').join(',');
             const intervalSeconds = document.getElementById('intervalSeconds').value;
 
             fetch('/ChickenManager/set', {
@@ -719,6 +717,13 @@
         }
 
         function fetchData() {
+            fetch('/Chicken/thresholddetails')
+                .then(response => response.json())
+                .then(details => {
+                    renderThresholdDetails(details);
+                })
+                .catch(error => console.error('Error fetching threshold details:', error));
+
             fetch('/Chicken/chickenrestdata')
                 .then(response => response.json())
                 .then(data => {
@@ -755,6 +760,33 @@
                     renderContourTable(data);
                 })
                 .catch(error => console.error('Error fetching contour data:', error));
+        }
+
+        function renderThresholdDetails(details) {
+            const container = document.getElementById('thresholdDetailsTable');
+            if (!details || details.length === 0) {
+                container.innerHTML = '<p style="color:#aaa;">No threshold data yet. Enable scheduler and wait for the next analysis cycle.</p>';
+                return;
+            }
+            const headers = ['Nest', 'Base Otsu', 'Coverage Search', 'Final Threshold', 'Coverage', 'Reason'];
+            let html = '<table style="width:100%; border-collapse:collapse; font-size:12px;"><thead><tr>';
+            headers.forEach(h => html += `<th style="border:1px solid #0f3460; padding:6px; text-align:left;">${h}</th>`);
+            html += '</tr></thead><tbody>';
+            details.forEach(d => {
+                const reason = d.autoCorrected
+                    ? `Search triggered: coverage=${d.coverageRatio.toFixed(2)}, merged=${d.mergedCount}, rejected=${d.rejectedCount}`
+                    : 'Within limits, no search needed';
+                html += '<tr>';
+                html += `<td style="border:1px solid #0f3460; padding:6px;">${d.nest || ''}</td>`;
+                html += `<td style="border:1px solid #0f3460; padding:6px;">${d.baseOtsu}</td>`;
+                html += `<td style="border:1px solid #0f3460; padding:6px;">${d.searchAdjustment >= 0 ? '+' : ''}${d.searchAdjustment}</td>`;
+                html += `<td style="border:1px solid #0f3460; padding:6px; font-weight:bold;">${d.finalThreshold}</td>`;
+                html += `<td style="border:1px solid #0f3460; padding:6px;">${(d.coverageRatio * 100).toFixed(1)}%</td>`;
+                html += `<td style="border:1px solid #0f3460; padding:6px;">${reason}</td>`;
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
         }
 
         function renderContourTable(data) {
