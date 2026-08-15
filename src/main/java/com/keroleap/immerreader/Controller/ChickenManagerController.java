@@ -82,10 +82,10 @@ public class ChickenManagerController {
                 int minArea = Integer.parseInt(minAreaParts[i].trim());
                 int maxArea = Integer.parseInt(maxAreaParts[i].trim());
                 double minCircularity = Double.parseDouble(circularityParts[i].trim());
-                boolean autoThreshold = autoThresholdParts.length > i ? Boolean.parseBoolean(autoThresholdParts[i].trim()) : true;
-                boolean thresholdMask = thresholdMaskParts.length > i ? Boolean.parseBoolean(thresholdMaskParts[i].trim()) : false;
+                boolean autoThreshold = autoThresholdParts.length <= i || Boolean.parseBoolean(autoThresholdParts[i].trim());
+                boolean thresholdMask = thresholdMaskParts.length > i && Boolean.parseBoolean(thresholdMaskParts[i].trim());
                 int otsuOffset = otsuOffsetParts.length > i ? Integer.parseInt(otsuOffsetParts[i].trim()) : 0;
-                boolean autoCorrection = autoCorrectionParts.length > i ? Boolean.parseBoolean(autoCorrectionParts[i].trim()) : true;
+                boolean autoCorrection = autoCorrectionParts.length <= i || Boolean.parseBoolean(autoCorrectionParts[i].trim());
 
                 chickenManagerData.setNestPoints(i, xs, ys);
                 chickenManagerData.setNestThreshold(i, threshold);
