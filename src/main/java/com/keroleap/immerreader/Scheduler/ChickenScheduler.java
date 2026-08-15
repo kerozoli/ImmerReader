@@ -74,6 +74,7 @@ public class ChickenScheduler {
         if (!chickenManagerData.isEnabled()) {
             consecutiveErrors.set(0);
             lastErrorType = null;
+            chickenData.addCounts(java.util.Collections.nCopies(chickenManagerData.getNestCount(), 0));
             return;
         }
 

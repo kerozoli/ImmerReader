@@ -19,6 +19,7 @@ import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_core.MatVector;
 import org.bytedeco.opencv.opencv_core.Rect;
 import org.bytedeco.opencv.opencv_core.Size;
+import org.bytedeco.opencv.opencv_imgproc.CLAHE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,9 @@ public class ChickenAnalyzerService {
     private static final Logger logger = LoggerFactory.getLogger(ChickenAnalyzerService.class);
     private static final int BLUR_SIZE = 5;
     private static final int MORPH_SIZE = 3;
+    private static final int LOCAL_BG_BLUR_SIZE = 21;
+    private static final double CLAHE_CLIP_LIMIT = 2.0;
+    private static final int CLAHE_TILE_SIZE = 8;
     private static final Color NEST_POLYGON_COLOR = new Color(0, 140, 255);
     private static final Color REJECTED_CONTOUR_COLOR = new Color(200, 100, 0);
     private static final Color MERGED_CONTOUR_COLOR = new Color(180, 0, 220);
@@ -177,14 +181,18 @@ public class ChickenAnalyzerService {
 
     private Mat computeThresholdMaskMat(BufferedImage image, ChickenNest nest, Rectangle bounds, Polygon polygon) {
         Mat gray = bufferedImageToGrayMat(image, bounds);
+        Mat normalized = null;
+        Mat enhanced = null;
         Mat blurred = new Mat();
         Mat binary = new Mat();
         Mat kernel = null;
         Mat closed = new Mat();
         Mat opened = new Mat();
         try {
-            opencv_imgproc.GaussianBlur(gray, blurred, new Size(BLUR_SIZE, BLUR_SIZE), 0);
-            int effectiveThreshold = computeEffectiveThreshold(blurred, gray, nest, bounds, polygon);
+            normalized = normalizeLocalBackground(gray);
+            enhanced = applyClahe(normalized);
+            opencv_imgproc.GaussianBlur(enhanced, blurred, new Size(BLUR_SIZE, BLUR_SIZE), 0);
+            int effectiveThreshold = computeEffectiveThreshold(blurred, nest, bounds, polygon);
             opencv_imgproc.threshold(blurred, binary, effectiveThreshold, 255, opencv_imgproc.THRESH_BINARY);
             kernel = opencv_imgproc.getStructuringElement(opencv_imgproc.MORPH_ELLIPSE, new Size(MORPH_SIZE, MORPH_SIZE));
             opencv_imgproc.morphologyEx(binary, closed, opencv_imgproc.MORPH_CLOSE, kernel);
@@ -192,6 +200,12 @@ public class ChickenAnalyzerService {
             return opened.clone();
         } finally {
             gray.release();
+            if (normalized != null) {
+                normalized.release();
+            }
+            if (enhanced != null) {
+                enhanced.release();
+            }
             blurred.release();
             binary.release();
             if (kernel != null) {
@@ -228,6 +242,8 @@ public class ChickenAnalyzerService {
 
         Polygon polygon = new Polygon(xs, ys, xs.length);
         Mat gray = bufferedImageToGrayMat(image, bounds);
+        Mat normalized = null;
+        Mat enhanced = null;
         Mat blurred = new Mat();
         Mat binary = new Mat();
         Mat kernel = null;
@@ -236,9 +252,11 @@ public class ChickenAnalyzerService {
         MatVector contours = new MatVector();
         Mat hierarchy = new Mat();
         try {
-            opencv_imgproc.GaussianBlur(gray, blurred, new Size(BLUR_SIZE, BLUR_SIZE), 0);
+            normalized = normalizeLocalBackground(gray);
+            enhanced = applyClahe(normalized);
+            opencv_imgproc.GaussianBlur(enhanced, blurred, new Size(BLUR_SIZE, BLUR_SIZE), 0);
 
-            int effectiveThreshold = computeEffectiveThreshold(blurred, gray, nest, bounds, polygon);
+            int effectiveThreshold = computeEffectiveThreshold(blurred, nest, bounds, polygon);
             opencv_imgproc.threshold(blurred, binary, effectiveThreshold, 255, opencv_imgproc.THRESH_BINARY);
 
             kernel = opencv_imgproc.getStructuringElement(opencv_imgproc.MORPH_ELLIPSE, new Size(MORPH_SIZE, MORPH_SIZE));
@@ -247,13 +265,13 @@ public class ChickenAnalyzerService {
 
             opencv_imgproc.findContours(opened, contours, hierarchy, opencv_imgproc.RETR_EXTERNAL, opencv_imgproc.CHAIN_APPROX_SIMPLE);
 
-            List<Mat> eggContours = splitEggsWithWatershed(opened, gray, contours, nest, nest.getMinArea());
+            List<Mat> eggContours = splitEggsWithWatershed(opened, contours, nest.getMinArea());
             int count = 0;
             List<Map<String, Object>> contourData = new ArrayList<>();
             for (Mat contour : eggContours) {
-                boolean merged = isMergedContour(contour, polygon, bounds);
+                boolean merged = isMergedContour(contour);
                 if (merged) {
-                    List<Mat> split = aggressivelySplitContour(opened, contour, nest);
+                    List<Mat> split = aggressivelySplitContour(opened, contour);
                     if (split.size() >= 2) {
                         logger.info("Aggressive split separated merged contour into {} parts", split.size());
                         for (Mat part : split) {
@@ -298,6 +316,12 @@ public class ChickenAnalyzerService {
             return count;
         } finally {
             gray.release();
+            if (normalized != null) {
+                normalized.release();
+            }
+            if (enhanced != null) {
+                enhanced.release();
+            }
             blurred.release();
             binary.release();
             if (kernel != null) {
@@ -315,7 +339,7 @@ public class ChickenAnalyzerService {
         }
     }
 
-    private List<Mat> splitEggsWithWatershed(Mat binary, Mat gray, MatVector initialContours, ChickenNest nest, double minArea) {
+    private List<Mat> splitEggsWithWatershed(Mat binary, MatVector initialContours, double minArea) {
         List<Mat> result = new ArrayList<>();
         long count = initialContours.size();
         if (count == 0) {
@@ -448,7 +472,7 @@ public class ChickenAnalyzerService {
     }
 
 
-    private boolean isMergedContour(Mat contour, Polygon polygon, Rectangle bounds) {
+    private boolean isMergedContour(Mat contour) {
         double area = opencv_imgproc.contourArea(contour);
         if (area <= 0) {
             return false;
@@ -476,7 +500,7 @@ public class ChickenAnalyzerService {
         return false;
     }
 
-    private List<Mat> aggressivelySplitContour(Mat opened, Mat contour, ChickenNest nest) {
+    private List<Mat> aggressivelySplitContour(Mat opened, Mat contour) {
         List<Mat> result = new ArrayList<>();
         Rect rect = opencv_imgproc.boundingRect(contour);
         int x = rect.x();
@@ -501,7 +525,7 @@ public class ChickenAnalyzerService {
             return result;
         }
 
-        org.bytedeco.opencv.opencv_core.Rect roiRect = new org.bytedeco.opencv.opencv_core.Rect(x0, y0, roiW, roiH);
+        Rect roiRect = new Rect(x0, y0, roiW, roiH);
         Mat roi = new Mat(opened, roiRect);
         Mat distance = new Mat();
         Mat distance8u = new Mat();
@@ -566,6 +590,30 @@ public class ChickenAnalyzerService {
         graphics.drawString(text, x, Math.max(12, y - 4));
     }
 
+    private Mat normalizeLocalBackground(Mat gray) {
+        Mat localMean = new Mat();
+        Mat normalized = new Mat();
+        try {
+            opencv_imgproc.blur(gray, localMean, new Size(LOCAL_BG_BLUR_SIZE, LOCAL_BG_BLUR_SIZE));
+            opencv_core.subtract(gray, localMean, normalized);
+            return normalized.clone();
+        } finally {
+            localMean.release();
+        }
+    }
+
+    private Mat applyClahe(Mat gray) {
+        Mat enhanced = new Mat();
+        CLAHE clahe = opencv_imgproc.createCLAHE(CLAHE_CLIP_LIMIT, new Size(CLAHE_TILE_SIZE, CLAHE_TILE_SIZE));
+        try {
+            clahe.apply(gray, enhanced);
+            return enhanced.clone();
+        } finally {
+            enhanced.release();
+            clahe.close();
+        }
+    }
+
     private int computeOtsuThreshold(Mat gray) {
         try {
             double otsu = opencv_imgproc.threshold(gray, new Mat(), 0, 255, opencv_imgproc.THRESH_BINARY + opencv_imgproc.THRESH_OTSU);
@@ -579,12 +627,11 @@ public class ChickenAnalyzerService {
 
     /**
      * Computes the effective threshold for a nest, applying per-nest offset and,
-     * when enabled, automatic correction based on image brightness, mask coverage
-     * and contour quality.
+     * when enabled, automatic coverage correction.
      */
     private ThresholdDetail pendingThresholdDetail;
 
-    private int computeEffectiveThreshold(Mat blurred, Mat gray, ChickenNest nest, Rectangle bounds, Polygon polygon) {
+    private int computeEffectiveThreshold(Mat blurred, ChickenNest nest, Rectangle bounds, Polygon polygon) {
         if (!nest.isAutoThreshold()) {
             return clamp(nest.getThreshold(), 1, 254);
         }
@@ -607,7 +654,7 @@ public class ChickenAnalyzerService {
         boolean searched = false;
 
         if (polygon != null) {
-            best = evaluateThreshold(blurred, gray, nest, bounds, polygon, current);
+            best = evaluateThreshold(blurred, nest, bounds, polygon,current);
             logger.info("Threshold candidate evaluation at {}: counted={}, merged={}, rejected={}, coverage={}",
                     current, best.countedCount, best.mergedCount, best.rejectedCount, String.format("%.2f", best.coverageRatio));
 
@@ -615,7 +662,7 @@ public class ChickenAnalyzerService {
                 searched = true;
                 for (int step = 0; step < COVERAGE_SEARCH_MAX_STEPS; step++) {
                     int candidate = clamp(current + step * AUTO_CORRECTION_SEARCH_STEP, 1, 254);
-                    ThresholdScore candidateScore = evaluateThreshold(blurred, gray, nest, bounds, polygon, candidate);
+                    ThresholdScore candidateScore = evaluateThreshold(blurred, nest, bounds, polygon,candidate);
                     logger.debug("Threshold candidate {}: counted={}, merged={}, rejected={}, coverage={}",
                             candidate, candidateScore.countedCount, candidateScore.mergedCount, candidateScore.rejectedCount, String.format("%.2f", candidateScore.coverageRatio));
                     if (candidateScore.coverageRatio <= COVERAGE_HIGH_THRESHOLD) {
@@ -722,7 +769,7 @@ public class ChickenAnalyzerService {
         }
     }
 
-    private ThresholdScore evaluateThreshold(Mat blurred, Mat gray, ChickenNest nest, Rectangle bounds, Polygon polygon, int threshold) {
+    private ThresholdScore evaluateThreshold(Mat blurred, ChickenNest nest, Rectangle bounds, Polygon polygon, int threshold) {
         Mat binary = new Mat();
         Mat kernel = null;
         Mat closed = new Mat();
@@ -751,7 +798,7 @@ public class ChickenAnalyzerService {
                     }
                     continue;
                 }
-                if (area > nest.getMaxArea() || isMergedContour(contour, polygon, bounds)) {
+                if (area > nest.getMaxArea() || isMergedContour(contour)) {
                     merged++;
                 } else {
                     counted++;
@@ -810,7 +857,7 @@ public class ChickenAnalyzerService {
         if (graphics == null) {
             return;
         }
-        java.awt.Polygon poly = new java.awt.Polygon();
+        Polygon poly = new Polygon();
         Rect rect = opencv_imgproc.boundingRect(contour);
         int cx = rect.x();
         int cy = rect.y();
@@ -849,13 +896,6 @@ public class ChickenAnalyzerService {
         maxX = Math.min(maxWidth, maxX);
         maxY = Math.min(maxHeight, maxY);
         return new Rectangle(minX, minY, maxX - minX, maxY - minY);
-    }
-
-    private int[] contourCenter(Mat contour) {
-        Rect rect = opencv_imgproc.boundingRect(contour);
-        int cx = rect.x() + rect.width() / 2;
-        int cy = rect.y() + rect.height() / 2;
-        return new int[] { cx, cy };
     }
 
     private double contourInsidePolygonRatio(Mat contour, Rectangle bounds, Polygon polygon) {
