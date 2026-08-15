@@ -48,7 +48,7 @@ public class EbedloScheduler {
     private final AtomicInteger consecutiveErrors = new AtomicInteger(0);
     private volatile ErrorType lastErrorType = null;
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 15000)
     public void EbedloScheduledRead() {
         if (!ebedloManagerData.isEnabled()) {
             consecutiveErrors.set(0);
