@@ -52,7 +52,7 @@ public class ChickenAnalyzerService {
         List<ChickenNest> nests = managerData.getNests();
         for (ChickenNest nest : nests) {
             if (nest.isConfigured()) {
-                counts.add(countEggsInNest(image, nest));
+                counts.add(countEggsInNest(image, nest, null));
             } else {
                 counts.add(0);
             }
@@ -78,15 +78,17 @@ public class ChickenAnalyzerService {
             }
             int[] xs = nest.getXs();
             int[] ys = nest.getYs();
-            graphics.setColor(new Color(NEST_COLORS[i % NEST_COLORS.length]));
+            Color color = new Color(NEST_COLORS[i % NEST_COLORS.length]);
+            graphics.setColor(color);
             graphics.drawPolygon(xs, ys, xs.length);
             graphics.drawString("F" + (i + 1), xs[0] + 4, ys[0] + 16);
+            countEggsInNest(copy, nest, graphics);
         }
         graphics.dispose();
         return copy;
     }
 
-    private int countEggsInNest(BufferedImage image, ChickenNest nest) {
+    private int countEggsInNest(BufferedImage image, ChickenNest nest, Graphics2D debugGraphics) {
         int[] xs = nest.getXs();
         int[] ys = nest.getYs();
         Rectangle bounds = computeBounds(xs, ys, image.getWidth(), image.getHeight());
@@ -119,11 +121,13 @@ public class ChickenAnalyzerService {
                 Mat contour = contours.get(i);
                 double area = opencv_imgproc.contourArea(contour);
                 if (area < nest.getMinArea() || area > nest.getMaxArea()) {
+                    drawDebugContour(debugGraphics, contour, bounds, Color.YELLOW);
                     continue;
                 }
                 double perimeter = opencv_imgproc.arcLength(contour, true);
                 double circularity = perimeter > 0 ? 4 * Math.PI * area / (perimeter * perimeter) : 0;
                 if (circularity < nest.getMinCircularity()) {
+                    drawDebugContour(debugGraphics, contour, bounds, Color.ORANGE);
                     continue;
                 }
                 int[] center = contourCenter(contour);
@@ -131,6 +135,10 @@ public class ChickenAnalyzerService {
                 int imageY = bounds.y + center[1];
                 if (polygon.contains(imageX, imageY)) {
                     count++;
+                    drawDebugContour(debugGraphics, contour, bounds, Color.GREEN);
+                    drawDebugCenter(debugGraphics, imageX, imageY, Color.GREEN);
+                } else {
+                    drawDebugContour(debugGraphics, contour, bounds, Color.RED);
                 }
             }
 
@@ -138,6 +146,33 @@ public class ChickenAnalyzerService {
         } finally {
             gray.release();
         }
+    }
+
+    private void drawDebugContour(Graphics2D graphics, Mat contour, Rectangle bounds, Color color) {
+        if (graphics == null) {
+            return;
+        }
+        java.awt.Polygon poly = new java.awt.Polygon();
+        Rect rect = opencv_imgproc.boundingRect(contour);
+        int cx = rect.x();
+        int cy = rect.y();
+        int cw = rect.width();
+        int ch = rect.height();
+        poly.addPoint(bounds.x + cx, bounds.y + cy);
+        poly.addPoint(bounds.x + cx + cw, bounds.y + cy);
+        poly.addPoint(bounds.x + cx + cw, bounds.y + cy + ch);
+        poly.addPoint(bounds.x + cx, bounds.y + cy + ch);
+        graphics.setColor(color);
+        graphics.setStroke(new BasicStroke(2));
+        graphics.drawPolygon(poly);
+    }
+
+    private void drawDebugCenter(Graphics2D graphics, int x, int y, Color color) {
+        if (graphics == null) {
+            return;
+        }
+        graphics.setColor(color);
+        graphics.fillOval(x - 4, y - 4, 8, 8);
     }
 
     private Rectangle computeBounds(int[] xs, int[] ys, int maxWidth, int maxHeight) {

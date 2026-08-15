@@ -46,6 +46,12 @@ public class ChickenController {
     @GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[] getUncroppedImage() throws IOException {
         BufferedImage image = chickenAnalyzerService.getBufferedImage(cameraUrl);
+        return writeJpeg(image);
+    }
+
+    @GetMapping(value = "/debugimage", produces = MediaType.IMAGE_JPEG_VALUE)
+    public @ResponseBody byte[] getDebugImage() throws IOException {
+        BufferedImage image = chickenAnalyzerService.getBufferedImage(cameraUrl);
         image = chickenAnalyzerService.drawDebugOverlay(image, chickenManagerData);
         return writeJpeg(image);
     }
