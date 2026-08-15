@@ -21,7 +21,7 @@ public class ImmerManagerData {
 
     private final AtomicInteger offsetX = new AtomicInteger(0);
     private final AtomicInteger offsetY = new AtomicInteger(0);
-    private final AtomicBoolean enabled = new AtomicBoolean(true);
+    private final AtomicBoolean enabled = new AtomicBoolean(false);
 
     @PostConstruct
     private void load() {
@@ -32,7 +32,7 @@ public class ImmerManagerData {
                 props.load(fis);
                 offsetX.set(Integer.parseInt(props.getProperty("offsetX", "0")));
                 offsetY.set(Integer.parseInt(props.getProperty("offsetY", "0")));
-                enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "true")));
+                enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "false")));
             } catch (IOException | NumberFormatException e) {
                 logger.warn("Could not load offset data from {}: {}", DATA_FILE, e.getMessage());
             }

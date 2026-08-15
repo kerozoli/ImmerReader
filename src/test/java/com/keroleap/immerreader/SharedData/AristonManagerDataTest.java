@@ -101,8 +101,8 @@ class AristonManagerDataTest {
     }
 
     @Test
-    void defaultEnabledIsTrue() {
-        assertTrue(newInstance().isEnabled());
+    void defaultEnabledIsFalse() {
+        assertFalse(newInstance().isEnabled());
     }
 
     @Test
