@@ -106,6 +106,24 @@ class ImmerManagerControllerTest {
     }
 
     @Test
+    void enable_setsEnabledTrue() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/enable"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+        verify(immerManagerData).setEnabled(true);
+    }
+
+    @Test
+    void disable_setsEnabledFalse() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/disable"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+        verify(immerManagerData).setEnabled(false);
+    }
+
+    @Test
     void getOffset_returnsEnabledState() throws Exception {
         when(immerManagerData.getOffsetX()).thenReturn(0);
         when(immerManagerData.getOffsetY()).thenReturn(0);

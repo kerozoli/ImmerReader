@@ -52,6 +52,20 @@ public class AristonManagerController {
         return aristonManagerData;
     }
 
+    @PostMapping("/enable")
+    @ResponseBody
+    public AristonManagerData enable() {
+        aristonManagerData.setEnabled(true);
+        return aristonManagerData;
+    }
+
+    @PostMapping("/disable")
+    @ResponseBody
+    public AristonManagerData disable() {
+        aristonManagerData.setEnabled(false);
+        return aristonManagerData;
+    }
+
     @GetMapping
     @ResponseBody
     public AristonManagerData getPoints() {

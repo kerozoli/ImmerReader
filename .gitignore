@@ -27,3 +27,4 @@ replay_pid*
 /target/**
 
 
+.claude/plan.md
