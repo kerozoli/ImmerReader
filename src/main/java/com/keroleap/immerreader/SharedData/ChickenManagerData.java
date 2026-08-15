@@ -26,7 +26,7 @@ public class ChickenManagerData {
 
     private final List<ChickenNest> nests = new ArrayList<>();
     private int nestCount = 3;
-    private boolean enabled = true;
+    private boolean enabled = false;
 
     public ChickenManagerData() {
         load();
@@ -116,7 +116,7 @@ public class ChickenManagerData {
         Properties properties = new Properties();
         try (InputStream input = new FileInputStream(file)) {
             properties.load(input);
-            enabled = Boolean.parseBoolean(properties.getProperty("enabled", "true"));
+            enabled = Boolean.parseBoolean(properties.getProperty("enabled", "false"));
             nestCount = clamp(parseInt(properties, "nestCount", 3), MIN_NESTS, MAX_NESTS);
             resizeNests();
             for (int i = 0; i < nestCount; i++) {

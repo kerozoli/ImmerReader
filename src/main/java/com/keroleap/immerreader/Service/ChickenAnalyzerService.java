@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.keroleap.immerreader.ChickenRest;
+import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.SharedData.ChickenManagerData;
 import com.keroleap.immerreader.SharedData.ChickenNest;
 
@@ -43,6 +44,7 @@ public class ChickenAnalyzerService {
         ChickenRest chickenRest = new ChickenRest();
         if (image == null) {
             chickenRest.setError(true);
+            chickenRest.setErrorType(ErrorType.RTSP_CONNECTION_ERROR);
             return chickenRest;
         }
 

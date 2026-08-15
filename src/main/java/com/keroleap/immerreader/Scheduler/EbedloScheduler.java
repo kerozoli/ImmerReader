@@ -63,6 +63,10 @@ public class EbedloScheduler {
 
         try {
             EbedloRest result = future.get(5000, TimeUnit.MILLISECONDS);
+            if (result.isError()) {
+                handleError(result.getErrorType());
+                return;
+            }
             result.setError(false);
             result.setErrorType(null);
 

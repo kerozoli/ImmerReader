@@ -94,6 +94,24 @@ public class ChickenManagerController {
         return response;
     }
 
+    @PostMapping("/enable")
+    @ResponseBody
+    public Map<String, Object> enable() {
+        chickenManagerData.setEnabled(true);
+        Map<String, Object> response = new HashMap<>();
+        response.put("enabled", true);
+        return response;
+    }
+
+    @PostMapping("/disable")
+    @ResponseBody
+    public Map<String, Object> disable() {
+        chickenManagerData.setEnabled(false);
+        Map<String, Object> response = new HashMap<>();
+        response.put("enabled", false);
+        return response;
+    }
+
     @GetMapping
     public ModelAndView adjust() {
         ModelAndView modelAndView = new ModelAndView("chicken-manager");

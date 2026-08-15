@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,9 +14,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.keroleap.immerreader.ChickenRest;
+import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.Service.ChickenAnalyzerService;
 import com.keroleap.immerreader.SharedData.ChickenData;
 import com.keroleap.immerreader.SharedData.ChickenManagerData;
+import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -39,7 +42,12 @@ public class ChickenScheduler {
     @Autowired
     private ChickenManagerData chickenManagerData;
 
+    @Autowired
+    private ErrorStatistics errorStatistics;
+
     private ScheduledExecutorService scheduler;
+    private final AtomicInteger consecutiveErrors = new AtomicInteger(0);
+    private volatile ErrorType lastErrorType = null;
 
     @PostConstruct
     public void init() {
@@ -50,16 +58,40 @@ public class ChickenScheduler {
 
     private void run() {
         if (!chickenManagerData.isEnabled()) {
+            consecutiveErrors.set(0);
+            lastErrorType = null;
             return;
         }
         try {
             BufferedImage image = chickenAnalyzerService.getBufferedImage(cameraUrl);
             ChickenRest rest = chickenAnalyzerService.getChickenRestData(image, chickenManagerData);
+            if (rest.isError()) {
+                handleError(rest.getErrorType());
+                return;
+            }
             List<Integer> counts = rest.getNestCounts();
             chickenData.setConfiguredCount(counts.size());
             chickenData.addCounts(counts);
+            consecutiveErrors.set(0);
+            lastErrorType = null;
         } catch (Exception e) {
             logger.error("Error fetching Chicken data: {}", e.getMessage(), e);
+            handleError(ErrorType.FETCH_ERROR);
+        }
+    }
+
+    private void handleError(ErrorType errorType) {
+        errorStatistics.recordError("chicken", errorType);
+        if (errorType.equals(lastErrorType)) {
+            consecutiveErrors.incrementAndGet();
+        } else {
+            lastErrorType = errorType;
+            consecutiveErrors.set(1);
+        }
+        if (consecutiveErrors.get() >= 5) {
+            ChickenRest current = chickenData.getChickenRest();
+            current.setError(true);
+            current.setErrorType(errorType);
         }
     }
 
