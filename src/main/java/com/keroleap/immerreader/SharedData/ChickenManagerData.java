@@ -72,7 +72,7 @@ public class ChickenManagerData {
     }
 
     public void setIntervalSeconds(int intervalSeconds) {
-        this.intervalSeconds = Math.max(10, intervalSeconds);
+        this.intervalSeconds = Math.max(1, intervalSeconds);
         save();
     }
 

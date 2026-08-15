@@ -144,7 +144,7 @@ public class EbedloManagerData {
     }
 
     public void setIntervalSeconds(int intervalSeconds) {
-        this.intervalSeconds.set(Math.max(5, intervalSeconds));
+        this.intervalSeconds.set(Math.max(1, intervalSeconds));
         save();
     }
 }

@@ -40,15 +40,8 @@ public class ChickenController {
 
     @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[] getImage() throws IOException {
-        BufferedImage image = chickenAnalyzerService.getDebugOverlayImage(chickenManagerData);
-        if (image == null) {
-            image = chickenAnalyzerService.getBufferedImage(cameraUrl);
-            chickenAnalyzerService.getChickenRestData(image, chickenManagerData);
-            image = chickenAnalyzerService.getDebugOverlayImage(chickenManagerData);
-        }
-        if (image == null) {
-            image = chickenAnalyzerService.createPlaceholderImage();
-        }
+        BufferedImage image = chickenAnalyzerService.getBufferedImage(cameraUrl);
+        image = chickenAnalyzerService.drawDebugOverlay(image, chickenManagerData);
         return writeJpeg(image);
     }
 
@@ -60,18 +53,11 @@ public class ChickenController {
 
     @GetMapping(value = "/debugimage", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[] getDebugImage() throws IOException {
-        BufferedImage image = chickenAnalyzerService.getDebugOverlayImage(chickenManagerData);
-        if (image == null) {
-            try {
-                image = chickenAnalyzerService.getBufferedImage(cameraUrl);
-                chickenAnalyzerService.getChickenRestData(image, chickenManagerData);
-                image = chickenAnalyzerService.getDebugOverlayImage(chickenManagerData);
-            } catch (Throwable t) {
-                image = createErrorImage(t.getClass().getSimpleName() + ": " + t.getMessage());
-            }
-        }
-        if (image == null) {
-            image = createErrorImage("No debug overlay available");
+        BufferedImage image = chickenAnalyzerService.getBufferedImage(cameraUrl);
+        try {
+            image = chickenAnalyzerService.drawDebugOverlay(image, chickenManagerData);
+        } catch (Throwable t) {
+            image = createErrorImage(t.getClass().getSimpleName() + ": " + t.getMessage());
         }
         return writeJpeg(image);
     }
