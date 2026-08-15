@@ -41,6 +41,20 @@ public class ImmerManagerController {
         return immerManagerData;
     }
 
+    @PostMapping("/enable")
+    @ResponseBody
+    public ImmerManagerData enable() {
+        immerManagerData.setEnabled(true);
+        return immerManagerData;
+    }
+
+    @PostMapping("/disable")
+    @ResponseBody
+    public ImmerManagerData disable() {
+        immerManagerData.setEnabled(false);
+        return immerManagerData;
+    }
+
     @GetMapping
     @ResponseBody
     public ImmerManagerData getOffset() {

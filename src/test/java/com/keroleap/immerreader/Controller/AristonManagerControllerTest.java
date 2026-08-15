@@ -132,6 +132,24 @@ class AristonManagerControllerTest {
     }
 
     @Test
+    void enable_setsEnabledTrue() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/AristonManager/enable"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+        verify(aristonManagerData).setEnabled(true);
+    }
+
+    @Test
+    void disable_setsEnabledFalse() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/AristonManager/disable"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+
+        verify(aristonManagerData).setEnabled(false);
+    }
+
+    @Test
     void getPoints_returnsEnabledState() throws Exception {
         when(aristonManagerData.getStartX()).thenReturn(0);
         when(aristonManagerData.getStartY()).thenReturn(0);

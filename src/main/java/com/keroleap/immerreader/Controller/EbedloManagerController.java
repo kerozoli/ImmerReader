@@ -58,6 +58,20 @@ public class EbedloManagerController {
         return ebedloManagerData;
     }
 
+    @PostMapping("/enable")
+    @ResponseBody
+    public EbedloManagerData enable() {
+        ebedloManagerData.setEnabled(true);
+        return ebedloManagerData;
+    }
+
+    @PostMapping("/disable")
+    @ResponseBody
+    public EbedloManagerData disable() {
+        ebedloManagerData.setEnabled(false);
+        return ebedloManagerData;
+    }
+
     @GetMapping
     @ResponseBody
     public EbedloManagerData getPoints() {
