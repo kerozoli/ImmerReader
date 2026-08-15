@@ -45,6 +45,7 @@ public class ChickenManagerController {
                                       @RequestParam(required = false, defaultValue = "") String autoThresholds,
                                       @RequestParam(required = false, defaultValue = "") String thresholdMasks,
                                       @RequestParam(required = false, defaultValue = "") String otsuOffsets,
+                                      @RequestParam(required = false, defaultValue = "") String autoCorrections,
                                       @RequestParam(required = false, defaultValue = "30") int intervalSeconds) {
         String[] pointParts = points.split(",");
         String[] thresholdParts = thresholds.split(",");
@@ -54,6 +55,7 @@ public class ChickenManagerController {
         String[] autoThresholdParts = autoThresholds.isEmpty() ? new String[0] : autoThresholds.split(",");
         String[] thresholdMaskParts = thresholdMasks.isEmpty() ? new String[0] : thresholdMasks.split(",");
         String[] otsuOffsetParts = otsuOffsets.isEmpty() ? new String[0] : otsuOffsets.split(",");
+        String[] autoCorrectionParts = autoCorrections.isEmpty() ? new String[0] : autoCorrections.split(",");
 
         if (count < 1 || count > 5) {
             return ResponseEntity.badRequest().body("Nest count must be between 1 and 5.");
@@ -83,10 +85,11 @@ public class ChickenManagerController {
                 boolean autoThreshold = autoThresholdParts.length > i ? Boolean.parseBoolean(autoThresholdParts[i].trim()) : true;
                 boolean thresholdMask = thresholdMaskParts.length > i ? Boolean.parseBoolean(thresholdMaskParts[i].trim()) : false;
                 int otsuOffset = otsuOffsetParts.length > i ? Integer.parseInt(otsuOffsetParts[i].trim()) : 0;
+                boolean autoCorrection = autoCorrectionParts.length > i ? Boolean.parseBoolean(autoCorrectionParts[i].trim()) : true;
 
                 chickenManagerData.setNestPoints(i, xs, ys);
                 chickenManagerData.setNestThreshold(i, threshold);
-                chickenManagerData.setNestFilters(i, minArea, maxArea, minCircularity, autoThreshold, thresholdMask, otsuOffset);
+                chickenManagerData.setNestFilters(i, minArea, maxArea, minCircularity, autoThreshold, thresholdMask, otsuOffset, autoCorrection);
             }
             chickenData.setConfiguredCount(count);
             chickenManagerData.setIntervalSeconds(intervalSeconds);

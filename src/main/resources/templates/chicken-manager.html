@@ -360,6 +360,12 @@
                             <label for="otsuOffset" style="margin-top: 10px;">Otsu Offset (±255):</label>
                             <input type="number" id="otsuOffset" name="otsuOffset" min="-255" max="255" required>
                             <div class="hint">Add this value to the computed Otsu threshold for this nest. Use positive values to raise threshold (helps separate merged eggs).</div>
+                            <label class="toggle-label" style="margin-top: 10px; margin-bottom: 8px;">
+                                <span>Auto Threshold Correction</span>
+                                <input type="checkbox" id="autoCorrectionToggle">
+                                <span class="toggle-switch"></span>
+                            </label>
+                            <div class="hint">When on, the analyzer automatically adjusts the threshold per image based on brightness, mask coverage and contour quality.</div>
                         </div>
 
                         <div class="form-group">
@@ -479,7 +485,8 @@
                     minCircularity: source ? source.minCircularity : 0.5,
                     autoThreshold: source ? (source.autoThreshold === true || source.autoThreshold === 'true') : true,
                     thresholdMask: source ? (source.thresholdMask === true || source.thresholdMask === 'true') : false,
-                    otsuOffset: source ? source.otsuOffset : 0
+                    otsuOffset: source ? source.otsuOffset : 0,
+                    autoCorrection: source ? (source.autoCorrection === true || source.autoCorrection === 'true' || source.autoCorrection == null) : true
                 });
             }
         }
@@ -540,6 +547,7 @@
             document.getElementById('minCircularity').value = nest.minCircularity;
             document.getElementById('autoThresholdToggle').checked = nest.autoThreshold;
             document.getElementById('otsuOffset').value = nest.otsuOffset;
+            document.getElementById('autoCorrectionToggle').checked = nest.autoCorrection;
         }
 
         function toImageCoordinates(event) {
@@ -584,6 +592,7 @@
             nest.minCircularity = parseFloat(document.getElementById('minCircularity').value);
             nest.autoThreshold = document.getElementById('autoThresholdToggle').checked;
             nest.otsuOffset = parseInt(document.getElementById('otsuOffset').value || '0');
+            nest.autoCorrection = document.getElementById('autoCorrectionToggle').checked;
 
             const points = nests.map(n => n.xs.map((x, p) => `${x},${n.ys[p]}`).join(',')).join(',');
             const thresholds = nests.map(n => n.threshold).join(',');
@@ -593,6 +602,7 @@
             const autoThresholds = nests.map(n => n.autoThreshold ? 'true' : 'false').join(',');
             const thresholdMasks = nests.map(n => n.thresholdMask ? 'true' : 'false').join(',');
             const otsuOffsets = nests.map(n => n.otsuOffset).join(',');
+            const autoCorrections = nests.map(n => n.autoCorrection ? 'true' : 'false').join(',');
             const intervalSeconds = document.getElementById('intervalSeconds').value;
 
             fetch('/ChickenManager/set', {
@@ -600,7 +610,7 @@
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `count=${nestCount}&points=${encodeURIComponent(points)}&thresholds=${encodeURIComponent(thresholds)}&minAreas=${encodeURIComponent(minAreas)}&maxAreas=${encodeURIComponent(maxAreas)}&minCircularities=${encodeURIComponent(minCircularities)}&autoThresholds=${encodeURIComponent(autoThresholds)}&thresholdMasks=${encodeURIComponent(thresholdMasks)}&otsuOffsets=${encodeURIComponent(otsuOffsets)}&intervalSeconds=${intervalSeconds}`
+                body: `count=${nestCount}&points=${encodeURIComponent(points)}&thresholds=${encodeURIComponent(thresholds)}&minAreas=${encodeURIComponent(minAreas)}&maxAreas=${encodeURIComponent(maxAreas)}&minCircularities=${encodeURIComponent(minCircularities)}&autoThresholds=${encodeURIComponent(autoThresholds)}&thresholdMasks=${encodeURIComponent(thresholdMasks)}&otsuOffsets=${encodeURIComponent(otsuOffsets)}&autoCorrections=${encodeURIComponent(autoCorrections)}&intervalSeconds=${intervalSeconds}`
             })
             .then(response => {
                 if (!response.ok) {
