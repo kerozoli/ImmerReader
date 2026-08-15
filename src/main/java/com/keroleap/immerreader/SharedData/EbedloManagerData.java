@@ -22,10 +22,12 @@ public class EbedloManagerData {
     private static final String DATA_FILE = "/data/ebedlo.properties";
     private static final int POINT_COUNT = 4;
     private static final int DEFAULT_THRESHOLD = 100;
+    private static final int DEFAULT_INTERVAL_SECONDS = 15;
 
     private final AtomicIntegerArray xs = new AtomicIntegerArray(POINT_COUNT);
     private final AtomicIntegerArray ys = new AtomicIntegerArray(POINT_COUNT);
     private final AtomicInteger threshold = new AtomicInteger(DEFAULT_THRESHOLD);
+    private final AtomicInteger intervalSeconds = new AtomicInteger(DEFAULT_INTERVAL_SECONDS);
     private final AtomicBoolean enabled = new AtomicBoolean(false);
 
     @PostConstruct
@@ -40,6 +42,7 @@ public class EbedloManagerData {
                     ys.set(i, Integer.parseInt(props.getProperty("y" + i, "0")));
                 }
                 threshold.set(Integer.parseInt(props.getProperty("threshold", String.valueOf(DEFAULT_THRESHOLD))));
+                intervalSeconds.set(Integer.parseInt(props.getProperty("intervalSeconds", String.valueOf(DEFAULT_INTERVAL_SECONDS))));
                 enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "false")));
             } catch (IOException | NumberFormatException e) {
                 logger.warn("Could not load Ebedlo data from {}: {}", DATA_FILE, e.getMessage());
@@ -54,6 +57,7 @@ public class EbedloManagerData {
             props.setProperty("y" + i, String.valueOf(ys.get(i)));
         }
         props.setProperty("threshold", String.valueOf(threshold.get()));
+        props.setProperty("intervalSeconds", String.valueOf(intervalSeconds.get()));
         props.setProperty("enabled", String.valueOf(enabled.get()));
         File file = new File(DATA_FILE);
         File parent = file.getParentFile();
@@ -132,6 +136,15 @@ public class EbedloManagerData {
 
     public void setEnabled(boolean enabled) {
         this.enabled.set(enabled);
+        save();
+    }
+
+    public int getIntervalSeconds() {
+        return intervalSeconds.get();
+    }
+
+    public void setIntervalSeconds(int intervalSeconds) {
+        this.intervalSeconds.set(Math.max(1, intervalSeconds));
         save();
     }
 }

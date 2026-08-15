@@ -1,18 +1,23 @@
 package com.keroleap.immerreader.Scheduler;
 
 import java.awt.image.BufferedImage;
+import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.Trigger;
+import org.springframework.scheduling.TriggerContext;
 import org.springframework.stereotype.Component;
 
 import com.keroleap.immerreader.EbedloRest;
@@ -23,6 +28,7 @@ import com.keroleap.immerreader.SharedData.EbedloManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
 import com.keroleap.immerreader.SharedData.SchedulerHealthTracker;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 @Component
@@ -48,16 +54,54 @@ public class EbedloScheduler {
     @Autowired
     private SchedulerHealthTracker schedulerHealthTracker;
 
+    @Autowired
+    private TaskScheduler taskScheduler;
+
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final AtomicInteger consecutiveErrors = new AtomicInteger(0);
     private volatile ErrorType lastErrorType = null;
+    private volatile ScheduledFuture<?> scheduledFuture;
+    private final AtomicLong configuredIntervalMs = new AtomicLong(15000);
 
-    @Scheduled(fixedRate = 15000)
+    @PostConstruct
+    public void init() {
+        scheduleRead();
+    }
+
+    private void scheduleRead() {
+        cancelExisting();
+        configuredIntervalMs.set(ebedloManagerData.getIntervalSeconds() * 1000L);
+        Trigger trigger = new Trigger() {
+            @Override
+            public Instant nextExecution(TriggerContext triggerContext) {
+                Instant lastCompletion = triggerContext.lastCompletion();
+                long nextMs = (lastCompletion != null ? lastCompletion.toEpochMilli() : System.currentTimeMillis()) + configuredIntervalMs.get();
+                return Instant.ofEpochMilli(nextMs);
+            }
+        };
+        scheduledFuture = taskScheduler.schedule(this::EbedloScheduledRead, trigger);
+    }
+
+    private void cancelExisting() {
+        if (scheduledFuture != null) {
+            scheduledFuture.cancel(false);
+            scheduledFuture = null;
+        }
+    }
+
     public void EbedloScheduledRead() {
         if (!ebedloManagerData.isEnabled()) {
             consecutiveErrors.set(0);
             lastErrorType = null;
             return;
+        }
+
+        if (taskScheduler != null) {
+            long currentIntervalMs = ebedloManagerData.getIntervalSeconds() * 1000L;
+            if (currentIntervalMs != configuredIntervalMs.get()) {
+                scheduleRead();
+                return;
+            }
         }
 
         Future<EbedloRest> future = executor.submit(() -> {
@@ -115,6 +159,7 @@ public class EbedloScheduler {
     @PreDestroy
     public void destroy() {
         logger.info("Shutting down EbedloScheduler executor.");
+        cancelExisting();
         executor.shutdownNow();
     }
 }

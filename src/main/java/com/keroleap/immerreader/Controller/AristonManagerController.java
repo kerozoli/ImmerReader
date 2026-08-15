@@ -33,7 +33,8 @@ public class AristonManagerController {
                                          @RequestParam(required = false, defaultValue = "0") int controlX,
                                          @RequestParam(required = false, defaultValue = "0") int controlY,
                                          @RequestParam int endX,
-                                         @RequestParam int endY) {
+                                         @RequestParam int endY,
+                                         @RequestParam(required = false, defaultValue = "15") int intervalSeconds) {
         aristonManagerData.setStartX(startX);
         aristonManagerData.setStartY(startY);
         if (controlX != 0 || controlY != 0) {
@@ -42,6 +43,7 @@ public class AristonManagerController {
         }
         aristonManagerData.setEndX(endX);
         aristonManagerData.setEndY(endY);
+        aristonManagerData.setIntervalSeconds(intervalSeconds);
         return aristonManagerData;
     }
 
@@ -81,6 +83,7 @@ public class AristonManagerController {
         modelAndView.addObject("controlY", aristonManagerData.getControlY());
         modelAndView.addObject("endX", aristonManagerData.getEndX());
         modelAndView.addObject("endY", aristonManagerData.getEndY());
+        modelAndView.addObject("intervalSeconds", aristonManagerData.getIntervalSeconds());
         modelAndView.addObject("enabled", aristonManagerData.isEnabled());
         modelAndView.addObject("aristonRest", aristonData.getAristonRest());
         modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Ariston"));

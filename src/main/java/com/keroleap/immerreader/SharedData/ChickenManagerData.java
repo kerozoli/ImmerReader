@@ -23,9 +23,11 @@ public class ChickenManagerData {
     private static final int MIN_NESTS = 1;
     private static final int MAX_NESTS = 5;
     private static final int POINT_COUNT = 4;
+    private static final int DEFAULT_INTERVAL_SECONDS = 30;
 
     private final List<ChickenNest> nests = new ArrayList<>();
     private int nestCount = 3;
+    private int intervalSeconds = DEFAULT_INTERVAL_SECONDS;
     private boolean enabled = false;
 
     public ChickenManagerData() {
@@ -55,6 +57,15 @@ public class ChickenManagerData {
         save();
     }
 
+    public int getIntervalSeconds() {
+        return intervalSeconds;
+    }
+
+    public void setIntervalSeconds(int intervalSeconds) {
+        this.intervalSeconds = Math.max(1, intervalSeconds);
+        save();
+    }
+
     public void setNestPoints(int index, int[] xs, int[] ys) {
         validateIndex(index);
         ChickenNest nest = nests.get(index);
@@ -81,6 +92,7 @@ public class ChickenManagerData {
     public void save() {
         Properties properties = new Properties();
         properties.setProperty("enabled", String.valueOf(enabled));
+        properties.setProperty("intervalSeconds", String.valueOf(intervalSeconds));
         properties.setProperty("nestCount", String.valueOf(nestCount));
         for (int i = 0; i < nestCount; i++) {
             ChickenNest nest = nests.get(i);
@@ -117,6 +129,7 @@ public class ChickenManagerData {
         try (InputStream input = new FileInputStream(file)) {
             properties.load(input);
             enabled = Boolean.parseBoolean(properties.getProperty("enabled", "false"));
+            intervalSeconds = clamp(parseInt(properties, "intervalSeconds", DEFAULT_INTERVAL_SECONDS), 1, Integer.MAX_VALUE);
             nestCount = clamp(parseInt(properties, "nestCount", 3), MIN_NESTS, MAX_NESTS);
             resizeNests();
             for (int i = 0; i < nestCount; i++) {

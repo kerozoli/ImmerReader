@@ -32,7 +32,7 @@ public class ChickenScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(ChickenScheduler.class);
     private static final long INITIAL_DELAY_SECONDS = 5;
-    private static final long PERIOD_SECONDS = 30;
+    private static final long TIMEOUT_MS = 20000;
 
     @Value("${camera.chicken.url}")
     private String cameraUrl;
@@ -62,7 +62,12 @@ public class ChickenScheduler {
         logger.info("Chicken scheduler initialized.");
         scheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "ChickenScheduler"));
         executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "ChickenAnalyzer"));
-        scheduler.scheduleAtFixedRate(this::run, INITIAL_DELAY_SECONDS, PERIOD_SECONDS, TimeUnit.SECONDS);
+        scheduleRun();
+    }
+
+    private void scheduleRun() {
+        long periodSeconds = chickenManagerData.getIntervalSeconds();
+        scheduler.scheduleAtFixedRate(this::run, INITIAL_DELAY_SECONDS, periodSeconds, TimeUnit.SECONDS);
     }
 
     private void run() {
@@ -78,7 +83,7 @@ public class ChickenScheduler {
         });
 
         try {
-            ChickenRest rest = future.get(20000, TimeUnit.MILLISECONDS);
+            ChickenRest rest = future.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
             if (rest.isError()) {
                 handleError(rest.getErrorType());
                 return;

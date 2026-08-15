@@ -320,6 +320,10 @@
                                 <label for="endY">End Y:</label>
                                 <input type="number" id="endY" name="endY" th:value="${endY}" required>
                             </div>
+                            <div class="form-group">
+                                <label for="intervalSeconds">Scheduler Interval (seconds):</label>
+                                <input type="number" id="intervalSeconds" name="intervalSeconds" min="1" th:value="${intervalSeconds}" required>
+                            </div>
                             <button type="submit">Apply Points</button>
                         </form>
 
@@ -331,7 +335,8 @@
                             <strong>Current Values:</strong><br>
                             Start: (<span id="currentStartX" th:text="${startX}">0</span>, <span id="currentStartY" th:text="${startY}">0</span>)<br>
                             Control: (<span id="currentControlX" th:text="${controlX}">0</span>, <span id="currentControlY" th:text="${controlY}">0</span>)<br>
-                            End: (<span id="currentEndX" th:text="${endX}">0</span>, <span id="currentEndY" th:text="${endY}">0</span>)
+                            End: (<span id="currentEndX" th:text="${endX}">0</span>, <span id="currentEndY" th:text="${endY}">0</span>)<br>
+                            Interval: <span id="currentIntervalSeconds" th:text="${intervalSeconds}">15</span> s
                         </div>
                     </div>
 
@@ -351,7 +356,7 @@
                         <div id="controlMarker" class="marker control" style="display:none;"></div>
                         <div id="endMarker" class="marker end" style="display:none;"></div>
                     </div>
-                    <p><small>Image refreshes automatically every 15 seconds. Click on image to set active point.</small></p>
+                    <p><small>Image refreshes automatically every <span id="previewIntervalSeconds" th:text="${intervalSeconds}">15</span> seconds. Click on image to set active point.</small></p>
                 </div>
             </div>
         </div>
@@ -382,6 +387,7 @@
         const controlYInput = document.getElementById('controlY');
         const endXInput = document.getElementById('endX');
         const endYInput = document.getElementById('endY');
+        const intervalSecondsInput = document.getElementById('intervalSeconds');
         const setStartBtn = document.getElementById('setStartBtn');
         const setControlBtn = document.getElementById('setControlBtn');
         const setEndBtn = document.getElementById('setEndBtn');
@@ -474,13 +480,14 @@
             const controlY = controlYInput.value;
             const endX = endXInput.value;
             const endY = endYInput.value;
+            const intervalSeconds = intervalSecondsInput.value;
 
             fetch('/AristonManager/set', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `startX=${startX}&startY=${startY}&controlX=${controlX}&controlY=${controlY}&endX=${endX}&endY=${endY}`
+                body: `startX=${startX}&startY=${startY}&controlX=${controlX}&controlY=${controlY}&endX=${endX}&endY=${endY}&intervalSeconds=${intervalSeconds}`
             })
             .then(response => response.json())
             .then(data => {
@@ -490,6 +497,8 @@
                 document.getElementById('currentControlY').textContent = data.controlY;
                 document.getElementById('currentEndX').textContent = data.endX;
                 document.getElementById('currentEndY').textContent = data.endY;
+                document.getElementById('currentIntervalSeconds').textContent = data.intervalSeconds;
+                document.getElementById('previewIntervalSeconds').textContent = data.intervalSeconds;
 
                 const status = document.getElementById('status');
                 status.textContent = 'Points updated!';
@@ -548,7 +557,8 @@
             img.src = '/Ariston/uncroppedimage?t=' + new Date().getTime();
         }
 
-        setInterval(refreshImage, 15000);
+        const intervalMs = parseInt(document.getElementById('intervalSeconds').value) * 1000;
+        setInterval(refreshImage, intervalMs);
     </script>
 </body>
 </html>

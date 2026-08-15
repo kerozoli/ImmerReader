@@ -41,7 +41,8 @@ public class ChickenManagerController {
                                       @RequestParam String thresholds,
                                       @RequestParam String minAreas,
                                       @RequestParam String maxAreas,
-                                      @RequestParam String minCircularities) {
+                                      @RequestParam String minCircularities,
+                                      @RequestParam(required = false, defaultValue = "30") int intervalSeconds) {
         String[] pointParts = points.split(",");
         String[] thresholdParts = thresholds.split(",");
         String[] minAreaParts = minAreas.split(",");
@@ -79,6 +80,7 @@ public class ChickenManagerController {
                 chickenManagerData.setNestFilters(i, minArea, maxArea, minCircularity);
             }
             chickenData.setConfiguredCount(count);
+            chickenManagerData.setIntervalSeconds(intervalSeconds);
             return ResponseEntity.ok(chickenManagerData.getNests());
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body("Invalid number format: " + e.getMessage());
@@ -130,6 +132,7 @@ public class ChickenManagerController {
         modelAndView.addObject("chickenRest", chickenData.getChickenRest());
         List<ChickenNest> nests = chickenManagerData.getNests();
         modelAndView.addObject("nests", nests);
+        modelAndView.addObject("intervalSeconds", chickenManagerData.getIntervalSeconds());
         modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Chicken"));
     }
 }
