@@ -351,12 +351,18 @@
                                 <div class="point-buttons" id="pointButtons"></div>
                             </div>
 
+                            <div class="form-group">
+                                <label for="intervalSeconds">Scheduler Interval (seconds):</label>
+                                <input type="number" id="intervalSeconds" name="intervalSeconds" min="1" th:value="${intervalSeconds}" required>
+                            </div>
+
                             <button type="submit">Apply Points &amp; Threshold</button>
                         </form>
 
                         <div class="current-values">
                             <strong>Current Points:</strong>
                             <div class="point-list" id="pointList"></div>
+                            <strong>Current Interval:</strong> <span id="currentIntervalSeconds" th:text="${intervalSeconds}">15</span> s
                         </div>
                     </div>
 
@@ -376,7 +382,7 @@
                             <polyline id="polygonPolyline" points=""/>
                         </svg>
                     </div>
-                    <p><small>Image refreshes automatically every 10 seconds. Click on image to set the active point.</small></p>
+                    <p><small>Image refreshes automatically every <span id="previewIntervalSeconds" th:text="${intervalSeconds}">15</span> seconds. Click on image to set the active point.</small></p>
                 </div>
             </div>
         </div>
@@ -392,6 +398,10 @@
                     <div class="error-card">
                         <h4>General Errors</h4>
                         <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
+                    </div>
+                    <div class="error-card">
+                        <h4>RTSP Connection Errors</h4>
+                        <div class="count"><span id="rtspErrors" th:text="${errorStats['rtsp_connection_error']} ?: 0">0</span></div>
                     </div>
                 </div>
             </div>
@@ -526,13 +536,14 @@
 
             const points = xs.map((x, i) => `${x},${ys[i]}`).join(',');
             const threshold = document.getElementById('threshold').value;
+            const intervalSeconds = document.getElementById('intervalSeconds').value;
 
             fetch('/EbedloManager/set', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `points=${encodeURIComponent(points)}&threshold=${threshold}`
+                body: `points=${encodeURIComponent(points)}&threshold=${threshold}&intervalSeconds=${intervalSeconds}`
             })
             .then(response => {
                 if (!response.ok) {
@@ -548,6 +559,8 @@
                     status.className = 'status';
                 }, 2000);
 
+                document.getElementById('currentIntervalSeconds').textContent = data.intervalSeconds;
+                document.getElementById('previewIntervalSeconds').textContent = data.intervalSeconds;
                 refreshImage();
             })
             .catch(error => {
@@ -622,7 +635,8 @@
                 });
         }
 
-        setInterval(refreshImage, 10000);
+        const intervalMs = parseInt(document.getElementById('intervalSeconds').value) * 1000;
+        setInterval(refreshImage, intervalMs);
         setInterval(fetchAverageValue, 1000);
         updatePointButtons();
     </script>

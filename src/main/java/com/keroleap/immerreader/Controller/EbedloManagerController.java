@@ -31,7 +31,9 @@ public class EbedloManagerController {
 
     @PostMapping("/set")
     @ResponseBody
-    public ResponseEntity<?> setPoints(@RequestParam String points, @RequestParam int threshold) {
+    public ResponseEntity<?> setPoints(@RequestParam String points,
+                                      @RequestParam int threshold,
+                                      @RequestParam(required = false, defaultValue = "15") int intervalSeconds) {
         String[] parts = points.split(",");
         if (parts.length != POINT_COUNT * 2) {
             return ResponseEntity.badRequest().body("Expected " + (POINT_COUNT * 2) + " comma-separated coordinates, got " + parts.length);
@@ -45,6 +47,7 @@ public class EbedloManagerController {
             }
             ebedloManagerData.setPoints(xs, ys);
             ebedloManagerData.setThreshold(threshold);
+            ebedloManagerData.setIntervalSeconds(intervalSeconds);
             return ResponseEntity.ok(ebedloManagerData);
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body("Invalid coordinate value: " + e.getMessage());
@@ -84,6 +87,7 @@ public class EbedloManagerController {
         modelAndView.addObject("xs", ebedloManagerData.getXs());
         modelAndView.addObject("ys", ebedloManagerData.getYs());
         modelAndView.addObject("threshold", ebedloManagerData.getThreshold());
+        modelAndView.addObject("intervalSeconds", ebedloManagerData.getIntervalSeconds());
         modelAndView.addObject("enabled", ebedloManagerData.isEnabled());
         modelAndView.addObject("ebedloRest", ebedloData.getEbedloRest());
         modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Ebedlo"));

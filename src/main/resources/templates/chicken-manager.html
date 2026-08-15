@@ -217,6 +217,28 @@
             color: #aaa;
             margin-top: 4px;
         }
+        .error-stats {
+            margin-top: 20px;
+        }
+        .error-card {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-right: 10px;
+            display: inline-block;
+            min-width: 150px;
+        }
+        .error-card h4 {
+            margin: 0 0 5px 0;
+            color: #aaa;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .error-card .count {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e94560;
+        }
         .status {
             margin-top: 10px;
             padding: 10px;
@@ -304,6 +326,11 @@
                             <input type="number" id="minCircularity" name="minCircularity" min="0" max="1" step="0.05" required>
                         </div>
 
+                        <div class="form-group">
+                            <label for="intervalSeconds">Scheduler Interval (seconds):</label>
+                            <input type="number" id="intervalSeconds" name="intervalSeconds" min="1" th:value="${intervalSeconds}" required>
+                        </div>
+
                         <button type="submit">Apply All Nests</button>
                     </form>
                 </div>
@@ -318,7 +345,25 @@
                 <div class="image-wrapper" id="imageWrapper">
                     <img id="liveImage" src="/Chicken/uncroppedimage" alt="Chicken Camera Feed">
                 </div>
-                <p><small>Select a nest and a point, then click on the image to place the 4 polygon corners. Polygons refresh with the image.</small></p>
+                <p><small>Image refreshes automatically every <span id="previewIntervalSeconds" th:text="${intervalSeconds}">30</span> seconds. Select a nest and a point, then click on the image to place the 4 polygon corners.</small></p>
+            </div>
+
+            <div class="data-section">
+                <h2>Error Statistics (Last 24 Hours)</h2>
+                <div class="error-stats">
+                    <div class="error-card">
+                        <h4>Timeout Errors</h4>
+                        <div class="count"><span id="timeoutErrors" th:text="${errorStats['timeout']} ?: 0">0</span></div>
+                    </div>
+                    <div class="error-card">
+                        <h4>General Errors</h4>
+                        <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
+                    </div>
+                    <div class="error-card">
+                        <h4>RTSP Connection Errors</h4>
+                        <div class="count"><span id="rtspErrors" th:text="${errorStats['rtsp_connection_error']} ?: 0">0</span></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -464,13 +509,14 @@
             const minAreas = nests.map(n => n.minArea).join(',');
             const maxAreas = nests.map(n => n.maxArea).join(',');
             const minCircularities = nests.map(n => n.minCircularity).join(',');
+            const intervalSeconds = document.getElementById('intervalSeconds').value;
 
             fetch('/ChickenManager/set', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `count=${nestCount}&points=${encodeURIComponent(points)}&thresholds=${encodeURIComponent(thresholds)}&minAreas=${encodeURIComponent(minAreas)}&maxAreas=${encodeURIComponent(maxAreas)}&minCircularities=${encodeURIComponent(minCircularities)}`
+                body: `count=${nestCount}&points=${encodeURIComponent(points)}&thresholds=${encodeURIComponent(thresholds)}&minAreas=${encodeURIComponent(minAreas)}&maxAreas=${encodeURIComponent(maxAreas)}&minCircularities=${encodeURIComponent(minCircularities)}&intervalSeconds=${intervalSeconds}`
             })
             .then(response => {
                 if (!response.ok) {
@@ -480,6 +526,7 @@
             })
             .then(data => {
                 showStatus('All nest settings updated!', true);
+                document.getElementById('previewIntervalSeconds').textContent = data.intervalSeconds;
                 refreshImage();
             })
             .catch(error => {
@@ -565,7 +612,8 @@
         renderPointButtons();
         renderDataCards();
         updateForm();
-        setInterval(refreshImage, 10000);
+        const intervalMs = parseInt(document.getElementById('intervalSeconds').value) * 1000;
+        setInterval(refreshImage, intervalMs);
         setInterval(fetchData, 5000);
     </script>
 </body>

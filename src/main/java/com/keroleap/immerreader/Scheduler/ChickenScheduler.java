@@ -2,9 +2,12 @@ package com.keroleap.immerreader.Scheduler;
 
 import java.awt.image.BufferedImage;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -19,6 +22,7 @@ import com.keroleap.immerreader.Service.ChickenAnalyzerService;
 import com.keroleap.immerreader.SharedData.ChickenData;
 import com.keroleap.immerreader.SharedData.ChickenManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
+import com.keroleap.immerreader.SharedData.SchedulerHealthTracker;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -28,7 +32,7 @@ public class ChickenScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(ChickenScheduler.class);
     private static final long INITIAL_DELAY_SECONDS = 5;
-    private static final long PERIOD_SECONDS = 30;
+    private static final long TIMEOUT_MS = 20000;
 
     @Value("${camera.chicken.url}")
     private String cameraUrl;
@@ -45,7 +49,11 @@ public class ChickenScheduler {
     @Autowired
     private ErrorStatistics errorStatistics;
 
+    @Autowired
+    private SchedulerHealthTracker schedulerHealthTracker;
+
     private ScheduledExecutorService scheduler;
+    private ExecutorService executor;
     private final AtomicInteger consecutiveErrors = new AtomicInteger(0);
     private volatile ErrorType lastErrorType = null;
 
@@ -53,7 +61,13 @@ public class ChickenScheduler {
     public void init() {
         logger.info("Chicken scheduler initialized.");
         scheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "ChickenScheduler"));
-        scheduler.scheduleAtFixedRate(this::run, INITIAL_DELAY_SECONDS, PERIOD_SECONDS, TimeUnit.SECONDS);
+        executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "ChickenAnalyzer"));
+        scheduleRun();
+    }
+
+    private void scheduleRun() {
+        long periodSeconds = chickenManagerData.getIntervalSeconds();
+        scheduler.scheduleAtFixedRate(this::run, INITIAL_DELAY_SECONDS, periodSeconds, TimeUnit.SECONDS);
     }
 
     private void run() {
@@ -62,9 +76,14 @@ public class ChickenScheduler {
             lastErrorType = null;
             return;
         }
-        try {
+
+        Future<ChickenRest> future = executor.submit(() -> {
             BufferedImage image = chickenAnalyzerService.getBufferedImage(cameraUrl);
-            ChickenRest rest = chickenAnalyzerService.getChickenRestData(image, chickenManagerData);
+            return chickenAnalyzerService.getChickenRestData(image, chickenManagerData);
+        });
+
+        try {
+            ChickenRest rest = future.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
             if (rest.isError()) {
                 handleError(rest.getErrorType());
                 return;
@@ -74,6 +93,11 @@ public class ChickenScheduler {
             chickenData.addCounts(counts);
             consecutiveErrors.set(0);
             lastErrorType = null;
+            schedulerHealthTracker.recordSuccess("Chicken");
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            logger.warn("Timeout fetching Chicken data, keeping previous value.");
+            handleError(ErrorType.TIMEOUT);
         } catch (Exception e) {
             logger.error("Error fetching Chicken data: {}", e.getMessage(), e);
             handleError(ErrorType.FETCH_ERROR);
@@ -81,7 +105,8 @@ public class ChickenScheduler {
     }
 
     private void handleError(ErrorType errorType) {
-        errorStatistics.recordError("chicken", errorType);
+        errorStatistics.recordError("Chicken", errorType);
+        schedulerHealthTracker.recordError("Chicken", errorType);
         if (errorType.equals(lastErrorType)) {
             consecutiveErrors.incrementAndGet();
         } else {
@@ -100,6 +125,9 @@ public class ChickenScheduler {
         logger.info("Shutting down ChickenScheduler.");
         if (scheduler != null) {
             scheduler.shutdownNow();
+        }
+        if (executor != null) {
+            executor.shutdownNow();
         }
     }
 }
