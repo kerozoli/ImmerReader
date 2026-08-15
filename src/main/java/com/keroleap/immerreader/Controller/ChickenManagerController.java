@@ -130,6 +130,6 @@ public class ChickenManagerController {
         modelAndView.addObject("chickenRest", chickenData.getChickenRest());
         List<ChickenNest> nests = chickenManagerData.getNests();
         modelAndView.addObject("nests", nests);
-        modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("chicken"));
+        modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Chicken"));
     }
 }

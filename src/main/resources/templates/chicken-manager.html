@@ -217,6 +217,28 @@
             color: #aaa;
             margin-top: 4px;
         }
+        .error-stats {
+            margin-top: 20px;
+        }
+        .error-card {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-right: 10px;
+            display: inline-block;
+            min-width: 150px;
+        }
+        .error-card h4 {
+            margin: 0 0 5px 0;
+            color: #aaa;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .error-card .count {
+            font-size: 28px;
+            font-weight: bold;
+            color: #e94560;
+        }
         .status {
             margin-top: 10px;
             padding: 10px;
@@ -319,6 +341,24 @@
                     <img id="liveImage" src="/Chicken/uncroppedimage" alt="Chicken Camera Feed">
                 </div>
                 <p><small>Select a nest and a point, then click on the image to place the 4 polygon corners. Polygons refresh with the image.</small></p>
+            </div>
+
+            <div class="data-section">
+                <h2>Error Statistics (Last 24 Hours)</h2>
+                <div class="error-stats">
+                    <div class="error-card">
+                        <h4>Timeout Errors</h4>
+                        <div class="count"><span id="timeoutErrors" th:text="${errorStats['timeout']} ?: 0">0</span></div>
+                    </div>
+                    <div class="error-card">
+                        <h4>General Errors</h4>
+                        <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
+                    </div>
+                    <div class="error-card">
+                        <h4>RTSP Connection Errors</h4>
+                        <div class="count"><span id="rtspErrors" th:text="${errorStats['rtsp_connection_error']} ?: 0">0</span></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

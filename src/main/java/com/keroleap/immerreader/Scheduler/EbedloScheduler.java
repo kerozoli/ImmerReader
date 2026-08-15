@@ -21,6 +21,7 @@ import com.keroleap.immerreader.Service.EbedloAnalyzerService;
 import com.keroleap.immerreader.SharedData.EbedloData;
 import com.keroleap.immerreader.SharedData.EbedloManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
+import com.keroleap.immerreader.SharedData.SchedulerHealthTracker;
 
 import jakarta.annotation.PreDestroy;
 
@@ -43,6 +44,9 @@ public class EbedloScheduler {
 
     @Autowired
     private ErrorStatistics errorStatistics;
+
+    @Autowired
+    private SchedulerHealthTracker schedulerHealthTracker;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final AtomicInteger consecutiveErrors = new AtomicInteger(0);
@@ -82,6 +86,7 @@ public class EbedloScheduler {
 
             consecutiveErrors.set(0);
             lastErrorType = null;
+            schedulerHealthTracker.recordSuccess("Ebedlo");
         } catch (TimeoutException e) {
             future.cancel(true);
             logger.warn("Timeout fetching Ebedlo data, keeping previous value.");
@@ -94,6 +99,7 @@ public class EbedloScheduler {
 
     private void handleError(ErrorType errorType) {
         errorStatistics.recordError("Ebedlo", errorType);
+        schedulerHealthTracker.recordError("Ebedlo", errorType);
         if (errorType.equals(lastErrorType)) {
             consecutiveErrors.incrementAndGet();
         } else {

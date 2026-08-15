@@ -393,6 +393,10 @@
                         <h4>General Errors</h4>
                         <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
                     </div>
+                    <div class="error-card">
+                        <h4>RTSP Connection Errors</h4>
+                        <div class="count"><span id="rtspErrors" th:text="${errorStats['rtsp_connection_error']} ?: 0">0</span></div>
+                    </div>
                 </div>
             </div>
         </div>
