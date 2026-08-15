@@ -52,6 +52,7 @@ public class ChickenAnalyzerService {
     private volatile List<Integer> lastAnalyzedNestCounts;
     private volatile long lastAnalyzedTimestamp;
     private final Map<Integer, Mat> lastAnalyzedThresholdMasks = new HashMap<>();
+    private final Map<Integer, Integer> lastAnalyzedOtsuThresholds = new HashMap<>();
 
     @Autowired
     private CameraImageService cameraImageService;
@@ -137,6 +138,15 @@ public class ChickenAnalyzerService {
                 graphics.drawPolygon(xs, ys, xs.length);
                 drawCachedNestContours(graphics, contourData, i);
                 String label = "F" + (i + 1);
+                if (nest.isAutoThreshold()) {
+                    Integer otsuThreshold;
+                    synchronized (this) {
+                        otsuThreshold = lastAnalyzedOtsuThresholds.get(i);
+                    }
+                    if (otsuThreshold != null) {
+                        label += " Otsu:" + otsuThreshold + "+" + nest.getOtsuOffset();
+                    }
+                }
                 graphics.drawString(label, xs[0] + 4, ys[0] + 18);
             }
         } finally {
@@ -309,6 +319,7 @@ public class ChickenAnalyzerService {
                 if (oldMask != null) {
                     oldMask.release();
                 }
+                lastAnalyzedOtsuThresholds.put(nestIndex, otsuThreshold);
             }
 
             return count;
@@ -726,15 +737,18 @@ public class ChickenAnalyzerService {
         int h = bounds.height;
         int[] rgb = image.getRGB(bounds.x, bounds.y, w, h, null, 0, w);
         Mat bgr = new Mat(h, w, opencv_core.CV_8UC3);
-        byte[] data = new byte[w * h * 3];
-        for (int i = 0; i < rgb.length; i++) {
-            int pixel = rgb[i];
-            int idx = i * 3;
-            data[idx] = (byte) (pixel & 0xFF);          // B
-            data[idx + 1] = (byte) ((pixel >> 8) & 0xFF);  // G
-            data[idx + 2] = (byte) ((pixel >> 16) & 0xFF); // R
+        byte[] row = new byte[w * 3];
+        for (int y = 0; y < h; y++) {
+            int rowStart = y * w;
+            for (int x = 0; x < w; x++) {
+                int pixel = rgb[rowStart + x];
+                int idx = x * 3;
+                row[idx] = (byte) (pixel & 0xFF);          // B
+                row[idx + 1] = (byte) ((pixel >> 8) & 0xFF);  // G
+                row[idx + 2] = (byte) ((pixel >> 16) & 0xFF); // R
+            }
+            bgr.ptr(y).put(row);
         }
-        bgr.data().put(data);
         Mat gray = new Mat();
         opencv_imgproc.cvtColor(bgr, gray, opencv_imgproc.COLOR_BGR2GRAY);
         bgr.release();
