@@ -54,6 +54,9 @@ public class ChickenAnalyzerService {
     }
 
     public ChickenRest getChickenRestData(BufferedImage image, ChickenManagerData managerData) {
+        synchronized (accumulatedContourData) {
+            accumulatedContourData.clear();
+        }
         ChickenRest chickenRest = new ChickenRest();
         if (image == null) {
             chickenRest.setError(true);
@@ -88,7 +91,9 @@ public class ChickenAnalyzerService {
         graphics.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
         List<ChickenNest> nests = managerData.getNests();
 
-        accumulatedContourData.clear();
+        synchronized (accumulatedContourData) {
+            accumulatedContourData.clear();
+        }
 
         BufferedImage thresholdMaskLayer = createThresholdMaskLayer(copy, nests, managerData.isThresholdMaskEnabled());
         if (thresholdMaskLayer != null) {
