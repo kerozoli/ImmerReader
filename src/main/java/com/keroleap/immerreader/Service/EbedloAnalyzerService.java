@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.keroleap.immerreader.EbedloRest;
+import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.SharedData.EbedloManagerData;
 
 @Service
@@ -32,6 +33,8 @@ public class EbedloAnalyzerService {
         if (bufferedImage == null) {
             logger.warn("No image available for Ebedlo analysis");
             ebedloRest.setOn(false);
+            ebedloRest.setError(true);
+            ebedloRest.setErrorType(ErrorType.RTSP_CONNECTION_ERROR);
             return ebedloRest;
         }
 

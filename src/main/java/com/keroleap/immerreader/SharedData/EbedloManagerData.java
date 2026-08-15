@@ -26,7 +26,7 @@ public class EbedloManagerData {
     private final AtomicIntegerArray xs = new AtomicIntegerArray(POINT_COUNT);
     private final AtomicIntegerArray ys = new AtomicIntegerArray(POINT_COUNT);
     private final AtomicInteger threshold = new AtomicInteger(DEFAULT_THRESHOLD);
-    private final AtomicBoolean enabled = new AtomicBoolean(true);
+    private final AtomicBoolean enabled = new AtomicBoolean(false);
 
     @PostConstruct
     private void load() {
@@ -40,7 +40,7 @@ public class EbedloManagerData {
                     ys.set(i, Integer.parseInt(props.getProperty("y" + i, "0")));
                 }
                 threshold.set(Integer.parseInt(props.getProperty("threshold", String.valueOf(DEFAULT_THRESHOLD))));
-                enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "true")));
+                enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "false")));
             } catch (IOException | NumberFormatException e) {
                 logger.warn("Could not load Ebedlo data from {}: {}", DATA_FILE, e.getMessage());
             }

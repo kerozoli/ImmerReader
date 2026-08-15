@@ -76,8 +76,8 @@ class ImmerManagerDataTest {
     }
 
     @Test
-    void defaultEnabledIsTrue() {
-        assertTrue(newInstance().isEnabled());
+    void defaultEnabledIsFalse() {
+        assertFalse(newInstance().isEnabled());
     }
 
     @Test

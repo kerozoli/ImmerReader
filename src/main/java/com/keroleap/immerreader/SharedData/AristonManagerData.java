@@ -25,7 +25,7 @@ public class AristonManagerData {
     private final AtomicInteger controlY = new AtomicInteger(130);
     private final AtomicInteger endX = new AtomicInteger(220);
     private final AtomicInteger endY = new AtomicInteger(180);
-    private final AtomicBoolean enabled = new AtomicBoolean(true);
+    private final AtomicBoolean enabled = new AtomicBoolean(false);
 
     @PostConstruct
     private void load() {
@@ -40,7 +40,7 @@ public class AristonManagerData {
                 controlY.set(Integer.parseInt(props.getProperty("controlY", "130")));
                 endX.set(Integer.parseInt(props.getProperty("endX", "220")));
                 endY.set(Integer.parseInt(props.getProperty("endY", "180")));
-                enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "true")));
+                enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "false")));
             } catch (IOException | NumberFormatException e) {
                 logger.warn("Could not load offset data from {}: {}", DATA_FILE, e.getMessage());
             }

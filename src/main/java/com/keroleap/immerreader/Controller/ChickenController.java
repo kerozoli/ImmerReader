@@ -1,0 +1,72 @@
+package com.keroleap.immerreader.Controller;
+
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.keroleap.immerreader.ChickenRest;
+import com.keroleap.immerreader.Service.ChickenAnalyzerService;
+import com.keroleap.immerreader.SharedData.ChickenData;
+import com.keroleap.immerreader.SharedData.ChickenManagerData;
+
+@Controller
+@RequestMapping("/Chicken")
+public class ChickenController {
+
+    @Value("${camera.chicken.url}")
+    private String cameraUrl;
+
+    @Autowired
+    private ChickenData chickenData;
+
+    @Autowired
+    private ChickenAnalyzerService chickenAnalyzerService;
+
+    @Autowired
+    private ChickenManagerData chickenManagerData;
+
+    @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
+    public @ResponseBody byte[] getImage() throws IOException {
+        BufferedImage image = chickenAnalyzerService.getBufferedImage(cameraUrl);
+        image = chickenAnalyzerService.drawDebugOverlay(image, chickenManagerData);
+        return writeJpeg(image);
+    }
+
+    @GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
+    public @ResponseBody byte[] getUncroppedImage() throws IOException {
+        BufferedImage image = chickenAnalyzerService.getBufferedImage(cameraUrl);
+        image = chickenAnalyzerService.drawDebugOverlay(image, chickenManagerData);
+        return writeJpeg(image);
+    }
+
+    private byte[] writeJpeg(BufferedImage image) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(image, "jpg", baos);
+        return baos.toByteArray();
+    }
+
+    @RequestMapping(value = "/chickendata")
+    public ModelAndView getChickenData() throws IOException {
+        BufferedImage cachedImage = chickenAnalyzerService.getBufferedImage(cameraUrl);
+        ModelAndView modelAndView = new ModelAndView("chickendata");
+        modelAndView.addObject("message", chickenAnalyzerService.getChickenRestData(cachedImage, chickenManagerData).toString());
+        return modelAndView;
+    }
+
+    @RequestMapping(value = "/chickenrestdata")
+    @ResponseBody
+    public ChickenRest getChickenRestData() {
+        return chickenData.getChickenRest();
+    }
+}
