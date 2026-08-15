@@ -44,7 +44,15 @@ public class ChickenAnalyzerService {
     private static final double MERGED_HULL_RATIO_THRESHOLD = 1.25;
     private static final int AGGRESSIVE_SPLIT_DISTANCE_THRESHOLD = 64;
 
+    // Automatic threshold correction constants (coverage-only iterative search)
+    private static final int AUTO_CORRECTION_SEARCH_MAX_DELTA = 120;
+    private static final int AUTO_CORRECTION_SEARCH_STEP = 2;
+    private static final double COVERAGE_HIGH_THRESHOLD = 0.25;
+    private static final double COVERAGE_TARGET = 0.20;
+    private static final int COVERAGE_SEARCH_MAX_STEPS = 60;
+
     private final List<Map<String, Object>> accumulatedContourData = java.util.Collections.synchronizedList(new ArrayList<>());
+    private final List<Map<String, Object>> lastThresholdDetails = java.util.Collections.synchronizedList(new ArrayList<>());
 
     @Autowired
     private CameraImageService cameraImageService;
@@ -56,6 +64,9 @@ public class ChickenAnalyzerService {
     public ChickenRest getChickenRestData(BufferedImage image, ChickenManagerData managerData) {
         synchronized (accumulatedContourData) {
             accumulatedContourData.clear();
+        }
+        synchronized (lastThresholdDetails) {
+            lastThresholdDetails.clear();
         }
         ChickenRest chickenRest = new ChickenRest();
         if (image == null) {
@@ -70,6 +81,7 @@ public class ChickenAnalyzerService {
             ChickenNest nest = nests.get(i);
             if (nest.isConfigured()) {
                 counts.add(countEggsInNest(image, nest, null, i, false));
+                recordThresholdDetail("F" + (i + 1));
             } else {
                 counts.add(0);
             }
@@ -141,7 +153,7 @@ public class ChickenAnalyzerService {
                 continue;
             }
             Polygon polygon = new Polygon(xs, ys, xs.length);
-            Mat mask = computeThresholdMaskMat(source, nest, bounds);
+            Mat mask = computeThresholdMaskMat(source, nest, bounds, polygon);
             try {
                 for (int y = 0; y < bounds.height; y++) {
                     for (int x = 0; x < bounds.width; x++) {
@@ -163,7 +175,7 @@ public class ChickenAnalyzerService {
         return maskLayer;
     }
 
-    private Mat computeThresholdMaskMat(BufferedImage image, ChickenNest nest, Rectangle bounds) {
+    private Mat computeThresholdMaskMat(BufferedImage image, ChickenNest nest, Rectangle bounds, Polygon polygon) {
         Mat gray = bufferedImageToGrayMat(image, bounds);
         Mat blurred = new Mat();
         Mat binary = new Mat();
@@ -172,7 +184,7 @@ public class ChickenAnalyzerService {
         Mat opened = new Mat();
         try {
             opencv_imgproc.GaussianBlur(gray, blurred, new Size(BLUR_SIZE, BLUR_SIZE), 0);
-            int effectiveThreshold = nest.isAutoThreshold() ? computeOtsuThreshold(blurred) : nest.getThreshold();
+            int effectiveThreshold = computeEffectiveThreshold(blurred, gray, nest, bounds, polygon);
             opencv_imgproc.threshold(blurred, binary, effectiveThreshold, 255, opencv_imgproc.THRESH_BINARY);
             kernel = opencv_imgproc.getStructuringElement(opencv_imgproc.MORPH_ELLIPSE, new Size(MORPH_SIZE, MORPH_SIZE));
             opencv_imgproc.morphologyEx(binary, closed, opencv_imgproc.MORPH_CLOSE, kernel);
@@ -226,8 +238,7 @@ public class ChickenAnalyzerService {
         try {
             opencv_imgproc.GaussianBlur(gray, blurred, new Size(BLUR_SIZE, BLUR_SIZE), 0);
 
-            int otsuThreshold = computeOtsuThreshold(blurred);
-            int effectiveThreshold = nest.isAutoThreshold() ? Math.max(1, Math.min(254, otsuThreshold + nest.getOtsuOffset())) : nest.getThreshold();
+            int effectiveThreshold = computeEffectiveThreshold(blurred, gray, nest, bounds, polygon);
             opencv_imgproc.threshold(blurred, binary, effectiveThreshold, 255, opencv_imgproc.THRESH_BINARY);
 
             kernel = opencv_imgproc.getStructuringElement(opencv_imgproc.MORPH_ELLIPSE, new Size(MORPH_SIZE, MORPH_SIZE));
@@ -564,6 +575,235 @@ public class ChickenAnalyzerService {
             logger.warn("Otsu threshold computation failed: {}", t.getMessage());
             return 180;
         }
+    }
+
+    /**
+     * Computes the effective threshold for a nest, applying per-nest offset and,
+     * when enabled, automatic correction based on image brightness, mask coverage
+     * and contour quality.
+     */
+    private ThresholdDetail pendingThresholdDetail;
+
+    private int computeEffectiveThreshold(Mat blurred, Mat gray, ChickenNest nest, Rectangle bounds, Polygon polygon) {
+        if (!nest.isAutoThreshold()) {
+            return clamp(nest.getThreshold(), 1, 254);
+        }
+
+        int baseOtsu = computeOtsuThreshold(blurred);
+        int base = clamp(baseOtsu + nest.getOtsuOffset(), 1, 254);
+
+        if (!nest.isAutoCorrection()) {
+            logger.info("Nest threshold (no correction): Otsu={} offset={} -> {}", baseOtsu, nest.getOtsuOffset(), base);
+            return base;
+        }
+
+        // Coverage-only iterative search. Starts from Otsu and raises threshold until
+        // mask coverage drops below COVERAGE_HIGH_THRESHOLD (25%), then picks the best
+        // candidate with coverage under the target.
+        int current = base;
+        ThresholdScore best = null;
+        int bestThreshold = current;
+        int searchAdjustment = 0;
+        boolean searched = false;
+
+        if (polygon != null) {
+            best = evaluateThreshold(blurred, gray, nest, bounds, polygon, current);
+            logger.info("Threshold candidate evaluation at {}: counted={}, merged={}, rejected={}, coverage={}",
+                    current, best.countedCount, best.mergedCount, best.rejectedCount, String.format("%.2f", best.coverageRatio));
+
+            if (best.coverageRatio > COVERAGE_HIGH_THRESHOLD) {
+                searched = true;
+                for (int step = 0; step < COVERAGE_SEARCH_MAX_STEPS; step++) {
+                    int candidate = clamp(current + step * AUTO_CORRECTION_SEARCH_STEP, 1, 254);
+                    ThresholdScore candidateScore = evaluateThreshold(blurred, gray, nest, bounds, polygon, candidate);
+                    logger.debug("Threshold candidate {}: counted={}, merged={}, rejected={}, coverage={}",
+                            candidate, candidateScore.countedCount, candidateScore.mergedCount, candidateScore.rejectedCount, String.format("%.2f", candidateScore.coverageRatio));
+                    if (candidateScore.coverageRatio <= COVERAGE_HIGH_THRESHOLD) {
+                        bestThreshold = candidate;
+                        best = candidateScore;
+                        searchAdjustment = candidate - current;
+                        logger.info("Auto-corrected threshold from {} to {} (coverage {} under {})", current, bestThreshold, String.format("%.2f", candidateScore.coverageRatio), COVERAGE_HIGH_THRESHOLD);
+                        break;
+                    }
+                    if (candidateScore.coverageRatio < best.coverageRatio) {
+                        bestThreshold = candidate;
+                        best = candidateScore;
+                        searchAdjustment = candidate - current;
+                    }
+                }
+                if (bestThreshold == current) {
+                    logger.warn("Could not reduce coverage below {} with max threshold {}, keeping best found", COVERAGE_HIGH_THRESHOLD, current + (COVERAGE_SEARCH_MAX_STEPS - 1) * AUTO_CORRECTION_SEARCH_STEP);
+                }
+            }
+        }
+
+        int finalThreshold = bestThreshold;
+        pendingThresholdDetail = new ThresholdDetail("", baseOtsu, nest.getOtsuOffset(), searchAdjustment, finalThreshold, searched, best != null ? best.coverageRatio : 0.0, best != null ? best.mergedCount : 0, best != null ? best.rejectedCount : 0);
+        logger.info("Nest threshold (auto-corrected): Otsu={} final={} (searchAdj={})", baseOtsu, finalThreshold, searchAdjustment);
+        return finalThreshold;
+    }
+
+    private void recordThresholdDetail(String nestLabel) {
+        if (pendingThresholdDetail == null) {
+            return;
+        }
+        Map<String, Object> detail = new LinkedHashMap<>(pendingThresholdDetail.toMap());
+        detail.put("nest", nestLabel);
+        synchronized (lastThresholdDetails) {
+            lastThresholdDetails.add(detail);
+        }
+        pendingThresholdDetail = null;
+    }
+
+    public List<Map<String, Object>> getLastThresholdDetails() {
+        synchronized (lastThresholdDetails) {
+            return new ArrayList<>(lastThresholdDetails);
+        }
+    }
+
+    private static class ThresholdDetail {
+        final String nest;
+        final int baseOtsu;
+        final int otsuOffset;
+        final int searchAdjustment;
+        final int finalThreshold;
+        final boolean autoCorrected;
+        final double coverageRatio;
+        final int mergedCount;
+        final int rejectedCount;
+
+        ThresholdDetail(String nest, int baseOtsu, int otsuOffset, int searchAdjustment, int finalThreshold, boolean autoCorrected, double coverageRatio, int mergedCount, int rejectedCount) {
+            this.nest = nest;
+            this.baseOtsu = baseOtsu;
+            this.otsuOffset = otsuOffset;
+            this.searchAdjustment = searchAdjustment;
+            this.finalThreshold = finalThreshold;
+            this.autoCorrected = autoCorrected;
+            this.coverageRatio = coverageRatio;
+            this.mergedCount = mergedCount;
+            this.rejectedCount = rejectedCount;
+        }
+
+        Map<String, Object> toMap() {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("baseOtsu", baseOtsu);
+            map.put("otsuOffset", otsuOffset);
+            map.put("searchAdjustment", searchAdjustment);
+            map.put("finalThreshold", finalThreshold);
+            map.put("autoCorrected", autoCorrected);
+            map.put("coverageRatio", Math.round(coverageRatio * 1000.0) / 1000.0);
+            map.put("mergedCount", mergedCount);
+            map.put("rejectedCount", rejectedCount);
+            return map;
+        }
+    }
+
+    private int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static class ThresholdScore {
+        final int threshold;
+        final int countedCount;
+        final int mergedCount;
+        final int rejectedCount;
+        final double coverageRatio;
+
+        ThresholdScore(int threshold, int countedCount, int mergedCount, int rejectedCount, double coverageRatio) {
+            this.threshold = threshold;
+            this.countedCount = countedCount;
+            this.mergedCount = mergedCount;
+            this.rejectedCount = rejectedCount;
+            this.coverageRatio = coverageRatio;
+        }
+
+        double score() {
+            return countedCount * 10.0 - mergedCount * 25.0 - rejectedCount * 3.0 - coverageRatio * 250.0;
+        }
+    }
+
+    private ThresholdScore evaluateThreshold(Mat blurred, Mat gray, ChickenNest nest, Rectangle bounds, Polygon polygon, int threshold) {
+        Mat binary = new Mat();
+        Mat kernel = null;
+        Mat closed = new Mat();
+        Mat opened = new Mat();
+        MatVector contours = new MatVector();
+        Mat hierarchy = new Mat();
+        try {
+            opencv_imgproc.threshold(blurred, binary, threshold, 255, opencv_imgproc.THRESH_BINARY);
+            kernel = opencv_imgproc.getStructuringElement(opencv_imgproc.MORPH_ELLIPSE, new Size(MORPH_SIZE, MORPH_SIZE));
+            opencv_imgproc.morphologyEx(binary, closed, opencv_imgproc.MORPH_CLOSE, kernel);
+            opencv_imgproc.morphologyEx(closed, opened, opencv_imgproc.MORPH_OPEN, kernel);
+            opencv_imgproc.findContours(opened, contours, hierarchy, opencv_imgproc.RETR_EXTERNAL, opencv_imgproc.CHAIN_APPROX_SIMPLE);
+
+            int counted = 0;
+            int merged = 0;
+            int rejected = 0;
+            long maskPixels = 0;
+            for (int i = 0; i < contours.size(); i++) {
+                Mat contour = contours.get(i);
+                double area = opencv_imgproc.contourArea(contour);
+                double insideRatio = contourInsidePolygonRatio(contour, bounds, polygon);
+                boolean isInside = insideRatio >= 0.5;
+                if (!isInside || area < nest.getMinArea()) {
+                    if (isInside) {
+                        rejected++;
+                    }
+                    continue;
+                }
+                if (area > nest.getMaxArea() || isMergedContour(contour, polygon, bounds)) {
+                    merged++;
+                } else {
+                    counted++;
+                }
+            }
+
+            // Real coverage: count white pixels inside the polygon in the opened binary mask
+            for (int y = 0; y < opened.rows(); y++) {
+                byte[] row = new byte[opened.cols()];
+                opened.ptr(y).get(row);
+                for (int x = 0; x < opened.cols(); x++) {
+                    if ((row[x] & 0xFF) == 255) {
+                        int imageX = bounds.x + x;
+                        int imageY = bounds.y + y;
+                        if (polygon.contains(imageX, imageY)) {
+                            maskPixels++;
+                        }
+                    }
+                }
+            }
+
+            double polygonArea = computePolygonAreaPixels(polygon);
+            double coverage = polygonArea > 0 ? maskPixels / polygonArea : 0.0;
+            return new ThresholdScore(threshold, counted, merged, rejected, coverage);
+        } finally {
+            binary.release();
+            if (kernel != null) {
+                kernel.release();
+            }
+            closed.release();
+            opened.release();
+            hierarchy.release();
+        }
+    }
+
+    private double computePolygonAreaPixels(Polygon polygon) {
+        if (polygon == null) {
+            return 0.0;
+        }
+        Rectangle bounds = polygon.getBounds();
+        if (bounds.width <= 0 || bounds.height <= 0) {
+            return 0.0;
+        }
+        int inside = 0;
+        for (int y = bounds.y; y < bounds.y + bounds.height; y++) {
+            for (int x = bounds.x; x < bounds.x + bounds.width; x++) {
+                if (polygon.contains(x, y)) {
+                    inside++;
+                }
+            }
+        }
+        return (double) inside;
     }
 
     private void drawDebugContour(Graphics2D graphics, Mat contour, Rectangle bounds, Color color) {

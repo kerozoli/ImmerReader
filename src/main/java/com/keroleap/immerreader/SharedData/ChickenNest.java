@@ -15,6 +15,7 @@ public class ChickenNest {
     private boolean autoThreshold = true;
     private boolean thresholdMask = false;
     private int otsuOffset = 0;
+    private boolean autoCorrection = true;
 
     public int[] getXs() {
         return xs.clone();
@@ -90,6 +91,14 @@ public class ChickenNest {
 
     public void setOtsuOffset(int otsuOffset) {
         this.otsuOffset = otsuOffset;
+    }
+
+    public boolean isAutoCorrection() {
+        return autoCorrection;
+    }
+
+    public void setAutoCorrection(boolean autoCorrection) {
+        this.autoCorrection = autoCorrection;
     }
 
     public boolean isConfigured() {

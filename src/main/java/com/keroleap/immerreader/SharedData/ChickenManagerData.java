@@ -90,7 +90,7 @@ public class ChickenManagerData {
         save();
     }
 
-    public void setNestFilters(int index, int minArea, int maxArea, double minCircularity, boolean autoThreshold, boolean thresholdMask, int otsuOffset) {
+    public void setNestFilters(int index, int minArea, int maxArea, double minCircularity, boolean autoThreshold, boolean thresholdMask, int otsuOffset, boolean autoCorrection) {
         validateIndex(index);
         ChickenNest nest = nests.get(index);
         nest.setMinArea(minArea);
@@ -99,6 +99,7 @@ public class ChickenManagerData {
         nest.setAutoThreshold(autoThreshold);
         nest.setThresholdMask(thresholdMask);
         nest.setOtsuOffset(otsuOffset);
+        nest.setAutoCorrection(autoCorrection);
         save();
     }
 
@@ -124,6 +125,7 @@ public class ChickenManagerData {
             properties.setProperty(prefix + "autoThreshold", String.valueOf(nest.isAutoThreshold()));
             properties.setProperty(prefix + "thresholdMask", String.valueOf(nest.isThresholdMask()));
             properties.setProperty(prefix + "otsuOffset", String.valueOf(nest.getOtsuOffset()));
+            properties.setProperty(prefix + "autoCorrection", String.valueOf(nest.isAutoCorrection()));
         }
 
         File file = new File(DATA_FILE);
@@ -168,6 +170,7 @@ public class ChickenManagerData {
                 nest.setAutoThreshold(Boolean.parseBoolean(properties.getProperty(prefix + "autoThreshold", "true")));
                 nest.setThresholdMask(Boolean.parseBoolean(properties.getProperty(prefix + "thresholdMask", "false")));
                 nest.setOtsuOffset(parseInt(properties, prefix + "otsuOffset", 0));
+                nest.setAutoCorrection(Boolean.parseBoolean(properties.getProperty(prefix + "autoCorrection", "true")));
             }
         } catch (IOException e) {
             logger.warn("Could not load chicken data from {}: {}", DATA_FILE, e.getMessage());
