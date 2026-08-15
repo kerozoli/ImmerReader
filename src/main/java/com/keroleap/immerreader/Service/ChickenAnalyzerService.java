@@ -9,7 +9,6 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,13 +46,6 @@ public class ChickenAnalyzerService {
 
     private final List<Map<String, Object>> accumulatedContourData = java.util.Collections.synchronizedList(new ArrayList<>());
 
-    private volatile BufferedImage lastAnalyzedImage;
-    private volatile List<Map<String, Object>> lastAnalyzedContourData;
-    private volatile List<Integer> lastAnalyzedNestCounts;
-    private volatile long lastAnalyzedTimestamp;
-    private final Map<Integer, Mat> lastAnalyzedThresholdMasks = new HashMap<>();
-    private final Map<Integer, Integer> lastAnalyzedOtsuThresholds = new HashMap<>();
-
     @Autowired
     private CameraImageService cameraImageService;
 
@@ -85,116 +77,61 @@ public class ChickenAnalyzerService {
 
         chickenRest.setNestCounts(counts);
         chickenRest.setTotalCount(counts.stream().mapToInt(Integer::intValue).sum());
-
-        synchronized (this) {
-            lastAnalyzedImage = image;
-            lastAnalyzedContourData = new ArrayList<>(accumulatedContourData);
-            lastAnalyzedNestCounts = new ArrayList<>(counts);
-            lastAnalyzedTimestamp = System.currentTimeMillis();
-        }
-
         return chickenRest;
     }
 
-    public BufferedImage getDebugOverlayImage(ChickenManagerData managerData) {
-        BufferedImage source;
-        List<Map<String, Object>> contourData;
-        synchronized (this) {
-            source = lastAnalyzedImage;
-            contourData = lastAnalyzedContourData;
-        }
-        if (source == null || contourData == null) {
-            return null;
+    public BufferedImage drawDebugOverlay(BufferedImage image, ChickenManagerData managerData) {
+        if (image == null) {
+            return createPlaceholderImage();
         }
         long start = System.currentTimeMillis();
-        BufferedImage copy = deepCopy(source);
+        BufferedImage copy = deepCopy(image);
         Graphics2D graphics = copy.createGraphics();
-        try {
-            graphics.setStroke(new BasicStroke(3));
-            graphics.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
-            List<ChickenNest> nests = managerData.getNests();
-            Map<Integer, Mat> thresholdMasks;
-            synchronized (this) {
-                thresholdMasks = new HashMap<>(lastAnalyzedThresholdMasks);
-            }
+        graphics.setStroke(new BasicStroke(3));
+        graphics.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 14));
+        List<ChickenNest> nests = managerData.getNests();
 
-            if (managerData.isThresholdMaskEnabled()) {
-                BufferedImage thresholdMaskLayer = createThresholdMaskLayer(copy, nests, thresholdMasks);
-                if (thresholdMaskLayer != null) {
-                    graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, THRESHOLD_MASK_ALPHA));
-                    graphics.drawImage(thresholdMaskLayer, 0, 0, null);
-                    graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-                }
-            }
-
-            for (int i = 0; i < nests.size(); i++) {
-                ChickenNest nest = nests.get(i);
-                if (!nest.isConfigured()) {
-                    continue;
-                }
-                int[] xs = nest.getXs();
-                int[] ys = nest.getYs();
-                graphics.setColor(NEST_POLYGON_COLOR);
-                graphics.drawPolygon(xs, ys, xs.length);
-                drawCachedNestContours(graphics, contourData, i);
-                String label = "F" + (i + 1);
-                if (nest.isAutoThreshold()) {
-                    Integer otsuThreshold;
-                    synchronized (this) {
-                        otsuThreshold = lastAnalyzedOtsuThresholds.get(i);
-                    }
-                    if (otsuThreshold != null) {
-                        label += " Otsu:" + otsuThreshold + "+" + nest.getOtsuOffset();
-                    }
-                }
-                graphics.drawString(label, xs[0] + 4, ys[0] + 18);
-            }
-        } finally {
-            graphics.dispose();
+        synchronized (accumulatedContourData) {
+            accumulatedContourData.clear();
         }
-        logger.info("Debug overlay rendered from cache in {} ms", System.currentTimeMillis() - start);
-        return copy;
-    }
 
-    private void drawCachedNestContours(Graphics2D graphics, List<Map<String, Object>> contourData, int nestIndex) {
-        String nestLabel = "F" + (nestIndex + 1);
-        for (Map<String, Object> info : contourData) {
-            if (!nestLabel.equals(info.get("nest"))) {
-                continue;
-            }
-            boolean counted = Boolean.TRUE.equals(info.get("counted"));
-            boolean merged = Boolean.TRUE.equals(info.get("merged"));
-            int x = ((Number) info.get("x")).intValue();
-            int y = ((Number) info.get("y")).intValue();
-            int w = ((Number) info.get("width")).intValue();
-            int h = ((Number) info.get("height")).intValue();
-            Color color = counted ? (merged ? MERGED_CONTOUR_COLOR : Color.GREEN) : REJECTED_CONTOUR_COLOR;
-            graphics.setColor(color);
-            graphics.setStroke(new BasicStroke(2));
-            graphics.drawRect(x, y, w, h);
-            if (counted) {
-                drawDebugCenter(graphics, x + w / 2, y + h / 2, color);
-            }
-            if (merged && counted) {
-                drawDebugMergedLabel(graphics, x, Math.max(12, y - 4), "Merged?");
-            }
+        BufferedImage thresholdMaskLayer = createThresholdMaskLayer(copy, nests, managerData.isThresholdMaskEnabled());
+        if (thresholdMaskLayer != null) {
+            graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, THRESHOLD_MASK_ALPHA));
+            graphics.drawImage(thresholdMaskLayer, 0, 0, null);
+            graphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
         }
-    }
 
-    private BufferedImage createThresholdMaskLayer(BufferedImage source, List<ChickenNest> nests, Map<Integer, Mat> thresholdMasks) {
-        if (thresholdMasks == null || thresholdMasks.isEmpty()) {
-            return null;
-        }
-        BufferedImage maskLayer = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        int maskColor = THRESHOLD_MASK_COLOR.getRGB();
-        byte[] pixel = new byte[1];
         for (int i = 0; i < nests.size(); i++) {
             ChickenNest nest = nests.get(i);
             if (!nest.isConfigured()) {
                 continue;
             }
-            Mat mask = thresholdMasks.get(i);
-            if (mask == null) {
+            int[] xs = nest.getXs();
+            int[] ys = nest.getYs();
+            graphics.setColor(NEST_POLYGON_COLOR);
+            graphics.drawPolygon(xs, ys, xs.length);
+            countEggsInNest(copy, nest, graphics, i, true);
+            String label = "F" + (i + 1);
+            if (nest.isAutoThreshold()) {
+                int otsuThreshold = computeOtsuThresholdForPolygon(copy, nest);
+                label += " Otsu:" + otsuThreshold + "+" + nest.getOtsuOffset();
+            }
+            graphics.drawString(label, xs[0] + 4, ys[0] + 18);
+        }
+        graphics.dispose();
+        logger.info("Debug overlay rendered in {} ms", System.currentTimeMillis() - start);
+        return copy;
+    }
+
+    private BufferedImage createThresholdMaskLayer(BufferedImage source, List<ChickenNest> nests, boolean globalEnabled) {
+        if (!globalEnabled) {
+            return null;
+        }
+        BufferedImage maskLayer = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        int maskColor = THRESHOLD_MASK_COLOR.getRGB();
+        for (ChickenNest nest : nests) {
+            if (!nest.isConfigured()) {
                 continue;
             }
             int[] xs = nest.getXs();
@@ -204,20 +141,53 @@ public class ChickenAnalyzerService {
                 continue;
             }
             Polygon polygon = new Polygon(xs, ys, xs.length);
-            for (int y = 0; y < bounds.height; y++) {
-                for (int x = 0; x < bounds.width; x++) {
-                    int imageX = bounds.x + x;
-                    int imageY = bounds.y + y;
-                    if (polygon.contains(imageX, imageY)) {
-                        mask.ptr(y, x).get(pixel);
-                        if ((pixel[0] & 0xFF) == 255) {
-                            maskLayer.setRGB(imageX, imageY, maskColor);
+            Mat mask = computeThresholdMaskMat(source, nest, bounds);
+            try {
+                for (int y = 0; y < bounds.height; y++) {
+                    for (int x = 0; x < bounds.width; x++) {
+                        int imageX = bounds.x + x;
+                        int imageY = bounds.y + y;
+                        if (polygon.contains(imageX, imageY)) {
+                            byte[] pixel = new byte[1];
+                            mask.ptr(y, x).get(pixel);
+                            if ((pixel[0] & 0xFF) == 255) {
+                                maskLayer.setRGB(imageX, imageY, maskColor);
+                            }
                         }
                     }
                 }
+            } finally {
+                mask.release();
             }
         }
         return maskLayer;
+    }
+
+    private Mat computeThresholdMaskMat(BufferedImage image, ChickenNest nest, Rectangle bounds) {
+        Mat gray = bufferedImageToGrayMat(image, bounds);
+        Mat blurred = new Mat();
+        Mat binary = new Mat();
+        Mat kernel = null;
+        Mat closed = new Mat();
+        Mat opened = new Mat();
+        try {
+            opencv_imgproc.GaussianBlur(gray, blurred, new Size(BLUR_SIZE, BLUR_SIZE), 0);
+            int effectiveThreshold = nest.isAutoThreshold() ? computeOtsuThreshold(blurred) : nest.getThreshold();
+            opencv_imgproc.threshold(blurred, binary, effectiveThreshold, 255, opencv_imgproc.THRESH_BINARY);
+            kernel = opencv_imgproc.getStructuringElement(opencv_imgproc.MORPH_ELLIPSE, new Size(MORPH_SIZE, MORPH_SIZE));
+            opencv_imgproc.morphologyEx(binary, closed, opencv_imgproc.MORPH_CLOSE, kernel);
+            opencv_imgproc.morphologyEx(closed, opened, opencv_imgproc.MORPH_OPEN, kernel);
+            return opened.clone();
+        } finally {
+            gray.release();
+            blurred.release();
+            binary.release();
+            if (kernel != null) {
+                kernel.release();
+            }
+            closed.release();
+            opened.release();
+        }
     }
 
     private int computeOtsuThresholdForPolygon(BufferedImage image, ChickenNest nest) {
@@ -314,14 +284,6 @@ public class ChickenAnalyzerService {
                 accumulatedContourData.addAll(contourData);
             }
 
-            synchronized (this) {
-                Mat oldMask = lastAnalyzedThresholdMasks.put(nestIndex, opened.clone());
-                if (oldMask != null) {
-                    oldMask.release();
-                }
-                lastAnalyzedOtsuThresholds.put(nestIndex, otsuThreshold);
-            }
-
             return count;
         } finally {
             gray.release();
@@ -346,12 +308,6 @@ public class ChickenAnalyzerService {
         List<Mat> result = new ArrayList<>();
         long count = initialContours.size();
         if (count == 0) {
-            return result;
-        }
-        if (!needsWatershed(initialContours, minArea)) {
-            for (int i = 0; i < count; i++) {
-                result.add(initialContours.get(i).clone());
-            }
             return result;
         }
 
@@ -467,8 +423,7 @@ public class ChickenAnalyzerService {
             Color color = merged ? MERGED_CONTOUR_COLOR : Color.GREEN;
             drawDebugContour(debugGraphics, contour, bounds, color);
             if (merged) {
-                Rect mergedRect = opencv_imgproc.boundingRect(contour);
-                drawDebugMergedLabel(debugGraphics, bounds.x + mergedRect.x(), Math.max(12, bounds.y + mergedRect.y() - 4), "Merged?");
+                drawDebugMergedLabel(debugGraphics, contour, bounds, "Merged?");
             }
             int[] center = contourInsideCentroid(contour, bounds, polygon);
             drawDebugCenter(debugGraphics, center[0], center[1], color);
@@ -481,24 +436,6 @@ public class ChickenAnalyzerService {
         return false;
     }
 
-
-    private boolean needsWatershed(MatVector contours, double minArea) {
-        long count = contours.size();
-        for (int i = 0; i < count; i++) {
-            Mat contour = contours.get(i);
-            double area = opencv_imgproc.contourArea(contour);
-            if (area > minArea * 2) {
-                return true;
-            }
-            Rect rect = opencv_imgproc.boundingRect(contour);
-            int w = rect.width();
-            int h = rect.height();
-            if (w > 0 && h > 0 && (double) Math.max(w, h) / Math.min(w, h) > 1.6) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private boolean isMergedContour(Mat contour, Polygon polygon, Rectangle bounds) {
         double area = opencv_imgproc.contourArea(contour);
@@ -606,13 +543,16 @@ public class ChickenAnalyzerService {
         return shifted;
     }
 
-    private void drawDebugMergedLabel(Graphics2D graphics, int x, int y, String text) {
+    private void drawDebugMergedLabel(Graphics2D graphics, Mat contour, Rectangle bounds, String text) {
         if (graphics == null) {
             return;
         }
+        Rect rect = opencv_imgproc.boundingRect(contour);
+        int x = bounds.x + rect.x();
+        int y = bounds.y + rect.y();
         graphics.setColor(Color.WHITE);
         graphics.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 12));
-        graphics.drawString(text, x, y);
+        graphics.drawString(text, x, Math.max(12, y - 4));
     }
 
     private int computeOtsuThreshold(Mat gray) {
@@ -733,25 +673,20 @@ public class ChickenAnalyzerService {
     }
 
     private Mat bufferedImageToGrayMat(BufferedImage image, Rectangle bounds) {
-        int w = bounds.width;
-        int h = bounds.height;
-        int[] rgb = image.getRGB(bounds.x, bounds.y, w, h, null, 0, w);
-        Mat bgr = new Mat(h, w, opencv_core.CV_8UC3);
-        byte[] row = new byte[w * 3];
-        for (int y = 0; y < h; y++) {
-            int rowStart = y * w;
-            for (int x = 0; x < w; x++) {
-                int pixel = rgb[rowStart + x];
-                int idx = x * 3;
-                row[idx] = (byte) (pixel & 0xFF);          // B
-                row[idx + 1] = (byte) ((pixel >> 8) & 0xFF);  // G
-                row[idx + 2] = (byte) ((pixel >> 16) & 0xFF); // R
+        Mat roiMat = new Mat(bounds.height, bounds.width, opencv_core.CV_8UC3);
+        for (int y = 0; y < bounds.height; y++) {
+            for (int x = 0; x < bounds.width; x++) {
+                int rgb = image.getRGB(bounds.x + x, bounds.y + y);
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
+                byte[] data = new byte[] { (byte) b, (byte) g, (byte) r };
+                roiMat.ptr(y, x).put(data);
             }
-            bgr.ptr(y).put(row);
         }
         Mat gray = new Mat();
-        opencv_imgproc.cvtColor(bgr, gray, opencv_imgproc.COLOR_BGR2GRAY);
-        bgr.release();
+        opencv_imgproc.cvtColor(roiMat, gray, opencv_imgproc.COLOR_BGR2GRAY);
+        roiMat.release();
         return gray;
     }
 
@@ -762,7 +697,7 @@ public class ChickenAnalyzerService {
         return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
     }
 
-    public BufferedImage createPlaceholderImage() {
+    private BufferedImage createPlaceholderImage() {
         BufferedImage placeholder = new BufferedImage(320, 240, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = placeholder.createGraphics();
         g.setColor(Color.BLACK);

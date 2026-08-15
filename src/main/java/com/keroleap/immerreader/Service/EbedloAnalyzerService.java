@@ -1,10 +1,8 @@
 package com.keroleap.immerreader.Service;
 
 import java.awt.Polygon;
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -23,48 +21,11 @@ public class EbedloAnalyzerService {
     private static final Logger logger = LoggerFactory.getLogger(EbedloAnalyzerService.class);
     private static final double TRIM_PERCENTAGE = 0.10;
 
-    private boolean[] lastPolygonMask;
-    private int lastMaskWidth;
-    private int lastMaskHeight;
-    private int[] lastMaskXs;
-    private int[] lastMaskYs;
-
-    private volatile BufferedImage lastAnalyzedImage;
-    private volatile EbedloRest lastAnalyzedRest;
-    private volatile long lastAnalyzedTimestamp;
-
     @Autowired
     private CameraImageService cameraImageService;
 
     public BufferedImage getBufferedImage(String imageUrl) {
         return cameraImageService.capture(imageUrl);
-    }
-
-    public BufferedImage getDebugOverlayImage(EbedloManagerData managerData) {
-        BufferedImage source;
-        synchronized (this) {
-            source = lastAnalyzedImage;
-        }
-        if (source == null) {
-            return null;
-        }
-        BufferedImage copy = deepCopy(source);
-        int count = managerData.getPointCount();
-        int[] xs = new int[count];
-        int[] ys = new int[count];
-        for (int i = 0; i < count; i++) {
-            xs[i] = managerData.getX(i);
-            ys[i] = managerData.getY(i);
-        }
-        drawPolygonMarkers(copy, xs, ys, count);
-        return copy;
-    }
-
-    private BufferedImage deepCopy(BufferedImage source) {
-        java.awt.image.ColorModel cm = source.getColorModel();
-        boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
-        java.awt.image.WritableRaster raster = source.copyData(null);
-        return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
     }
 
     public EbedloRest getEbedloRestData(BufferedImage bufferedImage, EbedloManagerData managerData) {
@@ -104,50 +65,34 @@ public class EbedloAnalyzerService {
         }
 
         Polygon area = new Polygon(xs, ys, count);
-        boolean[] mask = getOrCreatePolygonMask(area, bufferedImage.getWidth(), bufferedImage.getHeight(), xs, ys);
-        double averageValue = computeTrimmedMeanValueInPolygon(bufferedImage, area, mask);
+        double averageValue = computeTrimmedMeanValueInPolygon(bufferedImage, area);
         boolean on = averageValue > managerData.getThreshold();
 
         ebedloRest.setOn(on);
         ebedloRest.setAverageValue(Math.round(averageValue));
-
-        synchronized (this) {
-            lastAnalyzedImage = bufferedImage;
-            lastAnalyzedRest = ebedloRest;
-            lastAnalyzedTimestamp = System.currentTimeMillis();
-        }
-
+        drawPolygonMarkers(bufferedImage, xs, ys, count);
         return ebedloRest;
     }
 
-    private double computeTrimmedMeanValueInPolygon(BufferedImage image, Polygon polygon, boolean[] mask) {
+    private double computeTrimmedMeanValueInPolygon(BufferedImage image, Polygon polygon) {
         int width = image.getWidth();
         int height = image.getHeight();
         List<Integer> values = new ArrayList<>();
 
-        Rectangle bounds = polygon.getBounds();
-        int minX = Math.max(0, bounds.x);
-        int minY = Math.max(0, bounds.y);
-        int maxX = Math.min(width, minX + bounds.width);
-        int maxY = Math.min(height, minY + bounds.height);
-        int boxW = maxX - minX;
-        int boxH = maxY - minY;
-        if (boxW <= 0 || boxH <= 0) {
-            return 0;
-        }
-
-        int[] rgb = image.getRGB(minX, minY, boxW, boxH, null, 0, boxW);
+        int minX = Math.max(0, polygon.getBounds().x);
+        int minY = Math.max(0, polygon.getBounds().y);
+        int maxX = Math.min(width, minX + polygon.getBounds().width);
+        int maxY = Math.min(height, minY + polygon.getBounds().height);
 
         for (int y = minY; y < maxY; y++) {
-            int rowOffset = (y - minY) * boxW;
-            int maskRowOffset = y * width;
             for (int x = minX; x < maxX; x++) {
-                if (mask[maskRowOffset + x]) {
-                    int pixel = rgb[rowOffset + (x - minX)];
-                    int r = (pixel >> 16) & 0xFF;
-                    int g = (pixel >> 8) & 0xFF;
-                    int b = pixel & 0xFF;
-                    values.add(Math.max(r, Math.max(g, b)));
+                if (polygon.contains(x, y)) {
+                    int rgb = image.getRGB(x, y);
+                    int r = (rgb >> 16) & 0xFF;
+                    int g = (rgb >> 8) & 0xFF;
+                    int b = rgb & 0xFF;
+                    float[] hsv = rgbToHsv(r, g, b);
+                    values.add(Math.round(hsv[2] * 255));
                 }
             }
         }
@@ -170,40 +115,6 @@ public class EbedloAnalyzerService {
             total += values.get(i);
         }
         return (double) total / (end - start);
-    }
-
-    private boolean[] getOrCreatePolygonMask(Polygon polygon, int width, int height, int[] xs, int[] ys) {
-        if (lastPolygonMask != null
-                && lastMaskWidth == width
-                && lastMaskHeight == height
-                && Arrays.equals(lastMaskXs, xs)
-                && Arrays.equals(lastMaskYs, ys)) {
-            return lastPolygonMask;
-        }
-        lastPolygonMask = computePolygonMask(polygon, width, height);
-        lastMaskWidth = width;
-        lastMaskHeight = height;
-        lastMaskXs = Arrays.copyOf(xs, xs.length);
-        lastMaskYs = Arrays.copyOf(ys, ys.length);
-        return lastPolygonMask;
-    }
-
-    private boolean[] computePolygonMask(Polygon polygon, int width, int height) {
-        boolean[] mask = new boolean[width * height];
-        Rectangle bounds = polygon.getBounds();
-        int minX = Math.max(0, bounds.x);
-        int minY = Math.max(0, bounds.y);
-        int maxX = Math.min(width, bounds.x + bounds.width);
-        int maxY = Math.min(height, bounds.y + bounds.height);
-        for (int y = minY; y < maxY; y++) {
-            int rowOffset = y * width;
-            for (int x = minX; x < maxX; x++) {
-                if (polygon.contains(x, y)) {
-                    mask[rowOffset + x] = true;
-                }
-            }
-        }
-        return mask;
     }
 
     private void drawPolygonMarkers(BufferedImage image, int[] xs, int[] ys, int count) {
@@ -264,5 +175,26 @@ public class EbedloAnalyzerService {
                 image.setRGB(x, b, color);
             }
         }
+    }
+
+    private float[] rgbToHsv(int r, int g, int b) {
+        float rf = r / 255.0f;
+        float gf = g / 255.0f;
+        float bf = b / 255.0f;
+        float max = Math.max(rf, Math.max(gf, bf));
+        float min = Math.min(rf, Math.min(gf, bf));
+        float v = max;
+        float s = max == 0 ? 0 : (max - min) / max;
+        float h;
+        if (max == min) {
+            h = 0;
+        } else if (max == rf) {
+            h = (60 * ((gf - bf) / (max - min)) + 360) % 360;
+        } else if (max == gf) {
+            h = (60 * ((bf - rf) / (max - min)) + 120);
+        } else {
+            h = (60 * ((rf - gf) / (max - min)) + 240);
+        }
+        return new float[] { h, s, v };
     }
 }

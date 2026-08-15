@@ -40,18 +40,18 @@ public class EbedloController {
 
     @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[] getImage() throws IOException {
-        BufferedImage image = ebedloAnalyzerService.getDebugOverlayImage(ebedloManagerData);
-        if (image == null) {
-            image = ebedloAnalyzerService.getBufferedImage(cameraUrl);
-            ebedloAnalyzerService.getEbedloRestData(image, ebedloManagerData);
-            image = ebedloAnalyzerService.getDebugOverlayImage(ebedloManagerData);
-        }
-        return writeJpeg(image);
+        return writeJpeg(analyzeAndReturnImage());
     }
 
     @GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[] getUncroppedImage() throws IOException {
-        return getImage();
+        return writeJpeg(analyzeAndReturnImage());
+    }
+
+    private BufferedImage analyzeAndReturnImage() {
+        BufferedImage cachedImage = ebedloAnalyzerService.getBufferedImage(cameraUrl);
+        ebedloAnalyzerService.getEbedloRestData(cachedImage, ebedloManagerData);
+        return cachedImage;
     }
 
     private byte[] writeJpeg(BufferedImage image) throws IOException {
