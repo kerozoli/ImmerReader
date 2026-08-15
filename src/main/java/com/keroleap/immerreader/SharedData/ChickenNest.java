@@ -12,6 +12,9 @@ public class ChickenNest {
     private int minArea = 500;
     private int maxArea = 8000;
     private double minCircularity = 0.5;
+    private boolean autoThreshold = true;
+    private boolean thresholdMask = false;
+    private int otsuOffset = 0;
 
     public int[] getXs() {
         return xs.clone();
@@ -63,6 +66,30 @@ public class ChickenNest {
 
     public void setMinCircularity(double minCircularity) {
         this.minCircularity = minCircularity;
+    }
+
+    public boolean isAutoThreshold() {
+        return autoThreshold;
+    }
+
+    public void setAutoThreshold(boolean autoThreshold) {
+        this.autoThreshold = autoThreshold;
+    }
+
+    public boolean isThresholdMask() {
+        return thresholdMask;
+    }
+
+    public void setThresholdMask(boolean thresholdMask) {
+        this.thresholdMask = thresholdMask;
+    }
+
+    public int getOtsuOffset() {
+        return otsuOffset;
+    }
+
+    public void setOtsuOffset(int otsuOffset) {
+        this.otsuOffset = otsuOffset;
     }
 
     public boolean isConfigured() {

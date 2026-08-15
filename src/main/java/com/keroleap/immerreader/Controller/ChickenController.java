@@ -3,6 +3,8 @@ package com.keroleap.immerreader.Controller;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 import javax.imageio.ImageIO;
 
@@ -52,8 +54,32 @@ public class ChickenController {
     @GetMapping(value = "/debugimage", produces = MediaType.IMAGE_JPEG_VALUE)
     public @ResponseBody byte[] getDebugImage() throws IOException {
         BufferedImage image = chickenAnalyzerService.getBufferedImage(cameraUrl);
-        image = chickenAnalyzerService.drawDebugOverlay(image, chickenManagerData);
+        try {
+            image = chickenAnalyzerService.drawDebugOverlay(image, chickenManagerData);
+        } catch (Throwable t) {
+            image = createErrorImage(t.getClass().getSimpleName() + ": " + t.getMessage());
+        }
         return writeJpeg(image);
+    }
+
+    private BufferedImage createErrorImage(String message) {
+        BufferedImage errorImage = new BufferedImage(640, 160, BufferedImage.TYPE_INT_RGB);
+        java.awt.Graphics2D g = errorImage.createGraphics();
+        g.setColor(java.awt.Color.BLACK);
+        g.fillRect(0, 0, 640, 160);
+        g.setColor(java.awt.Color.RED);
+        g.fillRect(0, 120, 640, 40);
+        g.setColor(java.awt.Color.WHITE);
+        g.setFont(new java.awt.Font("Arial", java.awt.Font.BOLD, 16));
+        g.drawString("DEBUG OVERLAY ERROR", 20, 30);
+        g.setFont(new java.awt.Font("Arial", java.awt.Font.PLAIN, 14));
+        if (message != null) {
+            g.drawString(message, 20, 70);
+        }
+        g.setColor(java.awt.Color.BLACK);
+        g.drawString("Check server logs / camera configuration", 20, 145);
+        g.dispose();
+        return errorImage;
     }
 
     private byte[] writeJpeg(BufferedImage image) throws IOException {
@@ -74,5 +100,11 @@ public class ChickenController {
     @ResponseBody
     public ChickenRest getChickenRestData() {
         return chickenData.getChickenRest();
+    }
+
+    @RequestMapping(value = "/contourdata")
+    @ResponseBody
+    public List<Map<String, Object>> getContourData() {
+        return chickenAnalyzerService.getLastContourData();
     }
 }

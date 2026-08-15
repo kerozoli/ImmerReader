@@ -29,6 +29,7 @@ public class ChickenManagerData {
     private int nestCount = 3;
     private int intervalSeconds = DEFAULT_INTERVAL_SECONDS;
     private boolean enabled = false;
+    private boolean thresholdMaskEnabled = false;
 
     public ChickenManagerData() {
         load();
@@ -57,6 +58,15 @@ public class ChickenManagerData {
         save();
     }
 
+    public boolean isThresholdMaskEnabled() {
+        return thresholdMaskEnabled;
+    }
+
+    public void setThresholdMaskEnabled(boolean thresholdMaskEnabled) {
+        this.thresholdMaskEnabled = thresholdMaskEnabled;
+        save();
+    }
+
     public int getIntervalSeconds() {
         return intervalSeconds;
     }
@@ -80,18 +90,22 @@ public class ChickenManagerData {
         save();
     }
 
-    public void setNestFilters(int index, int minArea, int maxArea, double minCircularity) {
+    public void setNestFilters(int index, int minArea, int maxArea, double minCircularity, boolean autoThreshold, boolean thresholdMask, int otsuOffset) {
         validateIndex(index);
         ChickenNest nest = nests.get(index);
         nest.setMinArea(minArea);
         nest.setMaxArea(maxArea);
         nest.setMinCircularity(minCircularity);
+        nest.setAutoThreshold(autoThreshold);
+        nest.setThresholdMask(thresholdMask);
+        nest.setOtsuOffset(otsuOffset);
         save();
     }
 
     public void save() {
         Properties properties = new Properties();
         properties.setProperty("enabled", String.valueOf(enabled));
+        properties.setProperty("thresholdMaskEnabled", String.valueOf(thresholdMaskEnabled));
         properties.setProperty("intervalSeconds", String.valueOf(intervalSeconds));
         properties.setProperty("nestCount", String.valueOf(nestCount));
         for (int i = 0; i < nestCount; i++) {
@@ -107,6 +121,9 @@ public class ChickenManagerData {
             properties.setProperty(prefix + "minArea", String.valueOf(nest.getMinArea()));
             properties.setProperty(prefix + "maxArea", String.valueOf(nest.getMaxArea()));
             properties.setProperty(prefix + "minCircularity", String.valueOf(nest.getMinCircularity()));
+            properties.setProperty(prefix + "autoThreshold", String.valueOf(nest.isAutoThreshold()));
+            properties.setProperty(prefix + "thresholdMask", String.valueOf(nest.isThresholdMask()));
+            properties.setProperty(prefix + "otsuOffset", String.valueOf(nest.getOtsuOffset()));
         }
 
         File file = new File(DATA_FILE);
@@ -129,6 +146,7 @@ public class ChickenManagerData {
         try (InputStream input = new FileInputStream(file)) {
             properties.load(input);
             enabled = Boolean.parseBoolean(properties.getProperty("enabled", "false"));
+            thresholdMaskEnabled = Boolean.parseBoolean(properties.getProperty("thresholdMaskEnabled", "false"));
             intervalSeconds = clamp(parseInt(properties, "intervalSeconds", DEFAULT_INTERVAL_SECONDS), 1, Integer.MAX_VALUE);
             nestCount = clamp(parseInt(properties, "nestCount", 3), MIN_NESTS, MAX_NESTS);
             resizeNests();
@@ -147,6 +165,9 @@ public class ChickenManagerData {
                 nest.setMinArea(parseInt(properties, prefix + "minArea", 500));
                 nest.setMaxArea(parseInt(properties, prefix + "maxArea", 8000));
                 nest.setMinCircularity(parseDouble(properties, prefix + "minCircularity", 0.5));
+                nest.setAutoThreshold(Boolean.parseBoolean(properties.getProperty(prefix + "autoThreshold", "true")));
+                nest.setThresholdMask(Boolean.parseBoolean(properties.getProperty(prefix + "thresholdMask", "false")));
+                nest.setOtsuOffset(parseInt(properties, prefix + "otsuOffset", 0));
             }
         } catch (IOException e) {
             logger.warn("Could not load chicken data from {}: {}", DATA_FILE, e.getMessage());

@@ -19,6 +19,7 @@ public class ChickenData {
     private ChickenRest chickenRest = new ChickenRest();
     private final List<Deque<Integer>> history = new ArrayList<>();
     private int configuredCount = 0;
+    private int intervalSeconds = 30;
 
     public ChickenData() {
         resizeHistory(3);
@@ -42,16 +43,25 @@ public class ChickenData {
         ChickenRest rest = new ChickenRest();
         rest.setNestCounts(smoothed);
         rest.setTotalCount(smoothed.stream().mapToInt(Integer::intValue).sum());
+        rest.setIntervalSeconds(this.intervalSeconds);
         this.chickenRest = rest;
     }
 
     public synchronized ChickenRest getChickenRest() {
+        chickenRest.setIntervalSeconds(this.intervalSeconds);
         return chickenRest;
     }
 
     public synchronized void setConfiguredCount(int count) {
         this.configuredCount = count;
         resizeHistory(count);
+    }
+
+    public synchronized void setIntervalSeconds(int intervalSeconds) {
+        this.intervalSeconds = intervalSeconds;
+        if (this.chickenRest != null) {
+            this.chickenRest.setIntervalSeconds(intervalSeconds);
+        }
     }
 
     private void resizeHistory(int count) {
