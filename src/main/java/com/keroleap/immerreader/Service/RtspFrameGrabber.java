@@ -8,6 +8,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
@@ -23,12 +25,16 @@ public class RtspFrameGrabber {
     private static final Logger logger = LoggerFactory.getLogger(RtspFrameGrabber.class);
     private static final long FRAME_TIMEOUT_MS = 10000;
     private static final long GRABBER_ERROR_DELAY_MS = 2000;
+    private static final long DEFAULT_TARGET_FPS = 2;
+
+    @Value("${rtsp.target.fps:2}")
+    private long targetFps;
 
     private final Map<String, StreamHolder> holders = new ConcurrentHashMap<>();
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
     public BufferedImage getLatestFrame(String rtspUrl) {
-        StreamHolder holder = holders.computeIfAbsent(rtspUrl, StreamHolder::new);
+        StreamHolder holder = holders.computeIfAbsent(rtspUrl, key -> new StreamHolder(key, targetFps));
         return holder.getFrame();
     }
 
@@ -48,13 +54,15 @@ public class RtspFrameGrabber {
 
     private class StreamHolder {
         private final String rtspUrl;
+        private final long targetFps;
         private final ReentrantLock lock = new ReentrantLock();
         private final AtomicLong lastFrameTime = new AtomicLong(0);
         private volatile BufferedImage latestFrame;
         private volatile Thread workerThread;
 
-        StreamHolder(String rtspUrl) {
+        StreamHolder(String rtspUrl, long targetFps) {
             this.rtspUrl = rtspUrl;
+            this.targetFps = Math.max(1, targetFps);
             startWorker();
         }
 
@@ -104,12 +112,14 @@ public class RtspFrameGrabber {
         }
 
         void runGrabber() {
-            logger.info("Starting RTSP grabber for {}", rtspUrl);
+            long grabIntervalMs = 1000 / targetFps;
+            logger.info("Starting RTSP grabber for {} at {} fps ({} ms between grabs)", rtspUrl, targetFps, grabIntervalMs);
             while (!shutdown.get() && !Thread.currentThread().isInterrupted()) {
                 try (FFmpegFrameGrabber grabber = createGrabber();
                      Java2DFrameConverter converter = new Java2DFrameConverter()) {
                     grabber.start();
                     while (!shutdown.get() && !Thread.currentThread().isInterrupted()) {
+                        long loopStart = System.currentTimeMillis();
                         Frame frame = grabber.grabImage();
                         if (frame == null) {
                             break;
@@ -118,6 +128,16 @@ public class RtspFrameGrabber {
                         if (image != null) {
                             latestFrame = image;
                             lastFrameTime.set(System.currentTimeMillis());
+                        }
+                        long elapsed = System.currentTimeMillis() - loopStart;
+                        long sleepMs = grabIntervalMs - elapsed;
+                        if (sleepMs > 0) {
+                            try {
+                                Thread.sleep(sleepMs);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                break;
+                            }
                         }
                     }
                 } catch (Exception e) {
