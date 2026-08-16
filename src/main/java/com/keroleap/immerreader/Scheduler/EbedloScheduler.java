@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import com.keroleap.immerreader.EbedloRest;
 import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.Service.EbedloAnalyzerService;
+import com.keroleap.immerreader.Service.RtspFrameGrabber;
 import com.keroleap.immerreader.SharedData.EbedloData;
 import com.keroleap.immerreader.SharedData.EbedloManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
@@ -56,6 +57,9 @@ public class EbedloScheduler {
 
     @Autowired
     private TaskScheduler taskScheduler;
+
+    @Autowired
+    private RtspFrameGrabber rtspFrameGrabber;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final AtomicInteger consecutiveErrors = new AtomicInteger(0);
@@ -93,6 +97,7 @@ public class EbedloScheduler {
         if (!ebedloManagerData.isEnabled()) {
             consecutiveErrors.set(0);
             lastErrorType = null;
+            rtspFrameGrabber.stopStream(cameraUrl);
             return;
         }
 
