@@ -32,6 +32,14 @@ public class RtspFrameGrabber {
         return holder.getFrame();
     }
 
+    public void stopStream(String rtspUrl) {
+        StreamHolder holder = holders.remove(rtspUrl);
+        if (holder != null) {
+            logger.info("Stopping RTSP stream for {}", rtspUrl);
+            holder.stop();
+        }
+    }
+
     @PreDestroy
     public void destroy() {
         shutdown.set(true);

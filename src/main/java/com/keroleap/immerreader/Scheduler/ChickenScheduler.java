@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import com.keroleap.immerreader.ChickenRest;
 import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.Service.ChickenAnalyzerService;
+import com.keroleap.immerreader.Service.RtspFrameGrabber;
 import com.keroleap.immerreader.SharedData.ChickenData;
 import com.keroleap.immerreader.SharedData.ChickenManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
@@ -52,6 +53,9 @@ public class ChickenScheduler {
     @Autowired
     private SchedulerHealthTracker schedulerHealthTracker;
 
+    @Autowired
+    private RtspFrameGrabber rtspFrameGrabber;
+
     private ScheduledExecutorService scheduler;
     private ExecutorService executor;
     private final AtomicInteger consecutiveErrors = new AtomicInteger(0);
@@ -75,6 +79,7 @@ public class ChickenScheduler {
             consecutiveErrors.set(0);
             lastErrorType = null;
             chickenData.addCounts(java.util.Collections.nCopies(chickenManagerData.getNestCount(), 0));
+            rtspFrameGrabber.stopStream(cameraUrl);
             return;
         }
 
