@@ -34,6 +34,27 @@ public class ImmerManagerController {
         return immerManagerData;
     }
 
+    @PostMapping("/setReference")
+    @ResponseBody
+    public ImmerManagerData setReference(@RequestParam int x,
+                                         @RequestParam int y,
+                                         @RequestParam int threshold,
+                                         @RequestParam int hysteresis) {
+        immerManagerData.setReferenceX(x);
+        immerManagerData.setReferenceY(y);
+        immerManagerData.setReferenceThreshold(threshold);
+        immerManagerData.setReferenceHysteresis(hysteresis);
+        return immerManagerData;
+    }
+
+    @PostMapping("/setThresholds")
+    @ResponseBody
+    public ImmerManagerData setThresholds(@RequestParam int dark, @RequestParam int light) {
+        immerManagerData.setDarkThreshold(dark);
+        immerManagerData.setLightThreshold(light);
+        return immerManagerData;
+    }
+
     @PostMapping("/toggle")
     @ResponseBody
     public ImmerManagerData toggleEnabled() {
@@ -69,6 +90,14 @@ public class ImmerManagerController {
         modelAndView.addObject("enabled", immerManagerData.isEnabled());
         modelAndView.addObject("immerRest", immerData.getImmerRest());
         modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Immer"));
+        modelAndView.addObject("referenceX", immerManagerData.getReferenceX());
+        modelAndView.addObject("referenceY", immerManagerData.getReferenceY());
+        modelAndView.addObject("referenceThreshold", immerManagerData.getReferenceThreshold());
+        modelAndView.addObject("referenceHysteresis", immerManagerData.getReferenceHysteresis());
+        modelAndView.addObject("darkThreshold", immerManagerData.getDarkThreshold());
+        modelAndView.addObject("lightThreshold", immerManagerData.getLightThreshold());
+        modelAndView.addObject("ambientBrightness", immerManagerData.getAmbientBrightness());
+        modelAndView.addObject("lightMode", immerManagerData.isLightMode());
         return modelAndView;
     }
 }

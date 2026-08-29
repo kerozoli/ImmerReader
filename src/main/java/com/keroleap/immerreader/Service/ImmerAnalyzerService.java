@@ -11,12 +11,16 @@ import org.springframework.stereotype.Service;
 import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
+import com.keroleap.immerreader.SharedData.ImmerManagerData;
 
 @Service
 public class ImmerAnalyzerService {
 
     private static final Logger logger = LoggerFactory.getLogger(ImmerAnalyzerService.class);
     private static final int LIGHT_THRESHOLD = -2500000;
+    private static final int DEFAULT_REFERENCE_X = 150;
+    private static final int DEFAULT_REFERENCE_Y = 150;
+
     private final AtomicInteger previousTempValue = new AtomicInteger(0);
 
     @Autowired(required = false)
@@ -25,30 +29,66 @@ public class ImmerAnalyzerService {
     @Autowired
     private CameraImageService cameraImageService;
 
+    @Autowired(required = false)
+    private ImmerManagerData immerManagerData;
+
     public ImmerRest getImmerRestData(BufferedImage bufferedImage, int offsetX, int offsetY) {
-        boolean heating = getLightValueAnnDrawRedCross(495 + offsetX, 215 + offsetY, bufferedImage);
-        boolean levelOne = getLightValueAnnDrawRedCross(305 + offsetX, 150 + offsetY, bufferedImage);
-        boolean levelTwo = getLightValueAnnDrawRedCross(334 + offsetX, 150 + offsetY, bufferedImage);
-        boolean levelThree = getLightValueAnnDrawRedCross(362 + offsetX, 150 + offsetY, bufferedImage);
-        boolean levelFour = getLightValueAnnDrawRedCross(390 + offsetX, 150 + offsetY, bufferedImage);
+        if (bufferedImage == null) {
+            logger.warn("No image available for Immer analysis");
+            ImmerRest errorRest = new ImmerRest();
+            errorRest.setError(true);
+            errorRest.setErrorType(ErrorType.FETCH_ERROR);
+            return errorRest;
+        }
 
-        boolean boilerOn = getLightValueAnnDrawRedCross(490 + offsetX, 120 + offsetY, bufferedImage);
+        boolean lightMode = false;
+        int activeThreshold = LIGHT_THRESHOLD;
+        int ambientBrightness = 0;
 
-        boolean digit1_1 = getLightValueAnnDrawRedCross(306 + offsetX, 178 + offsetY, bufferedImage);
-        boolean digit1_2 = getLightValueAnnDrawRedCross(291 + offsetX, 199 + offsetY, bufferedImage);
-        boolean digit1_3 = getLightValueAnnDrawRedCross(291 + offsetX, 243 + offsetY, bufferedImage);
-        boolean digit1_4 = getLightValueAnnDrawRedCross(306 + offsetX, 269 + offsetY, bufferedImage);
-        boolean digit1_5 = getLightValueAnnDrawRedCross(324 + offsetX, 243 + offsetY, bufferedImage);
-        boolean digit1_6 = getLightValueAnnDrawRedCross(324 + offsetX, 199 + offsetY, bufferedImage);
-        boolean digit1_7 = getLightValueAnnDrawRedCross(304 + offsetX, 224 + offsetY, bufferedImage);
+        if (immerManagerData != null) {
+            int refX = immerManagerData.getReferenceX() + offsetX;
+            int refY = immerManagerData.getReferenceY() + offsetY;
+            ambientBrightness = measureBrightnessAt(refX, refY, bufferedImage);
+            int referenceThreshold = immerManagerData.getReferenceThreshold();
+            int hysteresis = immerManagerData.getReferenceHysteresis();
+            boolean currentlyLight = immerManagerData.isLightMode();
 
-        boolean digit2_1 = getLightValueAnnDrawRedCross(360 + offsetX, 178 + offsetY, bufferedImage);
-        boolean digit2_2 = getLightValueAnnDrawRedCross(344 + offsetX, 199 + offsetY, bufferedImage);
-        boolean digit2_3 = getLightValueAnnDrawRedCross(344 + offsetX, 243 + offsetY, bufferedImage);
-        boolean digit2_4 = getLightValueAnnDrawRedCross(360 + offsetX, 268 + offsetY, bufferedImage);
-        boolean digit2_5 = getLightValueAnnDrawRedCross(377 + offsetX, 243 + offsetY, bufferedImage);
-        boolean digit2_6 = getLightValueAnnDrawRedCross(377 + offsetX, 199 + offsetY, bufferedImage);
-        boolean digit2_7 = getLightValueAnnDrawRedCross(360 + offsetX, 224 + offsetY, bufferedImage);
+            if (currentlyLight) {
+                lightMode = ambientBrightness > (referenceThreshold - hysteresis);
+            } else {
+                lightMode = ambientBrightness > (referenceThreshold + hysteresis);
+            }
+
+            activeThreshold = lightMode ? immerManagerData.getLightThreshold() : immerManagerData.getDarkThreshold();
+            immerManagerData.setAmbientBrightness(ambientBrightness);
+            immerManagerData.setLightMode(lightMode);
+
+            drawReferenceCross(refX, refY, bufferedImage, lightMode);
+        }
+
+        boolean heating = getLightValueAnnDrawRedCross(495 + offsetX, 215 + offsetY, bufferedImage, activeThreshold);
+        boolean levelOne = getLightValueAnnDrawRedCross(305 + offsetX, 150 + offsetY, bufferedImage, activeThreshold);
+        boolean levelTwo = getLightValueAnnDrawRedCross(334 + offsetX, 150 + offsetY, bufferedImage, activeThreshold);
+        boolean levelThree = getLightValueAnnDrawRedCross(362 + offsetX, 150 + offsetY, bufferedImage, activeThreshold);
+        boolean levelFour = getLightValueAnnDrawRedCross(390 + offsetX, 150 + offsetY, bufferedImage, activeThreshold);
+
+        boolean boilerOn = getLightValueAnnDrawRedCross(490 + offsetX, 120 + offsetY, bufferedImage, activeThreshold);
+
+        boolean digit1_1 = getLightValueAnnDrawRedCross(306 + offsetX, 178 + offsetY, bufferedImage, activeThreshold);
+        boolean digit1_2 = getLightValueAnnDrawRedCross(291 + offsetX, 199 + offsetY, bufferedImage, activeThreshold);
+        boolean digit1_3 = getLightValueAnnDrawRedCross(291 + offsetX, 243 + offsetY, bufferedImage, activeThreshold);
+        boolean digit1_4 = getLightValueAnnDrawRedCross(306 + offsetX, 269 + offsetY, bufferedImage, activeThreshold);
+        boolean digit1_5 = getLightValueAnnDrawRedCross(324 + offsetX, 243 + offsetY, bufferedImage, activeThreshold);
+        boolean digit1_6 = getLightValueAnnDrawRedCross(324 + offsetX, 199 + offsetY, bufferedImage, activeThreshold);
+        boolean digit1_7 = getLightValueAnnDrawRedCross(304 + offsetX, 224 + offsetY, bufferedImage, activeThreshold);
+
+        boolean digit2_1 = getLightValueAnnDrawRedCross(360 + offsetX, 178 + offsetY, bufferedImage, activeThreshold);
+        boolean digit2_2 = getLightValueAnnDrawRedCross(344 + offsetX, 199 + offsetY, bufferedImage, activeThreshold);
+        boolean digit2_3 = getLightValueAnnDrawRedCross(344 + offsetX, 243 + offsetY, bufferedImage, activeThreshold);
+        boolean digit2_4 = getLightValueAnnDrawRedCross(360 + offsetX, 268 + offsetY, bufferedImage, activeThreshold);
+        boolean digit2_5 = getLightValueAnnDrawRedCross(377 + offsetX, 243 + offsetY, bufferedImage, activeThreshold);
+        boolean digit2_6 = getLightValueAnnDrawRedCross(377 + offsetX, 199 + offsetY, bufferedImage, activeThreshold);
+        boolean digit2_7 = getLightValueAnnDrawRedCross(360 + offsetX, 224 + offsetY, bufferedImage, activeThreshold);
 
         int number1 = getNumber(digit1_1, digit1_2, digit1_3, digit1_4, digit1_5, digit1_6, digit1_7) * 10;
         int number2 = getNumber(digit2_1, digit2_2, digit2_3, digit2_4, digit2_5, digit2_6, digit2_7);
@@ -86,6 +126,10 @@ public class ImmerAnalyzerService {
         immerRest.setThrottle(throttle);
         immerRest.setHeating(heating);
         immerRest.setBoilerOn(boilerOn);
+
+        if (lightMode) {
+            logger.debug("Immer analysis in LIGHT mode (ambient={}, threshold={})", ambientBrightness, activeThreshold);
+        }
 
         return immerRest;
     }
@@ -135,7 +179,21 @@ public class ImmerAnalyzerService {
         return cameraImageService.capture(imageUrl);
     }
 
-    private boolean getLightValueAnnDrawRedCross(int x, int y, BufferedImage image) {
+    private int measureBrightnessAt(int x, int y, BufferedImage image) {
+        if (image == null || x < 3 || y < 3 || x >= image.getWidth() - 3 || y >= image.getHeight() - 3) {
+            return 0;
+        }
+        long sum = 0;
+        for (int a = x - 3; a < x + 3; a++) {
+            sum += image.getRGB(a, y);
+        }
+        for (int b = y - 3; b < y + 3; b++) {
+            sum += image.getRGB(x, b);
+        }
+        return (int) Math.round(sum / 12.0);
+    }
+
+    private boolean getLightValueAnnDrawRedCross(int x, int y, BufferedImage image, int threshold) {
         long sum = 0;
         for (int a = x - 3; a < x + 3; a++) {
             sum += image.getRGB(a, y);
@@ -144,7 +202,7 @@ public class ImmerAnalyzerService {
             sum += image.getRGB(x, b);
         }
         double lightValue = sum / 12.0;
-        boolean detected = lightValue > LIGHT_THRESHOLD;
+        boolean detected = lightValue > threshold;
         int color = detected ? 16711680 : 16777215;
         for (int a = x - 5; a < x + 5; a++) {
             image.setRGB(a, y, color);
@@ -153,5 +211,21 @@ public class ImmerAnalyzerService {
             image.setRGB(x, b, color);
         }
         return detected;
+    }
+
+    private void drawReferenceCross(int x, int y, BufferedImage image, boolean lightMode) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        if (x < 5 || x >= width - 5 || y < 5 || y >= height - 5) {
+            return;
+        }
+        // Green when light mode is active, blue when dark mode is active
+        int color = lightMode ? 65280 : 255;
+        for (int a = x - 5; a < x + 5; a++) {
+            image.setRGB(a, y, color);
+        }
+        for (int b = y - 5; b < y + 5; b++) {
+            image.setRGB(x, b, color);
+        }
     }
 }
