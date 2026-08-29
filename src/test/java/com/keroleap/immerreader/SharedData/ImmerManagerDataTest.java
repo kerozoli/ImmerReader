@@ -95,4 +95,97 @@ class ImmerManagerDataTest {
         data.setEnabled(false);
         assertFalse(data.isEnabled());
     }
+
+    @Test
+    void defaultReferencePointIsSet() {
+        ImmerManagerData data = newInstance();
+        assertEquals(150, data.getReferenceX());
+        assertEquals(150, data.getReferenceY());
+    }
+
+    @Test
+    void setAndGetReferenceX() {
+        ImmerManagerData data = newInstance();
+        data.setReferenceX(300);
+        assertEquals(300, data.getReferenceX());
+    }
+
+    @Test
+    void setAndGetReferenceY() {
+        ImmerManagerData data = newInstance();
+        data.setReferenceY(250);
+        assertEquals(250, data.getReferenceY());
+    }
+
+    @Test
+    void defaultReferenceThreshold() {
+        assertEquals(-8000000, newInstance().getReferenceThreshold());
+    }
+
+    @Test
+    void setAndGetReferenceThreshold() {
+        ImmerManagerData data = newInstance();
+        data.setReferenceThreshold(-5000000);
+        assertEquals(-5000000, data.getReferenceThreshold());
+    }
+
+    @Test
+    void defaultReferenceHysteresis() {
+        assertEquals(500000, newInstance().getReferenceHysteresis());
+    }
+
+    @Test
+    void setAndGetReferenceHysteresis() {
+        ImmerManagerData data = newInstance();
+        data.setReferenceHysteresis(250000);
+        assertEquals(250000, data.getReferenceHysteresis());
+    }
+
+    @Test
+    void defaultDarkThreshold() {
+        assertEquals(-2500000, newInstance().getDarkThreshold());
+    }
+
+    @Test
+    void setAndGetDarkThreshold() {
+        ImmerManagerData data = newInstance();
+        data.setDarkThreshold(-3000000);
+        assertEquals(-3000000, data.getDarkThreshold());
+    }
+
+    @Test
+    void defaultLightThreshold() {
+        assertEquals(-6000000, newInstance().getLightThreshold());
+    }
+
+    @Test
+    void setAndGetLightThreshold() {
+        ImmerManagerData data = newInstance();
+        data.setLightThreshold(-7000000);
+        assertEquals(-7000000, data.getLightThreshold());
+    }
+
+    @Test
+    void defaultAmbientBrightnessIsZero() {
+        assertEquals(0, newInstance().getAmbientBrightness());
+    }
+
+    @Test
+    void setAndGetAmbientBrightness() {
+        ImmerManagerData data = newInstance();
+        data.setAmbientBrightness(-4000000);
+        assertEquals(-4000000, data.getAmbientBrightness());
+    }
+
+    @Test
+    void defaultLightModeIsFalse() {
+        assertFalse(newInstance().isLightMode());
+    }
+
+    @Test
+    void setAndGetLightMode() {
+        ImmerManagerData data = newInstance();
+        data.setLightMode(true);
+        assertTrue(data.isLightMode());
+    }
 }

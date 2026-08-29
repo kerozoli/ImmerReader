@@ -50,6 +50,7 @@ class ImmerManagerControllerTest {
 
         mockMvc.perform(MockMvcRequestBuilders.get("/ImmerManager"))
                 .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.offsetX").value(0))
                 .andExpect(jsonPath("$.offsetY").value(0));
     }
@@ -91,6 +92,64 @@ class ImmerManagerControllerTest {
     void setOffset_missingParamReturnsBadRequest() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/set")
                         .param("x", "5"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void setReference_updatesAllReferenceFields() throws Exception {
+        when(immerManagerData.getReferenceX()).thenReturn(200);
+        when(immerManagerData.getReferenceY()).thenReturn(220);
+        when(immerManagerData.getReferenceThreshold()).thenReturn(-7000000);
+        when(immerManagerData.getReferenceHysteresis()).thenReturn(400000);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/setReference")
+                        .param("x", "200")
+                        .param("y", "220")
+                        .param("threshold", "-7000000")
+                        .param("hysteresis", "400000"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.referenceX").value(200))
+                .andExpect(jsonPath("$.referenceY").value(220))
+                .andExpect(jsonPath("$.referenceThreshold").value(-7000000))
+                .andExpect(jsonPath("$.referenceHysteresis").value(400000));
+
+        verify(immerManagerData).setReferenceX(200);
+        verify(immerManagerData).setReferenceY(220);
+        verify(immerManagerData).setReferenceThreshold(-7000000);
+        verify(immerManagerData).setReferenceHysteresis(400000);
+    }
+
+    @Test
+    void setReference_missingParamReturnsBadRequest() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/setReference")
+                        .param("x", "200")
+                        .param("y", "220")
+                        .param("threshold", "-7000000"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void setThresholds_updatesDarkAndLightThresholds() throws Exception {
+        when(immerManagerData.getDarkThreshold()).thenReturn(-3000000);
+        when(immerManagerData.getLightThreshold()).thenReturn(-7500000);
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/setThresholds")
+                        .param("dark", "-3000000")
+                        .param("light", "-7500000"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.darkThreshold").value(-3000000))
+                .andExpect(jsonPath("$.lightThreshold").value(-7500000));
+
+        verify(immerManagerData).setDarkThreshold(-3000000);
+        verify(immerManagerData).setLightThreshold(-7500000);
+    }
+
+    @Test
+    void setThresholds_missingParamReturnsBadRequest() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/setThresholds")
+                        .param("dark", "-3000000"))
                 .andExpect(status().isBadRequest());
     }
 
