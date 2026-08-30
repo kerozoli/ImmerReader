@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.SharedData.ImmerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
@@ -80,6 +81,12 @@ public class ImmerManagerController {
     @ResponseBody
     public ImmerManagerData getOffset() {
         return immerManagerData;
+    }
+
+    @GetMapping("/data")
+    @ResponseBody
+    public ImmerRest getDetectedData() {
+        return immerData.getImmerRest();
     }
 
     @GetMapping("/adjust")

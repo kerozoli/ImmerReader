@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.SharedData.ImmerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
@@ -191,5 +192,35 @@ class ImmerManagerControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.get("/ImmerManager"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.enabled").value(false));
+    }
+
+    @Test
+    void getDetectedData_returnsImmerRestData() throws Exception {
+        ImmerRest immerRest = new ImmerRest();
+        immerRest.setTemperaute(42);
+        immerRest.setThrottle(2);
+        immerRest.setHeating(true);
+        immerRest.setBoilerOn(true);
+        when(immerData.getImmerRest()).thenReturn(immerRest);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/ImmerManager/data"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.temperaute").value(42))
+                .andExpect(jsonPath("$.throttle").value(2))
+                .andExpect(jsonPath("$.heating").value(true))
+                .andExpect(jsonPath("$.boilerOn").value(true));
+    }
+
+    @Test
+    void getDetectedData_defaultValues() throws Exception {
+        when(immerData.getImmerRest()).thenReturn(new ImmerRest());
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/ImmerManager/data"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.temperaute").value(0))
+                .andExpect(jsonPath("$.throttle").value(0))
+                .andExpect(jsonPath("$.heating").value(false))
+                .andExpect(jsonPath("$.boilerOn").value(false));
     }
 }
