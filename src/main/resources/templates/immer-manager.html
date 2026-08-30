@@ -520,11 +520,39 @@
             }
         }
 
+        function updateDetectedData(data) {
+            document.getElementById('temperature').textContent = data.temperaute != null ? data.temperaute : 0;
+            document.getElementById('throttle').textContent = data.throttle != null ? data.throttle : 0;
+
+            const heatingEl = document.getElementById('heating');
+            heatingEl.textContent = data.heating ? 'ON' : 'OFF';
+            if (data.heating) {
+                heatingEl.classList.add('active');
+            } else {
+                heatingEl.classList.remove('active');
+            }
+
+            const boilerEl = document.getElementById('boiler');
+            boilerEl.textContent = data.boilerOn ? 'ON' : 'OFF';
+            if (data.boilerOn) {
+                boilerEl.classList.add('active');
+            } else {
+                boilerEl.classList.remove('active');
+            }
+        }
+
         function pollState() {
             fetch('/ImmerManager')
                 .then(response => response.json())
                 .then(data => updateCurrentValues(data))
                 .catch(error => console.error('Error polling state:', error));
+        }
+
+        function pollDetectedData() {
+            fetch('/ImmerManager/data')
+                .then(response => response.json())
+                .then(data => updateDetectedData(data))
+                .catch(error => console.error('Error polling detected data:', error));
         }
 
         function refreshImage() {
@@ -534,6 +562,7 @@
 
         setInterval(refreshImage, 2000);
         setInterval(pollState, 2000);
+        setInterval(pollDetectedData, 2000);
     </script>
 </body>
 </html>
