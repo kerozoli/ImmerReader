@@ -50,6 +50,22 @@ class ImmerStatisticsTest {
     }
 
     @Test
+    void record_zeroThrottle_isIgnored() {
+        long base = 1_000_000L * 60_000L;
+        ImmerStatistics stats = newWithClock(base + 10_000L);
+
+        stats.record(rest(20, 0, false));
+        stats.record(rest(22, 2, false));
+        stats.record(rest(24, 0, false));
+
+        ImmerStatisticsSnapshot snapshot = stats.getLast24Hours();
+        List<Double> throttles = snapshot.getThrottleLevels();
+        int lastIndex = throttles.size() - 1;
+
+        assertEquals(2.0, throttles.get(lastIndex), 0.001);
+    }
+
+    @Test
     void record_accumulatesHeatingMsInSingleMinute() {
         long minute = 1_000_000L;
         long start = minute * 60_000L + 10_000L;

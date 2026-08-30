@@ -33,12 +33,11 @@
         nav a.active {
             background: #e94560;
         }
-        .container {
+        .main-content {
             display: flex;
-            gap: 20px;
-            align-items: flex-start;
+            gap: 15px;
             padding: 0 20px;
-            flex-wrap: wrap;
+            align-items: flex-start;
         }
         .controls {
             background: #16213e;
@@ -46,7 +45,21 @@
             border-radius: 8px;
             flex: 0 0 auto;
             width: 170px;
-            max-width: 170px;
+        }
+        .image-container {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 8px;
+            flex: 0 0 auto;
+            width: 480px;
+        }
+        .stats-panel {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+        .right-panel {
+            flex: 0 0 auto;
+            width: 220px;
         }
         .form-group {
             margin-bottom: 12px;
@@ -79,15 +92,10 @@
         button:hover {
             background: #ff6b6b;
         }
-        .image-container {
-            background: #16213e;
-            padding: 15px;
-            border-radius: 8px;
-            flex: 1 1 auto;
-            min-width: 300px;
-        }
         img {
             max-width: 100%;
+            width: 100%;
+            height: auto;
             border: 2px solid #0f3460;
             border-radius: 4px;
             display: block;
@@ -165,21 +173,6 @@
             font-size: 24px;
             font-weight: bold;
             color: #e94560;
-        }
-        .main-content {
-            display: flex;
-            gap: 15px;
-            padding: 0 20px;
-            flex-wrap: wrap;
-        }
-        .left-panel {
-            flex: 1 1 auto;
-            min-width: 500px;
-        }
-        .right-panel {
-            flex: 0 0 auto;
-            width: 320px;
-            min-width: 320px;
         }
         .toggle-section {
             margin-bottom: 15px;
@@ -279,8 +272,8 @@
         }
         .image-wrapper {
             position: relative;
-            display: inline-block;
-            max-width: 100%;
+            display: block;
+            width: 100%;
         }
         .marker {
             position: absolute;
@@ -456,152 +449,102 @@
     </div>
 
     <div class="main-content">
-        <div class="left-panel">
-            <div class="container">
-                <div class="controls">
-                    <div class="toggle-section">
-                        <label class="toggle-label">
-                            <span>Scheduler <span id="schedulerStatus" th:text="${enabled} ? 'Enabled' : 'Disabled'">Enabled</span></span>
-                            <input type="checkbox" id="schedulerToggle" th:checked="${enabled}">
-                            <span class="toggle-switch"></span>
-                        </label>
+        <div class="controls">
+            <div class="toggle-section">
+                <label class="toggle-label">
+                    <span>Scheduler <span id="schedulerStatus" th:text="${enabled} ? 'Enabled' : 'Disabled'">Enabled</span></span>
+                    <input type="checkbox" id="schedulerToggle" th:checked="${enabled}">
+                    <span class="toggle-switch"></span>
+                </label>
+            </div>
+
+            <div id="controlsPanel" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
+                <form id="pointsForm">
+                    <h3>Points</h3>
+                    <button type="button" id="editModeBtn" class="mode-btn">Edit mode: OFF</button>
+                    <div class="form-group">
+                        <div id="pointGroups"></div>
                     </div>
-
-                    <div id="controlsPanel" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
-                        <form id="pointsForm">
-                            <h3>Points</h3>
-                            <button type="button" id="editModeBtn" class="mode-btn">Edit mode: OFF</button>
-                            <div class="form-group">
-                                <div id="pointGroups"></div>
-                            </div>
-                            <div class="form-group">
-                                <label>Coordinate:</label>
-                                <div class="point-inputs">
-                                    <input type="number" id="pointX" name="pointX" required>
-                                    <input type="number" id="pointY" name="pointY" required>
-                                </div>
-                                <div id="dirtyIndicator" class="dirty-indicator">Unsaved changes</div>
-                            </div>
-                            <button type="submit">Apply</button>
-                        </form>
-
-                        <form id="referenceForm" style="margin-top: 15px;">
-                            <h3>Reference</h3>
-                            <div class="form-group">
-                                <label for="referenceX">X:</label>
-                                <input type="number" id="referenceX" name="x" th:value="${referenceX}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="referenceY">Y:</label>
-                                <input type="number" id="referenceY" name="y" th:value="${referenceY}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="referenceThreshold">Threshold:</label>
-                                <input type="number" id="referenceThreshold" name="threshold" th:value="${referenceThreshold}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="referenceHysteresis">Hyst:</label>
-                                <input type="number" id="referenceHysteresis" name="hysteresis" th:value="${referenceHysteresis}" required>
-                            </div>
-                            <button type="submit">Apply</button>
-                        </form>
-
-                        <form id="thresholdForm" style="margin-top: 15px;">
-                            <h3>Thresholds</h3>
-                            <div class="form-group">
-                                <label for="darkThreshold">Dark:</label>
-                                <input type="number" id="darkThreshold" name="dark" th:value="${darkThreshold}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="lightThreshold">Light:</label>
-                                <input type="number" id="lightThreshold" name="light" th:value="${lightThreshold}" required>
-                            </div>
-                            <button type="submit">Apply</button>
-                        </form>
-
-                        <div class="current-values">
-                            <strong id="currentPointName">Heating</strong>
-                            (<span id="currentPointX">0</span>,
-                            <span id="currentPointY">0</span>)<br>
-                            Ref: (<span id="currentReferenceX" th:text="${referenceX}">0</span>,
-                            <span id="currentReferenceY" th:text="${referenceY}">0</span>)<br>
-                            Ref Thr: <span id="currentReferenceThreshold" th:text="${referenceThreshold}">0</span><br>
-                            Hyst: <span id="currentReferenceHysteresis" th:text="${referenceHysteresis}">0</span><br>
-                            Dark: <span id="currentDarkThreshold" th:text="${darkThreshold}">0</span><br>
-                            Light: <span id="currentLightThreshold" th:text="${lightThreshold}">0</span><br>
-                            Ambient: <span id="currentAmbientBrightness" th:text="${ambientBrightness}">0</span><br>
-                            Mode: <span id="currentMode" th:classappend="${lightMode} ? 'active' : ''" th:text="${lightMode} ? 'LIGHT' : 'DARK'">DARK</span>
+                    <div class="form-group">
+                        <label>Coordinate:</label>
+                        <div class="point-inputs">
+                            <input type="number" id="pointX" name="pointX" required>
+                            <input type="number" id="pointY" name="pointY" required>
                         </div>
+                        <div id="dirtyIndicator" class="dirty-indicator">Unsaved changes</div>
                     </div>
+                    <button type="submit">Apply</button>
+                </form>
 
-                    <div id="stockPanel" class="stock-values" th:style="${enabled} ? 'display:none;' : ''">
-                        <h3>Stock Values (Scheduler Disabled)</h3>
-                        <div>Temperature: 0°C</div>
-                        <div>Throttle: 0/4</div>
-                        <div>Heating: OFF</div>
-                        <div>Boiler: OFF</div>
+                <form id="referenceForm" style="margin-top: 15px;">
+                    <h3>Reference</h3>
+                    <div class="form-group">
+                        <label for="referenceX">X:</label>
+                        <input type="number" id="referenceX" name="x" th:value="${referenceX}" required>
                     </div>
-
-                    <div id="status" class="status">Updated!</div>
-                </div>
-
-                <div class="image-container" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
-                    <h2>Live Preview</h2>
-                    <div class="image-wrapper" id="imageWrapper">
-                        <img id="liveImage" src="/Immer/uncroppedimage" alt="Immer Camera Feed">
+                    <div class="form-group">
+                        <label for="referenceY">Y:</label>
+                        <input type="number" id="referenceY" name="y" th:value="${referenceY}" required>
                     </div>
-                    <p style="font-size: 12px; margin-top: 8px;"><small>Turn <strong>Edit mode</strong> ON to place points on a clean image. OFF shows the analyzer's red/white detection crosses. Apply to save.</small></p>
+                    <div class="form-group">
+                        <label for="referenceThreshold">Threshold:</label>
+                        <input type="number" id="referenceThreshold" name="threshold" th:value="${referenceThreshold}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="referenceHysteresis">Hyst:</label>
+                        <input type="number" id="referenceHysteresis" name="hysteresis" th:value="${referenceHysteresis}" required>
+                    </div>
+                    <button type="submit">Apply</button>
+                </form>
+
+                <form id="thresholdForm" style="margin-top: 15px;">
+                    <h3>Thresholds</h3>
+                    <div class="form-group">
+                        <label for="darkThreshold">Dark:</label>
+                        <input type="number" id="darkThreshold" name="dark" th:value="${darkThreshold}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lightThreshold">Light:</label>
+                        <input type="number" id="lightThreshold" name="light" th:value="${lightThreshold}" required>
+                    </div>
+                    <button type="submit">Apply</button>
+                </form>
+
+                <div class="current-values">
+                    <strong id="currentPointName">Heating</strong>
+                    (<span id="currentPointX">0</span>,
+                    <span id="currentPointY">0</span>)<br>
+                    Ref: (<span id="currentReferenceX" th:text="${referenceX}">0</span>,
+                    <span id="currentReferenceY" th:text="${referenceY}">0</span>)<br>
+                    Ref Thr: <span id="currentReferenceThreshold" th:text="${referenceThreshold}">0</span><br>
+                    Hyst: <span id="currentReferenceHysteresis" th:text="${referenceHysteresis}">0</span><br>
+                    Dark: <span id="currentDarkThreshold" th:text="${darkThreshold}">0</span><br>
+                    Light: <span id="currentLightThreshold" th:text="${lightThreshold}">0</span><br>
+                    Ambient: <span id="currentAmbientBrightness" th:text="${ambientBrightness}">0</span><br>
+                    Mode: <span id="currentMode" th:classappend="${lightMode} ? 'active' : ''" th:text="${lightMode} ? 'LIGHT' : 'DARK'">DARK</span>
                 </div>
             </div>
+
+            <div id="stockPanel" class="stock-values" th:style="${enabled} ? 'display:none;' : ''">
+                <h3>Stock Values (Scheduler Disabled)</h3>
+                <div>Temperature: 0°C</div>
+                <div>Throttle: 0/4</div>
+                <div>Heating: OFF</div>
+                <div>Boiler: OFF</div>
+            </div>
+
+            <div id="status" class="status">Updated!</div>
         </div>
 
-        <div class="right-panel">
-            <div class="data-section">
-                <h2>Error Statistics (Last 24 Hours)</h2>
-                <div class="error-stats">
-                    <div class="error-card">
-                        <h4>Timeout Errors</h4>
-                        <div class="count"><span id="timeoutErrors" th:text="${errorStats['timeout']} ?: 0">0</span></div>
-                    </div>
-                    <div class="error-card">
-                        <h4>General Errors</h4>
-                        <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
-                    </div>
-                    <div class="error-card">
-                        <h4>Unknown Digit</h4>
-                        <div class="count"><span id="unknownDigitErrors" th:text="${errorStats['unknown_digit']} ?: 0">0</span></div>
-                    </div>
-                </div>
+        <div class="image-container" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
+            <h2>Live Preview</h2>
+            <div class="image-wrapper" id="imageWrapper">
+                <img id="liveImage" src="/Immer/uncroppedimage" alt="Immer Camera Feed" style="width: 100%; max-width: 100%; height: auto;">
             </div>
-
-            <div class="data-section">
-                <h2>7-Segment Cheat Sheet</h2>
-                <p style="font-size: 12px; color: #aaa; margin-top: 0;">Segment numbers 1-7 map like this. Place each point on the glowing centre of its segment.</p>
-                <div class="cheat-sheet">
-                    <svg width="180" height="260" viewBox="0 0 180 260">
-                        <g stroke="#0f3460" stroke-width="4" stroke-linejoin="round">
-                            <polygon points="40,20 140,20 130,40 50,40" fill="#e94560" />
-                            <polygon points="30,50 50,40 50,110 30,120" fill="#e94560" />
-                            <polygon points="150,50 130,40 130,110 150,120" fill="#e94560" />
-                            <polygon points="40,130 130,130 120,150 50,150" fill="#e94560" />
-                            <polygon points="30,160 50,150 50,220 30,230" fill="#e94560" />
-                            <polygon points="150,160 130,150 130,220 150,230" fill="#e94560" />
-                            <polygon points="40,240 120,240 130,220 50,220" fill="#e94560" />
-                        </g>
-                        <text x="90" y="15" text-anchor="middle" class="segment-label">1</text>
-                        <text x="20" y="85" text-anchor="middle" class="segment-label">2</text>
-                        <text x="160" y="85" text-anchor="middle" class="segment-label">3</text>
-                        <text x="90" y="145" text-anchor="middle" class="segment-label">4</text>
-                        <text x="20" y="195" text-anchor="middle" class="segment-label">5</text>
-                        <text x="160" y="195" text-anchor="middle" class="segment-label">6</text>
-                        <text x="90" y="255" text-anchor="middle" class="segment-label">7</text>
-                    </svg>
-                </div>
-            </div>
+            <p style="font-size: 12px; margin-top: 8px;"><small>Turn <strong>Edit mode</strong> ON to place points on a clean image. OFF shows the analyzer's red/white detection crosses. Apply to save.</small></p>
         </div>
-    </div>
 
-    <div style="padding: 0 20px;">
+    <div class="stats-panel">
         <div class="data-section stats-section">
             <h2>24-Hour Statistics</h2>
             <div class="stats-summary">
@@ -631,7 +574,53 @@
         </div>
     </div>
 
-    <script th:inline="javascript">
+    <div class="right-panel">
+        <div class="data-section">
+            <h2>Error Statistics (Last 24 Hours)</h2>
+            <div class="error-stats">
+                <div class="error-card">
+                    <h4>Timeout Errors</h4>
+                    <div class="count"><span id="timeoutErrors" th:text="${errorStats['timeout']} ?: 0">0</span></div>
+                </div>
+                <div class="error-card">
+                    <h4>General Errors</h4>
+                    <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
+                </div>
+                <div class="error-card">
+                    <h4>Unknown Digit</h4>
+                    <div class="count"><span id="unknownDigitErrors" th:text="${errorStats['unknown_digit']} ?: 0">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-section">
+            <h2>7-Segment Cheat Sheet</h2>
+            <p style="font-size: 12px; color: #aaa; margin-top: 0;">Segment numbers 1-7 map like this. Place each point on the glowing centre of its segment.</p>
+            <div class="cheat-sheet">
+                <svg width="180" height="260" viewBox="0 0 180 260">
+                    <g stroke="#0f3460" stroke-width="4" stroke-linejoin="round">
+                        <polygon points="40,20 140,20 130,40 50,40" fill="#e94560" />
+                        <polygon points="30,50 50,40 50,110 30,120" fill="#e94560" />
+                        <polygon points="150,50 130,40 130,110 150,120" fill="#e94560" />
+                        <polygon points="40,130 130,130 120,150 50,150" fill="#e94560" />
+                        <polygon points="30,160 50,150 50,220 30,230" fill="#e94560" />
+                        <polygon points="150,160 130,150 130,220 150,230" fill="#e94560" />
+                        <polygon points="40,240 120,240 130,220 50,220" fill="#e94560" />
+                    </g>
+                    <text x="90" y="15" text-anchor="middle" class="segment-label">1</text>
+                    <text x="20" y="85" text-anchor="middle" class="segment-label">2</text>
+                    <text x="160" y="85" text-anchor="middle" class="segment-label">3</text>
+                    <text x="90" y="145" text-anchor="middle" class="segment-label">4</text>
+                    <text x="20" y="195" text-anchor="middle" class="segment-label">5</text>
+                    <text x="160" y="195" text-anchor="middle" class="segment-label">6</text>
+                    <text x="90" y="255" text-anchor="middle" class="segment-label">7</text>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
         const POINT_NAMES = [
             'Heating', 'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Boiler',
             'Digit1 Seg1', 'Digit1 Seg2', 'Digit1 Seg3', 'Digit1 Seg4', 'Digit1 Seg5', 'Digit1 Seg6', 'Digit1 Seg7',
@@ -1127,11 +1116,17 @@
             drawLineChart('throttleChart', data.labels, data.throttleLevels, '#28a745');
         }
 
-        function pollStats() {
-            fetch('/ImmerManager/stats')
-                .then(response => response.json())
-                .then(data => updateStats(data))
-                .catch(error => console.error('Error polling stats:', error));
+        async function pollStats() {
+            try {
+                const response = await fetch('/ImmerManager/stats');
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                const data = await response.json();
+                updateStats(data);
+            } catch (error) {
+                console.error('Error polling stats:', error);
+            }
         }
 
         renderPointButtons();

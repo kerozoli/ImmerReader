@@ -81,7 +81,7 @@ public class ImmerStatistics {
         if (temperature > 0) {
             bucket.addTemperature(temperature);
         }
-        if (throttle >= 0) {
+        if (throttle > 0) {
             bucket.addThrottle(throttle);
         }
     }
