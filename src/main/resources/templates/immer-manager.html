@@ -1010,7 +1010,7 @@
             return sum / valid.length;
         }
 
-        function drawLineChart(containerId, labels, values, color) {
+        function drawLineChart(containerId, labels, values, color, fixedMin, fixedMax) {
             const container = document.getElementById(containerId);
             container.innerHTML = '';
 
@@ -1026,8 +1026,8 @@
                 return;
             }
 
-            const minValue = Math.min(...validValues);
-            const maxValue = Math.max(...validValues);
+            const minValue = fixedMin !== undefined ? fixedMin : Math.min(...validValues);
+            const maxValue = fixedMax !== undefined ? fixedMax : Math.max(...validValues);
             const range = maxValue - minValue || 1;
             const yBottom = padding.top + chartHeight;
 
@@ -1117,8 +1117,8 @@
             document.getElementById('avgThrottle').textContent = avgThrottle !== null ? avgThrottle.toFixed(1) : '--';
             document.getElementById('totalHeatingTime').textContent = formatDuration(data.totalHeatingMs);
 
-            drawLineChart('temperatureChart', data.labels, data.temperatures, '#e94560');
-            drawLineChart('throttleChart', data.labels, data.throttleLevels, '#28a745');
+            drawLineChart('temperatureChart', data.labels, data.temperatures, '#e94560', 45, 55);
+            drawLineChart('throttleChart', data.labels, data.throttleLevels, '#28a745', 0, 4);
         }
 
         async function pollStats() {
