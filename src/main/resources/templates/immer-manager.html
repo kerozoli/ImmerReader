@@ -1056,7 +1056,7 @@
                 line.setAttribute('class', 'chart-grid');
                 svg.appendChild(line);
 
-                const label = Number.isInteger(value) ? String(Math.round(value)) : value.toFixed(1);
+                const label = String(Math.round(value));
                 if (!usedLabels.has(label)) {
                     usedLabels.add(label);
                     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
