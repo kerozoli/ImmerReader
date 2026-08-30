@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +20,45 @@ public class ImmerManagerData {
     private static final Logger logger = LoggerFactory.getLogger(ImmerManagerData.class);
     private static final String DATA_FILE = "/data/offset.properties";
 
-    // Offset for the sampling grid
-    private final AtomicInteger offsetX = new AtomicInteger(0);
-    private final AtomicInteger offsetY = new AtomicInteger(0);
+    // Indices for individually configurable detection points.
+    // Reference point (referenceX/referenceY) stays separate and is not part of these arrays.
+    public static final int HEATING = 0;
+    public static final int LEVEL_ONE = 1;
+    public static final int LEVEL_TWO = 2;
+    public static final int LEVEL_THREE = 3;
+    public static final int LEVEL_FOUR = 4;
+    public static final int BOILER = 5;
+    public static final int DIGIT1_SEG1 = 6;
+    public static final int DIGIT1_SEG2 = 7;
+    public static final int DIGIT1_SEG3 = 8;
+    public static final int DIGIT1_SEG4 = 9;
+    public static final int DIGIT1_SEG5 = 10;
+    public static final int DIGIT1_SEG6 = 11;
+    public static final int DIGIT1_SEG7 = 12;
+    public static final int DIGIT2_SEG1 = 13;
+    public static final int DIGIT2_SEG2 = 14;
+    public static final int DIGIT2_SEG3 = 15;
+    public static final int DIGIT2_SEG4 = 16;
+    public static final int DIGIT2_SEG5 = 17;
+    public static final int DIGIT2_SEG6 = 18;
+    public static final int DIGIT2_SEG7 = 19;
+    public static final int POINT_COUNT = 20;
+
+    private static final int[] DEFAULT_X = {
+        495, 305, 334, 362, 390, 490,
+        306, 291, 291, 306, 324, 324, 304,
+        360, 344, 344, 360, 377, 377, 360
+    };
+    private static final int[] DEFAULT_Y = {
+        215, 150, 150, 150, 150, 120,
+        178, 199, 243, 269, 243, 199, 224,
+        178, 199, 243, 268, 243, 199, 224
+    };
+
+    // Individual detection point coordinates (offsetX/offsetY replaced these)
+    private final AtomicIntegerArray xs = new AtomicIntegerArray(POINT_COUNT);
+    private final AtomicIntegerArray ys = new AtomicIntegerArray(POINT_COUNT);
+
     private final AtomicBoolean enabled = new AtomicBoolean(false);
 
     // Reference point for automatic light/dark mode detection
@@ -38,32 +75,68 @@ public class ImmerManagerData {
     private final AtomicInteger ambientBrightness = new AtomicInteger(0);
     private final AtomicBoolean lightMode = new AtomicBoolean(false);
 
+    public ImmerManagerData() {
+        setDefaults();
+    }
+
     @PostConstruct
     private void load() {
         File file = new File(DATA_FILE);
-        if (file.exists()) {
-            Properties props = new Properties();
-            try (FileInputStream fis = new FileInputStream(file)) {
-                props.load(fis);
-                offsetX.set(Integer.parseInt(props.getProperty("offsetX", "0")));
-                offsetY.set(Integer.parseInt(props.getProperty("offsetY", "0")));
-                enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "false")));
-                referenceX.set(Integer.parseInt(props.getProperty("referenceX", "150")));
-                referenceY.set(Integer.parseInt(props.getProperty("referenceY", "150")));
-                referenceThreshold.set(Integer.parseInt(props.getProperty("referenceThreshold", "-8000000")));
-                referenceHysteresis.set(Integer.parseInt(props.getProperty("referenceHysteresis", "500000")));
-                darkThreshold.set(Integer.parseInt(props.getProperty("darkThreshold", "-2500000")));
-                lightThreshold.set(Integer.parseInt(props.getProperty("lightThreshold", "-6000000")));
-            } catch (IOException | NumberFormatException e) {
-                logger.warn("Could not load offset data from {}: {}", DATA_FILE, e.getMessage());
+        if (!file.exists()) {
+            return;
+        }
+        Properties props = new Properties();
+        try (FileInputStream fis = new FileInputStream(file)) {
+            props.load(fis);
+
+            // Legacy migration: if old offset keys exist, compute individual points from them
+            String legacyOffsetX = props.getProperty("offsetX");
+            String legacyOffsetY = props.getProperty("offsetY");
+            if (legacyOffsetX != null && legacyOffsetY != null) {
+                try {
+                    int offsetX = Integer.parseInt(legacyOffsetX);
+                    int offsetY = Integer.parseInt(legacyOffsetY);
+                    for (int i = 0; i < POINT_COUNT; i++) {
+                        xs.set(i, DEFAULT_X[i] + offsetX);
+                        ys.set(i, DEFAULT_Y[i] + offsetY);
+                    }
+                } catch (NumberFormatException e) {
+                    logger.warn("Could not parse legacy offset data from {}: {}", DATA_FILE, e.getMessage());
+                    setDefaults();
+                }
+            } else {
+                for (int i = 0; i < POINT_COUNT; i++) {
+                    xs.set(i, Integer.parseInt(props.getProperty("x" + i, String.valueOf(DEFAULT_X[i]))));
+                    ys.set(i, Integer.parseInt(props.getProperty("y" + i, String.valueOf(DEFAULT_Y[i]))));
+                }
             }
+
+            enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "false")));
+            referenceX.set(Integer.parseInt(props.getProperty("referenceX", "150")));
+            referenceY.set(Integer.parseInt(props.getProperty("referenceY", "150")));
+            referenceThreshold.set(Integer.parseInt(props.getProperty("referenceThreshold", "-8000000")));
+            referenceHysteresis.set(Integer.parseInt(props.getProperty("referenceHysteresis", "500000")));
+            darkThreshold.set(Integer.parseInt(props.getProperty("darkThreshold", "-2500000")));
+            lightThreshold.set(Integer.parseInt(props.getProperty("lightThreshold", "-6000000")));
+        } catch (IOException | NumberFormatException e) {
+            logger.warn("Could not load offset data from {}: {}", DATA_FILE, e.getMessage());
+            setDefaults();
+        }
+    }
+
+    private void setDefaults() {
+        for (int i = 0; i < POINT_COUNT; i++) {
+            xs.set(i, DEFAULT_X[i]);
+            ys.set(i, DEFAULT_Y[i]);
         }
     }
 
     private void save() {
         Properties props = new Properties();
-        props.setProperty("offsetX", String.valueOf(offsetX.get()));
-        props.setProperty("offsetY", String.valueOf(offsetY.get()));
+        for (int i = 0; i < POINT_COUNT; i++) {
+            props.setProperty("x" + i, String.valueOf(xs.get(i)));
+            props.setProperty("y" + i, String.valueOf(ys.get(i)));
+        }
         props.setProperty("enabled", String.valueOf(enabled.get()));
         props.setProperty("referenceX", String.valueOf(referenceX.get()));
         props.setProperty("referenceY", String.valueOf(referenceY.get()));
@@ -84,21 +157,38 @@ public class ImmerManagerData {
         }
     }
 
-    public int getOffsetX() {
-        return offsetX.get();
+    public int[] getXs() {
+        int[] result = new int[POINT_COUNT];
+        for (int i = 0; i < POINT_COUNT; i++) {
+            result[i] = xs.get(i);
+        }
+        return result;
     }
 
-    public void setOffsetX(int offsetX) {
-        this.offsetX.set(offsetX);
-        save();
+    public int[] getYs() {
+        int[] result = new int[POINT_COUNT];
+        for (int i = 0; i < POINT_COUNT; i++) {
+            result[i] = ys.get(i);
+        }
+        return result;
     }
 
-    public int getOffsetY() {
-        return offsetY.get();
+    public int getX(int index) {
+        return xs.get(index);
     }
 
-    public void setOffsetY(int offsetY) {
-        this.offsetY.set(offsetY);
+    public int getY(int index) {
+        return ys.get(index);
+    }
+
+    public void setPoints(int[] newXs, int[] newYs) {
+        if (newXs == null || newYs == null || newXs.length != POINT_COUNT || newYs.length != POINT_COUNT) {
+            throw new IllegalArgumentException("Expected " + POINT_COUNT + " x and y coordinates");
+        }
+        for (int i = 0; i < POINT_COUNT; i++) {
+            xs.set(i, newXs[i]);
+            ys.set(i, newYs[i]);
+        }
         save();
     }
 

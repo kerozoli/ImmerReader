@@ -8,71 +8,69 @@ class ImmerManagerDataTest {
 
     /**
      * Directly instantiates ImmerManagerData without a Spring context.
-     * The @PostConstruct (load) is not invoked, but the AtomicInteger fields
-     * are initialised to 0 by their field declarations, so default-value
-     * assertions are still meaningful.
+     * The @PostConstruct (load) is not invoked, but the AtomicIntegerArray fields
+     * are initialised to the default coordinates by their field declarations,
+     * so default-value assertions are still meaningful.
      */
     private ImmerManagerData newInstance() {
         return new ImmerManagerData();
     }
 
     @Test
-    void defaultOffsetXIsZero() {
-        assertEquals(0, newInstance().getOffsetX());
-    }
-
-    @Test
-    void defaultOffsetYIsZero() {
-        assertEquals(0, newInstance().getOffsetY());
-    }
-
-    @Test
-    void setAndGetOffsetX() {
+    void defaultXsMatchDefaults() {
         ImmerManagerData data = newInstance();
-        // save() will attempt to write to /data/offset.properties; it fails
-        // silently when the directory does not exist, so the in-memory value
-        // must still be updated.
-        data.setOffsetX(15);
-        assertEquals(15, data.getOffsetX());
+        int[] xs = data.getXs();
+        assertEquals(ImmerManagerData.POINT_COUNT, xs.length);
+        assertEquals(495, xs[ImmerManagerData.HEATING]);
+        assertEquals(305, xs[ImmerManagerData.LEVEL_ONE]);
+        assertEquals(360, xs[ImmerManagerData.DIGIT2_SEG1]);
     }
 
     @Test
-    void setAndGetOffsetY() {
+    void defaultYsMatchDefaults() {
         ImmerManagerData data = newInstance();
-        data.setOffsetY(30);
-        assertEquals(30, data.getOffsetY());
+        int[] ys = data.getYs();
+        assertEquals(ImmerManagerData.POINT_COUNT, ys.length);
+        assertEquals(215, ys[ImmerManagerData.HEATING]);
+        assertEquals(150, ys[ImmerManagerData.LEVEL_ONE]);
+        assertEquals(178, ys[ImmerManagerData.DIGIT2_SEG1]);
     }
 
     @Test
-    void setOffsetXToNegative() {
+    void setAndGetPoints() {
         ImmerManagerData data = newInstance();
-        data.setOffsetX(-5);
-        assertEquals(-5, data.getOffsetX());
+        int[] xs = new int[ImmerManagerData.POINT_COUNT];
+        int[] ys = new int[ImmerManagerData.POINT_COUNT];
+        for (int i = 0; i < ImmerManagerData.POINT_COUNT; i++) {
+            xs[i] = i * 10;
+            ys[i] = i * 10 + 1;
+        }
+        data.setPoints(xs, ys);
+        assertArrayEquals(xs, data.getXs());
+        assertArrayEquals(ys, data.getYs());
     }
 
     @Test
-    void setOffsetYToNegative() {
+    void setPointsRejectsWrongLength() {
         ImmerManagerData data = newInstance();
-        data.setOffsetY(-10);
-        assertEquals(-10, data.getOffsetY());
+        int[] xs = new int[ImmerManagerData.POINT_COUNT - 1];
+        int[] ys = new int[ImmerManagerData.POINT_COUNT];
+        assertThrows(IllegalArgumentException.class, () -> data.setPoints(xs, ys));
     }
 
     @Test
-    void setOffsetXMultipleTimes() {
+    void setPointsRejectsNull() {
         ImmerManagerData data = newInstance();
-        data.setOffsetX(10);
-        data.setOffsetX(20);
-        data.setOffsetX(5);
-        assertEquals(5, data.getOffsetX());
+        int[] xs = new int[ImmerManagerData.POINT_COUNT];
+        assertThrows(IllegalArgumentException.class, () -> data.setPoints(null, xs));
+        assertThrows(IllegalArgumentException.class, () -> data.setPoints(xs, null));
     }
 
     @Test
-    void xAndYAreIndependent() {
+    void getAndSetIndividualPoint() {
         ImmerManagerData data = newInstance();
-        data.setOffsetX(7);
-        data.setOffsetY(13);
-        assertEquals(7, data.getOffsetX());
-        assertEquals(13, data.getOffsetY());
+        assertEquals(495, data.getX(ImmerManagerData.HEATING));
+        assertEquals(215, data.getY(ImmerManagerData.HEATING));
     }
 
     @Test

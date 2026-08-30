@@ -70,11 +70,11 @@ public class ImmerScheduler {
             return;
         }
 
-        int offsetX = immerManagerData.getOffsetX();
-        int offsetY = immerManagerData.getOffsetY();
+        int[] xs = immerManagerData.getXs();
+        int[] ys = immerManagerData.getYs();
         Future<ImmerRest> future = Executors.newSingleThreadExecutor().submit(() -> {
             BufferedImage cachedImage = immerAnalyzerService.getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-            return immerAnalyzerService.getImmerRestData(cachedImage, offsetX, offsetY);
+            return immerAnalyzerService.getImmerRestData(cachedImage, xs, ys);
         });
 
         try {

@@ -22,8 +22,8 @@ class ImmerSchedulerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        when(immerManagerData.getOffsetX()).thenReturn(0);
-        when(immerManagerData.getOffsetY()).thenReturn(0);
+        when(immerManagerData.getXs()).thenReturn(new int[ImmerManagerData.POINT_COUNT]);
+        when(immerManagerData.getYs()).thenReturn(new int[ImmerManagerData.POINT_COUNT]);
     }
 
     @Test

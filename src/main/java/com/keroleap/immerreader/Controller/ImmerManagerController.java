@@ -1,6 +1,7 @@
 package com.keroleap.immerreader.Controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,12 +28,25 @@ public class ImmerManagerController {
     @Autowired
     private ErrorStatistics errorStatistics;
 
-    @PostMapping("/set")
+    @PostMapping("/setPoints")
     @ResponseBody
-    public ImmerManagerData setOffset(@RequestParam int x, @RequestParam int y) {
-        immerManagerData.setOffsetX(x);
-        immerManagerData.setOffsetY(y);
-        return immerManagerData;
+    public ResponseEntity<?> setPoints(@RequestParam String points) {
+        String[] parts = points.split(",");
+        if (parts.length != ImmerManagerData.POINT_COUNT * 2) {
+            return ResponseEntity.badRequest().body("Expected " + (ImmerManagerData.POINT_COUNT * 2) + " comma-separated coordinates, got " + parts.length);
+        }
+        try {
+            int[] xs = new int[ImmerManagerData.POINT_COUNT];
+            int[] ys = new int[ImmerManagerData.POINT_COUNT];
+            for (int i = 0; i < ImmerManagerData.POINT_COUNT; i++) {
+                xs[i] = Integer.parseInt(parts[i * 2].trim());
+                ys[i] = Integer.parseInt(parts[i * 2 + 1].trim());
+            }
+            immerManagerData.setPoints(xs, ys);
+            return ResponseEntity.ok(immerManagerData);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body("Invalid coordinate value: " + e.getMessage());
+        }
     }
 
     @PostMapping("/setReference")
@@ -92,8 +106,8 @@ public class ImmerManagerController {
     @GetMapping("/adjust")
     public ModelAndView adjustOffset() {
         ModelAndView modelAndView = new ModelAndView("immer-manager");
-        modelAndView.addObject("offsetX", immerManagerData.getOffsetX());
-        modelAndView.addObject("offsetY", immerManagerData.getOffsetY());
+        modelAndView.addObject("xs", immerManagerData.getXs());
+        modelAndView.addObject("ys", immerManagerData.getYs());
         modelAndView.addObject("enabled", immerManagerData.isEnabled());
         modelAndView.addObject("immerRest", immerData.getImmerRest());
         modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Immer"));

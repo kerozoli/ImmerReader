@@ -228,6 +228,51 @@
             color: #e94560;
             font-size: 16px;
         }
+        .point-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        button.point-btn {
+            width: auto;
+            flex: 1 1 30%;
+            padding: 8px 4px;
+            font-size: 12px;
+        }
+        button.point-btn.active {
+            background: #28a745;
+        }
+        .image-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .marker {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            background: #e94560;
+        }
+        .marker.active {
+            background: #28a745;
+        }
+        .point-inputs {
+            display: flex;
+            gap: 10px;
+        }
+        .point-inputs input {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -278,16 +323,20 @@
             </div>
 
             <div id="controlsPanel" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
-                <form id="offsetForm">
+                <form id="pointsForm">
+                    <h3>Detection Points</h3>
                     <div class="form-group">
-                        <label for="offsetX">Offset X:</label>
-                        <input type="number" id="offsetX" name="x" th:value="${offsetX}" required>
+                        <label>Active Point:</label>
+                        <div class="point-buttons" id="pointButtons"></div>
                     </div>
                     <div class="form-group">
-                        <label for="offsetY">Offset Y:</label>
-                        <input type="number" id="offsetY" name="y" th:value="${offsetY}" required>
+                        <label>Coordinate:</label>
+                        <div class="point-inputs">
+                            <input type="number" id="pointX" name="pointX" required>
+                            <input type="number" id="pointY" name="pointY" required>
+                        </div>
                     </div>
-                    <button type="submit">Apply Offset</button>
+                    <button type="submit">Apply All Points</button>
                 </form>
 
                 <form id="referenceForm" style="margin-top: 20px;">
@@ -326,8 +375,9 @@
 
                 <div class="current-values">
                     <strong>Current Values:</strong><br>
-                    Offset X: <span id="currentX" th:text="${offsetX}">0</span><br>
-                    Offset Y: <span id="currentY" th:text="${offsetY}">0</span><br>
+                    Active Point: <span id="currentPointName">Heating</span>
+                    (<span id="currentPointX">0</span>,
+                    <span id="currentPointY">0</span>)<br>
                     Reference: (<span id="currentReferenceX" th:text="${referenceX}">0</span>,
                     <span id="currentReferenceY" th:text="${referenceY}">0</span>)<br>
                     Ref Threshold: <span id="currentReferenceThreshold" th:text="${referenceThreshold}">0</span><br>
@@ -352,8 +402,10 @@
 
         <div class="image-container" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
             <h2>Live Preview</h2>
-            <img id="liveImage" src="/Immer/uncroppedimage" alt="Immer Camera Feed">
-            <p><small>Image refreshes automatically every 2 seconds (dynamically adjusted by the scheduler)</small></p>
+            <div class="image-wrapper" id="imageWrapper">
+                <img id="liveImage" src="/Immer/uncroppedimage" alt="Immer Camera Feed">
+            </div>
+            <p><small>Image refreshes automatically every 2 seconds. Select a point above, then click on the image to place it.</small></p>
         </div>
             </div>
         </div>
@@ -379,7 +431,118 @@
         </div>
     </div>
 
-    <script>
+    <script th:inline="javascript">
+        const POINT_NAMES = [
+            'Heating', 'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Boiler',
+            'Digit1 Seg1', 'Digit1 Seg2', 'Digit1 Seg3', 'Digit1 Seg4', 'Digit1 Seg5', 'Digit1 Seg6', 'Digit1 Seg7',
+            'Digit2 Seg1', 'Digit2 Seg2', 'Digit2 Seg3', 'Digit2 Seg4', 'Digit2 Seg5', 'Digit2 Seg6', 'Digit2 Seg7'
+        ];
+        const initialXs = /*[[${xs}]]*/ [];
+        const initialYs = /*[[${ys}]]*/ [];
+        let xs = [...initialXs];
+        let ys = [...initialYs];
+        let activePoint = 0;
+
+        const pointButtonsContainer = document.getElementById('pointButtons');
+        const pointXInput = document.getElementById('pointX');
+        const pointYInput = document.getElementById('pointY');
+        const liveImage = document.getElementById('liveImage');
+        const imageWrapper = document.getElementById('imageWrapper');
+        const markers = [];
+
+        function renderPointButtons() {
+            pointButtonsContainer.innerHTML = '';
+            POINT_NAMES.forEach((name, i) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'secondary point-btn' + (i === activePoint ? ' active' : '');
+                btn.textContent = name;
+                btn.addEventListener('click', () => setActivePoint(i));
+                pointButtonsContainer.appendChild(btn);
+            });
+        }
+
+        function setActivePoint(index) {
+            activePoint = index;
+            renderPointButtons();
+            updatePointInputs();
+            updateMarkers();
+        }
+
+        function updatePointInputs() {
+            pointXInput.value = xs[activePoint];
+            pointYInput.value = ys[activePoint];
+            document.getElementById('currentPointName').textContent = POINT_NAMES[activePoint];
+            document.getElementById('currentPointX').textContent = xs[activePoint];
+            document.getElementById('currentPointY').textContent = ys[activePoint];
+        }
+
+        function createMarkers() {
+            for (let i = 0; i < POINT_NAMES.length; i++) {
+                const marker = document.createElement('div');
+                marker.className = 'marker' + (i === activePoint ? ' active' : '');
+                marker.textContent = i + 1;
+                imageWrapper.appendChild(marker);
+                markers.push(marker);
+            }
+        }
+
+        function updateMarkers() {
+            const rect = liveImage.getBoundingClientRect();
+            const imgWidth = liveImage.naturalWidth || rect.width;
+            const imgHeight = liveImage.naturalHeight || rect.height;
+            if (imgWidth === 0 || imgHeight === 0) {
+                return;
+            }
+            const scaleX = rect.width / imgWidth;
+            const scaleY = rect.height / imgHeight;
+
+            markers.forEach((marker, i) => {
+                marker.style.left = (xs[i] * scaleX) + 'px';
+                marker.style.top = (ys[i] * scaleY) + 'px';
+                if (i === activePoint) {
+                    marker.classList.add('active');
+                } else {
+                    marker.classList.remove('active');
+                }
+            });
+        }
+
+        liveImage.addEventListener('load', updateMarkers);
+        if (liveImage.complete) {
+            updateMarkers();
+        }
+
+        imageWrapper.addEventListener('click', function(e) {
+            const rect = liveImage.getBoundingClientRect();
+            const imgWidth = liveImage.naturalWidth || rect.width;
+            const imgHeight = liveImage.naturalHeight || rect.height;
+            if (imgWidth === 0 || imgHeight === 0 || rect.width === 0 || rect.height === 0) {
+                console.warn('Image has no size yet, cannot set point');
+                return;
+            }
+            const scaleX = imgWidth / rect.width;
+            const scaleY = imgHeight / rect.height;
+
+            const x = Math.round((e.clientX - rect.left) * scaleX);
+            const y = Math.round((e.clientY - rect.top) * scaleY);
+
+            xs[activePoint] = x;
+            ys[activePoint] = y;
+            updatePointInputs();
+            updateMarkers();
+        });
+
+        pointXInput.addEventListener('change', function() {
+            xs[activePoint] = parseInt(this.value) || 0;
+            updateMarkers();
+        });
+
+        pointYInput.addEventListener('change', function() {
+            ys[activePoint] = parseInt(this.value) || 0;
+            updateMarkers();
+        });
+
         document.getElementById('schedulerToggle').addEventListener('change', function() {
             fetch('/ImmerManager/toggle', {
                 method: 'POST'
@@ -418,27 +581,34 @@
             });
         });
 
-        document.getElementById('offsetForm').addEventListener('submit', function(e) {
+        document.getElementById('pointsForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const x = document.getElementById('offsetX').value;
-            const y = document.getElementById('offsetY').value;
+            const points = xs.map((x, i) => `${x},${ys[i]}`).join(',');
 
-            fetch('/ImmerManager/set', {
+            fetch('/ImmerManager/setPoints', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `x=${x}&y=${y}`
+                body: `points=${encodeURIComponent(points)}`
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text); });
+                }
+                return response.json();
+            })
             .then(data => {
                 updateCurrentValues(data);
-                showStatus('Offset updated!');
+                showStatus('Points updated!');
                 refreshImage();
             })
             .catch(error => {
                 console.error('Error:', error);
+                const status = document.getElementById('status');
+                status.textContent = 'Error: ' + error.message;
+                status.className = 'status success';
             });
         });
 
@@ -492,9 +662,11 @@
         }
 
         function updateCurrentValues(data) {
-            if (data.offsetX !== undefined) {
-                document.getElementById('currentX').textContent = data.offsetX;
-                document.getElementById('currentY').textContent = data.offsetY;
+            if (data.xs !== undefined && data.ys !== undefined) {
+                xs = [...data.xs];
+                ys = [...data.ys];
+                updatePointInputs();
+                updateMarkers();
             }
             if (data.referenceX !== undefined) {
                 document.getElementById('currentReferenceX').textContent = data.referenceX;
@@ -560,6 +732,9 @@
             img.src = '/Immer/uncroppedimage?t=' + new Date().getTime();
         }
 
+        renderPointButtons();
+        createMarkers();
+        updatePointInputs();
         setInterval(refreshImage, 2000);
         setInterval(pollState, 2000);
         setInterval(pollDetectedData, 2000);

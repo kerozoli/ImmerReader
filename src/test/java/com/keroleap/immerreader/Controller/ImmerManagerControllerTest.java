@@ -34,65 +34,46 @@ class ImmerManagerControllerTest {
 
     @Test
     void getOffset_returnsCurrentValues() throws Exception {
-        when(immerManagerData.getOffsetX()).thenReturn(5);
-        when(immerManagerData.getOffsetY()).thenReturn(10);
+        when(immerManagerData.getXs()).thenReturn(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
+        when(immerManagerData.getYs()).thenReturn(new int[] { 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40 });
 
         mockMvc.perform(MockMvcRequestBuilders.get("/ImmerManager"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.offsetX").value(5))
-                .andExpect(jsonPath("$.offsetY").value(10));
+                .andExpect(jsonPath("$.xs[0]").value(1))
+                .andExpect(jsonPath("$.ys[0]").value(21));
     }
 
     @Test
-    void getOffset_defaultZeroValues() throws Exception {
-        when(immerManagerData.getOffsetX()).thenReturn(0);
-        when(immerManagerData.getOffsetY()).thenReturn(0);
+    void getOffset_defaultValues() throws Exception {
+        when(immerManagerData.getXs()).thenReturn(new int[ImmerManagerData.POINT_COUNT]);
+        when(immerManagerData.getYs()).thenReturn(new int[ImmerManagerData.POINT_COUNT]);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/ImmerManager"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.offsetX").value(0))
-                .andExpect(jsonPath("$.offsetY").value(0));
+                .andExpect(jsonPath("$.xs[0]").value(0))
+                .andExpect(jsonPath("$.ys[0]").value(0));
     }
 
     @Test
-    void setOffset_updatesAndReturnsValues() throws Exception {
-        when(immerManagerData.getOffsetX()).thenReturn(7);
-        when(immerManagerData.getOffsetY()).thenReturn(3);
+    void setPoints_updatesAndReturnsValues() throws Exception {
+        String points = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40";
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/set")
-                        .param("x", "7")
-                        .param("y", "3"))
+        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/setPoints")
+                        .param("points", points))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.offsetX").value(7))
-                .andExpect(jsonPath("$.offsetY").value(3));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
 
-        verify(immerManagerData).setOffsetX(7);
-        verify(immerManagerData).setOffsetY(3);
+        verify(immerManagerData).setPoints(
+                new int[] { 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39 },
+                new int[] { 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40 });
     }
 
     @Test
-    void setOffset_negativeValues() throws Exception {
-        when(immerManagerData.getOffsetX()).thenReturn(-5);
-        when(immerManagerData.getOffsetY()).thenReturn(-10);
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/set")
-                        .param("x", "-5")
-                        .param("y", "-10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.offsetX").value(-5))
-                .andExpect(jsonPath("$.offsetY").value(-10));
-
-        verify(immerManagerData).setOffsetX(-5);
-        verify(immerManagerData).setOffsetY(-10);
-    }
-
-    @Test
-    void setOffset_missingParamReturnsBadRequest() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/set")
-                        .param("x", "5"))
+    void setPoints_wrongCoordinateCount_returnsBadRequest() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/ImmerManager/setPoints")
+                        .param("points", "1,2,3,4"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -185,8 +166,8 @@ class ImmerManagerControllerTest {
 
     @Test
     void getOffset_returnsEnabledState() throws Exception {
-        when(immerManagerData.getOffsetX()).thenReturn(0);
-        when(immerManagerData.getOffsetY()).thenReturn(0);
+        when(immerManagerData.getXs()).thenReturn(new int[ImmerManagerData.POINT_COUNT]);
+        when(immerManagerData.getYs()).thenReturn(new int[ImmerManagerData.POINT_COUNT]);
         when(immerManagerData.isEnabled()).thenReturn(false);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/ImmerManager"))

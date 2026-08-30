@@ -32,7 +32,7 @@ public class ImmerAnalyzerService {
     @Autowired(required = false)
     private ImmerManagerData immerManagerData;
 
-    public ImmerRest getImmerRestData(BufferedImage bufferedImage, int offsetX, int offsetY) {
+    public ImmerRest getImmerRestData(BufferedImage bufferedImage, int[] xs, int[] ys) {
         if (bufferedImage == null) {
             logger.warn("No image available for Immer analysis");
             ImmerRest errorRest = new ImmerRest();
@@ -41,13 +41,17 @@ public class ImmerAnalyzerService {
             return errorRest;
         }
 
+        if (xs == null || ys == null || xs.length != ImmerManagerData.POINT_COUNT || ys.length != ImmerManagerData.POINT_COUNT) {
+            throw new IllegalArgumentException("Expected " + ImmerManagerData.POINT_COUNT + " x and y coordinates");
+        }
+
         boolean lightMode = false;
         int activeThreshold = LIGHT_THRESHOLD;
         int ambientBrightness = 0;
 
         if (immerManagerData != null) {
-            int refX = immerManagerData.getReferenceX() + offsetX;
-            int refY = immerManagerData.getReferenceY() + offsetY;
+            int refX = immerManagerData.getReferenceX();
+            int refY = immerManagerData.getReferenceY();
             ambientBrightness = measureBrightnessAt(refX, refY, bufferedImage);
             int referenceThreshold = immerManagerData.getReferenceThreshold();
             int hysteresis = immerManagerData.getReferenceHysteresis();
@@ -66,29 +70,29 @@ public class ImmerAnalyzerService {
             drawReferenceCross(refX, refY, bufferedImage, lightMode);
         }
 
-        boolean heating = getLightValueAnnDrawRedCross(495 + offsetX, 215 + offsetY, bufferedImage, activeThreshold);
-        boolean levelOne = getLightValueAnnDrawRedCross(305 + offsetX, 150 + offsetY, bufferedImage, activeThreshold);
-        boolean levelTwo = getLightValueAnnDrawRedCross(334 + offsetX, 150 + offsetY, bufferedImage, activeThreshold);
-        boolean levelThree = getLightValueAnnDrawRedCross(362 + offsetX, 150 + offsetY, bufferedImage, activeThreshold);
-        boolean levelFour = getLightValueAnnDrawRedCross(390 + offsetX, 150 + offsetY, bufferedImage, activeThreshold);
+        boolean heating = getLightValueAnnDrawRedCross(xs[ImmerManagerData.HEATING], ys[ImmerManagerData.HEATING], bufferedImage, activeThreshold);
+        boolean levelOne = getLightValueAnnDrawRedCross(xs[ImmerManagerData.LEVEL_ONE], ys[ImmerManagerData.LEVEL_ONE], bufferedImage, activeThreshold);
+        boolean levelTwo = getLightValueAnnDrawRedCross(xs[ImmerManagerData.LEVEL_TWO], ys[ImmerManagerData.LEVEL_TWO], bufferedImage, activeThreshold);
+        boolean levelThree = getLightValueAnnDrawRedCross(xs[ImmerManagerData.LEVEL_THREE], ys[ImmerManagerData.LEVEL_THREE], bufferedImage, activeThreshold);
+        boolean levelFour = getLightValueAnnDrawRedCross(xs[ImmerManagerData.LEVEL_FOUR], ys[ImmerManagerData.LEVEL_FOUR], bufferedImage, activeThreshold);
 
-        boolean boilerOn = getLightValueAnnDrawRedCross(490 + offsetX, 120 + offsetY, bufferedImage, activeThreshold);
+        boolean boilerOn = getLightValueAnnDrawRedCross(xs[ImmerManagerData.BOILER], ys[ImmerManagerData.BOILER], bufferedImage, activeThreshold);
 
-        boolean digit1_1 = getLightValueAnnDrawRedCross(306 + offsetX, 178 + offsetY, bufferedImage, activeThreshold);
-        boolean digit1_2 = getLightValueAnnDrawRedCross(291 + offsetX, 199 + offsetY, bufferedImage, activeThreshold);
-        boolean digit1_3 = getLightValueAnnDrawRedCross(291 + offsetX, 243 + offsetY, bufferedImage, activeThreshold);
-        boolean digit1_4 = getLightValueAnnDrawRedCross(306 + offsetX, 269 + offsetY, bufferedImage, activeThreshold);
-        boolean digit1_5 = getLightValueAnnDrawRedCross(324 + offsetX, 243 + offsetY, bufferedImage, activeThreshold);
-        boolean digit1_6 = getLightValueAnnDrawRedCross(324 + offsetX, 199 + offsetY, bufferedImage, activeThreshold);
-        boolean digit1_7 = getLightValueAnnDrawRedCross(304 + offsetX, 224 + offsetY, bufferedImage, activeThreshold);
+        boolean digit1_1 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT1_SEG1], ys[ImmerManagerData.DIGIT1_SEG1], bufferedImage, activeThreshold);
+        boolean digit1_2 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT1_SEG2], ys[ImmerManagerData.DIGIT1_SEG2], bufferedImage, activeThreshold);
+        boolean digit1_3 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT1_SEG3], ys[ImmerManagerData.DIGIT1_SEG3], bufferedImage, activeThreshold);
+        boolean digit1_4 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT1_SEG4], ys[ImmerManagerData.DIGIT1_SEG4], bufferedImage, activeThreshold);
+        boolean digit1_5 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT1_SEG5], ys[ImmerManagerData.DIGIT1_SEG5], bufferedImage, activeThreshold);
+        boolean digit1_6 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT1_SEG6], ys[ImmerManagerData.DIGIT1_SEG6], bufferedImage, activeThreshold);
+        boolean digit1_7 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT1_SEG7], ys[ImmerManagerData.DIGIT1_SEG7], bufferedImage, activeThreshold);
 
-        boolean digit2_1 = getLightValueAnnDrawRedCross(360 + offsetX, 178 + offsetY, bufferedImage, activeThreshold);
-        boolean digit2_2 = getLightValueAnnDrawRedCross(344 + offsetX, 199 + offsetY, bufferedImage, activeThreshold);
-        boolean digit2_3 = getLightValueAnnDrawRedCross(344 + offsetX, 243 + offsetY, bufferedImage, activeThreshold);
-        boolean digit2_4 = getLightValueAnnDrawRedCross(360 + offsetX, 268 + offsetY, bufferedImage, activeThreshold);
-        boolean digit2_5 = getLightValueAnnDrawRedCross(377 + offsetX, 243 + offsetY, bufferedImage, activeThreshold);
-        boolean digit2_6 = getLightValueAnnDrawRedCross(377 + offsetX, 199 + offsetY, bufferedImage, activeThreshold);
-        boolean digit2_7 = getLightValueAnnDrawRedCross(360 + offsetX, 224 + offsetY, bufferedImage, activeThreshold);
+        boolean digit2_1 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT2_SEG1], ys[ImmerManagerData.DIGIT2_SEG1], bufferedImage, activeThreshold);
+        boolean digit2_2 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT2_SEG2], ys[ImmerManagerData.DIGIT2_SEG2], bufferedImage, activeThreshold);
+        boolean digit2_3 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT2_SEG3], ys[ImmerManagerData.DIGIT2_SEG3], bufferedImage, activeThreshold);
+        boolean digit2_4 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT2_SEG4], ys[ImmerManagerData.DIGIT2_SEG4], bufferedImage, activeThreshold);
+        boolean digit2_5 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT2_SEG5], ys[ImmerManagerData.DIGIT2_SEG5], bufferedImage, activeThreshold);
+        boolean digit2_6 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT2_SEG6], ys[ImmerManagerData.DIGIT2_SEG6], bufferedImage, activeThreshold);
+        boolean digit2_7 = getLightValueAnnDrawRedCross(xs[ImmerManagerData.DIGIT2_SEG7], ys[ImmerManagerData.DIGIT2_SEG7], bufferedImage, activeThreshold);
 
         int number1 = getNumber(digit1_1, digit1_2, digit1_3, digit1_4, digit1_5, digit1_6, digit1_7) * 10;
         int number2 = getNumber(digit2_1, digit2_2, digit2_3, digit2_4, digit2_5, digit2_6, digit2_7);

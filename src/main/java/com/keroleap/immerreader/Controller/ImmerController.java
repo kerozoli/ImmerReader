@@ -37,7 +37,7 @@ private ImmerManagerData immerManagerData;
 @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
 public @ResponseBody byte[] getImage() throws IOException {
     BufferedImage cachedImage = immerAnalyzerService.getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-    immerAnalyzerService.getImmerRestData(cachedImage, immerManagerData.getOffsetX(), immerManagerData.getOffsetY());
+    immerAnalyzerService.getImmerRestData(cachedImage, immerManagerData.getXs(), immerManagerData.getYs());
     int x1 = 90; // the x-coordinate of the top-left corner of the crop area
     int y1 = 35; // the y-coordinate of the top-left corner of the crop area
     int x2 = 240; // the x-coordinate of the bottom-right corner of the crop area
@@ -58,7 +58,7 @@ public @ResponseBody byte[] getImage() throws IOException {
 @GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
 public @ResponseBody byte[] getUncroppedImage() throws IOException {
     BufferedImage cachedImage = immerAnalyzerService.getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-    immerAnalyzerService.getImmerRestData(cachedImage, immerManagerData.getOffsetX(), immerManagerData.getOffsetY());
+    immerAnalyzerService.getImmerRestData(cachedImage, immerManagerData.getXs(), immerManagerData.getYs());
 
     // Crop the image
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -72,7 +72,7 @@ public @ResponseBody byte[] getUncroppedImage() throws IOException {
 public ModelAndView getImmerData() throws IOException {
     BufferedImage cachedImage = immerAnalyzerService.getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
     ModelAndView modelAndView = new ModelAndView("immerdata");
-    modelAndView.addObject("message", immerAnalyzerService.getImmerRestData(cachedImage, immerManagerData.getOffsetX(), immerManagerData.getOffsetY()).toString());
+    modelAndView.addObject("message", immerAnalyzerService.getImmerRestData(cachedImage, immerManagerData.getXs(), immerManagerData.getYs()).toString());
     return modelAndView;
 }
 

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.keroleap.immerreader.ImmerRest;
+import com.keroleap.immerreader.SharedData.ImmerManagerData;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,7 +15,7 @@ class ImmerAnalyzerServiceTest {
     private ImmerAnalyzerService service;
 
     // Image large enough to accommodate all pixel reads/writes used by getImmerRestData
-    // with offsetX=0, offsetY=0. Furthest writes reach x+5=500, y+5=275.
+    // with the default point coordinates. Furthest writes reach x+5=500, y+5=275.
     private static final int IMG_WIDTH = 600;
     private static final int IMG_HEIGHT = 400;
 
@@ -135,11 +136,21 @@ class ImmerAnalyzerServiceTest {
         }
     }
 
+    private int[] defaultXs() {
+        ImmerManagerData data = new ImmerManagerData();
+        return data.getXs();
+    }
+
+    private int[] defaultYs() {
+        ImmerManagerData data = new ImmerManagerData();
+        return data.getYs();
+    }
+
     @Test
     void getImmerRestData_noHeating_allZero() {
         // All pixels black → heating=false → temperature forced to 0, throttle=0
         BufferedImage img = createBlackImage();
-        ImmerRest result = service.getImmerRestData(img, 0, 0);
+        ImmerRest result = service.getImmerRestData(img, defaultXs(), defaultYs());
 
         assertFalse(result.isHeating());
         assertFalse(result.isBoilerOn());
@@ -150,17 +161,19 @@ class ImmerAnalyzerServiceTest {
     @Test
     void getImmerRestData_heatingOn_boilerOn_throttleOne() {
         BufferedImage img = createBlackImage();
+        int[] xs = defaultXs();
+        int[] ys = defaultYs();
 
-        // heating indicator at (495, 215)
-        setRegionWhite(img, 495, 215);
-        // boilerOn indicator at (490, 120)
-        setRegionWhite(img, 490, 120);
-        // throttle level 1 at (305, 150); levels 2-4 remain black
-        setRegionWhite(img, 305, 150);
+        // heating indicator at default (495, 215)
+        setRegionWhite(img, xs[ImmerManagerData.HEATING], ys[ImmerManagerData.HEATING]);
+        // boilerOn indicator at default (490, 120)
+        setRegionWhite(img, xs[ImmerManagerData.BOILER], ys[ImmerManagerData.BOILER]);
+        // throttle level 1 at default (305, 150); levels 2-4 remain black
+        setRegionWhite(img, xs[ImmerManagerData.LEVEL_ONE], ys[ImmerManagerData.LEVEL_ONE]);
 
         // Leave temperature digits all black → digits decode to 1000,
         // number > 500 → falls back to previousTempValue (0)
-        ImmerRest result = service.getImmerRestData(img, 0, 0);
+        ImmerRest result = service.getImmerRestData(img, xs, ys);
 
         assertTrue(result.isHeating());
         assertTrue(result.isBoilerOn());
@@ -173,28 +186,32 @@ class ImmerAnalyzerServiceTest {
     @Test
     void getImmerRestData_throttleFour() {
         BufferedImage img = createBlackImage();
-        setRegionWhite(img, 495, 215); // heating on
+        int[] xs = defaultXs();
+        int[] ys = defaultYs();
+        setRegionWhite(img, xs[ImmerManagerData.HEATING], ys[ImmerManagerData.HEATING]);
 
         // All four throttle levels lit → last assignment wins → throttle=4
-        setRegionWhite(img, 305, 150);
-        setRegionWhite(img, 334, 150);
-        setRegionWhite(img, 362, 150);
-        setRegionWhite(img, 390, 150);
+        setRegionWhite(img, xs[ImmerManagerData.LEVEL_ONE], ys[ImmerManagerData.LEVEL_ONE]);
+        setRegionWhite(img, xs[ImmerManagerData.LEVEL_TWO], ys[ImmerManagerData.LEVEL_TWO]);
+        setRegionWhite(img, xs[ImmerManagerData.LEVEL_THREE], ys[ImmerManagerData.LEVEL_THREE]);
+        setRegionWhite(img, xs[ImmerManagerData.LEVEL_FOUR], ys[ImmerManagerData.LEVEL_FOUR]);
 
-        ImmerRest result = service.getImmerRestData(img, 0, 0);
+        ImmerRest result = service.getImmerRestData(img, xs, ys);
         assertEquals(4, result.getThrottle());
     }
 
     @Test
     void getImmerRestData_throttleTwo() {
         BufferedImage img = createBlackImage();
-        setRegionWhite(img, 495, 215); // heating on
+        int[] xs = defaultXs();
+        int[] ys = defaultYs();
+        setRegionWhite(img, xs[ImmerManagerData.HEATING], ys[ImmerManagerData.HEATING]);
 
         // Level 1 and 2 lit, 3 and 4 dark → throttle=2
-        setRegionWhite(img, 305, 150);
-        setRegionWhite(img, 334, 150);
+        setRegionWhite(img, xs[ImmerManagerData.LEVEL_ONE], ys[ImmerManagerData.LEVEL_ONE]);
+        setRegionWhite(img, xs[ImmerManagerData.LEVEL_TWO], ys[ImmerManagerData.LEVEL_TWO]);
 
-        ImmerRest result = service.getImmerRestData(img, 0, 0);
+        ImmerRest result = service.getImmerRestData(img, xs, ys);
         assertEquals(2, result.getThrottle());
     }
 
@@ -205,27 +222,29 @@ class ImmerAnalyzerServiceTest {
         //   digit2 = 5 → segments: d1=T,d2=T,d3=F,d4=T,d5=T,d6=F,d7=T
         // Result: 3*10 + 5 = 35 which is in range (20, 56).
         BufferedImage img = createBlackImage();
-        setRegionWhite(img, 495, 215); // heating on
+        int[] xs = defaultXs();
+        int[] ys = defaultYs();
+        setRegionWhite(img, xs[ImmerManagerData.HEATING], ys[ImmerManagerData.HEATING]);
 
-        // Digit 1 segments (all offsets relative to offsetX=0, offsetY=0)
-        setRegionWhite(img, 306, 178);  // d1_1 on
-        // d1_2 (291,199) left black → off
-        // d1_3 (291,243) left black → off
-        setRegionWhite(img, 306, 269);  // d1_4 on
-        setRegionWhite(img, 324, 243);  // d1_5 on
-        setRegionWhite(img, 324, 199);  // d1_6 on
-        setRegionWhite(img, 304, 224);  // d1_7 on
+        // Digit 1 segments
+        setRegionWhite(img, xs[ImmerManagerData.DIGIT1_SEG1], ys[ImmerManagerData.DIGIT1_SEG1]);  // d1_1 on
+        // d1_2 left black → off
+        // d1_3 left black → off
+        setRegionWhite(img, xs[ImmerManagerData.DIGIT1_SEG4], ys[ImmerManagerData.DIGIT1_SEG4]);  // d1_4 on
+        setRegionWhite(img, xs[ImmerManagerData.DIGIT1_SEG5], ys[ImmerManagerData.DIGIT1_SEG5]);  // d1_5 on
+        setRegionWhite(img, xs[ImmerManagerData.DIGIT1_SEG6], ys[ImmerManagerData.DIGIT1_SEG6]);  // d1_6 on
+        setRegionWhite(img, xs[ImmerManagerData.DIGIT1_SEG7], ys[ImmerManagerData.DIGIT1_SEG7]);  // d1_7 on
 
         // Digit 2 segments
-        setRegionWhite(img, 360, 178);  // d2_1 on
-        setRegionWhite(img, 344, 199);  // d2_2 on
-        // d2_3 (344,243) left black → off
-        setRegionWhite(img, 360, 268);  // d2_4 on
-        setRegionWhite(img, 377, 243);  // d2_5 on
-        // d2_6 (377,199) left black → off
-        setRegionWhite(img, 360, 224);  // d2_7 on
+        setRegionWhite(img, xs[ImmerManagerData.DIGIT2_SEG1], ys[ImmerManagerData.DIGIT2_SEG1]);  // d2_1 on
+        setRegionWhite(img, xs[ImmerManagerData.DIGIT2_SEG2], ys[ImmerManagerData.DIGIT2_SEG2]);  // d2_2 on
+        // d2_3 left black → off
+        setRegionWhite(img, xs[ImmerManagerData.DIGIT2_SEG4], ys[ImmerManagerData.DIGIT2_SEG4]);  // d2_4 on
+        setRegionWhite(img, xs[ImmerManagerData.DIGIT2_SEG5], ys[ImmerManagerData.DIGIT2_SEG5]);  // d2_5 on
+        // d2_6 left black → off
+        setRegionWhite(img, xs[ImmerManagerData.DIGIT2_SEG7], ys[ImmerManagerData.DIGIT2_SEG7]);  // d2_7 on
 
-        ImmerRest result = service.getImmerRestData(img, 0, 0);
+        ImmerRest result = service.getImmerRestData(img, xs, ys);
 
         assertTrue(result.isHeating());
         assertEquals(35, result.getTemperaute());
@@ -237,25 +256,33 @@ class ImmerAnalyzerServiceTest {
         // → falls back to previousTempValue which starts at 0.
         // heating=true so temperature is not forced to 0, but fallback value is 0.
         BufferedImage img = createBlackImage();
-        setRegionWhite(img, 495, 215); // heating on
+        int[] xs = defaultXs();
+        int[] ys = defaultYs();
+        setRegionWhite(img, xs[ImmerManagerData.HEATING], ys[ImmerManagerData.HEATING]);
 
-        ImmerRest result = service.getImmerRestData(img, 0, 0);
+        ImmerRest result = service.getImmerRestData(img, xs, ys);
         assertEquals(0, result.getTemperaute());
     }
 
     @Test
-    void getImmerRestData_withPositiveOffset() {
-        // Verify that offsetX and offsetY shift the sampling coordinates correctly.
-        int ox = 10;
-        int oy = 5;
+    void getImmerRestData_withShiftedPoints() {
+        // Verify that individually configurable point coordinates shift the sampling correctly.
+        int shiftX = 10;
+        int shiftY = 5;
         BufferedImage img = createBlackImage();
 
-        // Heating at (495+ox, 215+oy)
-        setRegionWhite(img, 495 + ox, 215 + oy);
-        // BoilerOn at (490+ox, 120+oy)
-        setRegionWhite(img, 490 + ox, 120 + oy);
+        int[] xs = defaultXs();
+        int[] ys = defaultYs();
+        for (int i = 0; i < ImmerManagerData.POINT_COUNT; i++) {
+            xs[i] += shiftX;
+            ys[i] += shiftY;
+        }
 
-        ImmerRest result = service.getImmerRestData(img, ox, oy);
+        // Heating and boiler at shifted coordinates
+        setRegionWhite(img, xs[ImmerManagerData.HEATING], ys[ImmerManagerData.HEATING]);
+        setRegionWhite(img, xs[ImmerManagerData.BOILER], ys[ImmerManagerData.BOILER]);
+
+        ImmerRest result = service.getImmerRestData(img, xs, ys);
 
         assertTrue(result.isHeating());
         assertTrue(result.isBoilerOn());
