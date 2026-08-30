@@ -1042,8 +1042,9 @@
             svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
             svg.setAttribute('preserveAspectRatio', 'none');
 
-            // Grid lines
+            // Grid lines and Y-axis labels
             const gridCount = 4;
+            const usedLabels = new Set();
             for (let i = 0; i <= gridCount; i++) {
                 const value = minValue + (range * i / gridCount);
                 const y = yFor(value);
@@ -1055,13 +1056,17 @@
                 line.setAttribute('class', 'chart-grid');
                 svg.appendChild(line);
 
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('x', padding.left - 5);
-                text.setAttribute('y', y + 3);
-                text.setAttribute('class', 'chart-label');
-                text.setAttribute('text-anchor', 'end');
-                text.textContent = Math.round(value);
-                svg.appendChild(text);
+                const label = Number.isInteger(value) ? String(Math.round(value)) : value.toFixed(1);
+                if (!usedLabels.has(label)) {
+                    usedLabels.add(label);
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', padding.left - 5);
+                    text.setAttribute('y', y + 3);
+                    text.setAttribute('class', 'chart-label');
+                    text.setAttribute('text-anchor', 'end');
+                    text.textContent = label;
+                    svg.appendChild(text);
+                }
             }
 
             // X-axis labels (every 2 hours = 120 points)
