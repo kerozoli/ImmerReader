@@ -38,6 +38,7 @@
             gap: 15px;
             padding: 0 20px;
             align-items: flex-start;
+            overflow-x: auto;
         }
         .controls {
             background: #16213e;
@@ -52,6 +53,10 @@
             border-radius: 8px;
             flex: 0 0 auto;
             width: 480px;
+            transition: width 0.3s ease;
+        }
+        .image-container.edit-mode {
+            width: 1440px;
         }
         .stats-panel {
             flex: 1 1 0;
@@ -99,6 +104,7 @@
             border: 2px solid #0f3460;
             border-radius: 4px;
             display: block;
+            image-rendering: pixelated;
         }
         .current-values {
             margin-top: 12px;
@@ -666,14 +672,21 @@
 
         function toggleEditMode() {
             editMode = !editMode;
+            const imageContainer = imageWrapper.closest('.image-container');
             if (editMode) {
                 editModeBtn.textContent = 'Edit mode: ON';
                 editModeBtn.classList.add('active');
                 imageWrapper.classList.add('edit-mode');
+                if (imageContainer) {
+                    imageContainer.classList.add('edit-mode');
+                }
             } else {
                 editModeBtn.textContent = 'Edit mode: OFF';
                 editModeBtn.classList.remove('active');
                 imageWrapper.classList.remove('edit-mode');
+                if (imageContainer) {
+                    imageContainer.classList.remove('edit-mode');
+                }
             }
             refreshImage();
             updateMarkers();
