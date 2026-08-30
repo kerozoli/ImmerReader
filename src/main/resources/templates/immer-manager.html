@@ -341,6 +341,83 @@
             font-weight: bold;
             fill: #eee;
         }
+        .stats-section {
+            margin-top: 15px;
+        }
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .stat-card {
+            background: #0f3460;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            margin: 0 0 6px 0;
+            color: #aaa;
+            font-size: 12px;
+        }
+        .stat-card .value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        @media (min-width: 900px) {
+            .charts-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .chart-card {
+            background: #0f3460;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .chart-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            color: #aaa;
+        }
+        .chart-container {
+            width: 100%;
+            height: 180px;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+        .chart-container svg {
+            height: 100%;
+            min-width: 100%;
+            display: block;
+        }
+        .chart-line {
+            fill: none;
+            stroke-width: 2;
+        }
+        .chart-axis {
+            stroke: #555;
+            stroke-width: 1;
+        }
+        .chart-grid {
+            stroke: #16213e;
+            stroke-width: 1;
+            stroke-dasharray: 4;
+        }
+        .chart-label {
+            fill: #aaa;
+            font-size: 9px;
+            text-anchor: middle;
+        }
+        .chart-area {
+            fill-opacity: 0.2;
+        }
     </style>
 </head>
 <body>
@@ -519,6 +596,36 @@
                         <text x="160" y="195" text-anchor="middle" class="segment-label">6</text>
                         <text x="90" y="255" text-anchor="middle" class="segment-label">7</text>
                     </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="padding: 0 20px;">
+        <div class="data-section stats-section">
+            <h2>24-Hour Statistics</h2>
+            <div class="stats-summary">
+                <div class="stat-card">
+                    <h3>Avg Temperature</h3>
+                    <div class="value"><span id="avgTemperature">--</span>°C</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Avg Throttle</h3>
+                    <div class="value"><span id="avgThrottle">--</span></div>
+                </div>
+                <div class="stat-card">
+                    <h3>Heating Time</h3>
+                    <div class="value" id="totalHeatingTime">--</div>
+                </div>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Temperature (24h, 1-min avg)</h3>
+                    <div class="chart-container" id="temperatureChart"></div>
+                </div>
+                <div class="chart-card">
+                    <h3>Throttle Level (24h, 1-min avg)</h3>
+                    <div class="chart-container" id="throttleChart"></div>
                 </div>
             </div>
         </div>
@@ -892,12 +999,149 @@
             img.src = '/Immer/uncroppedimage?analyze=' + analyze + '&t=' + new Date().getTime();
         }
 
+        function formatDuration(ms) {
+            if (ms <= 0) {
+                return '0m';
+            }
+            const totalMinutes = Math.round(ms / 60000);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            if (hours > 0) {
+                return hours + 'h ' + minutes + 'm';
+            }
+            return minutes + 'm';
+        }
+
+        function average(values) {
+            const valid = values.filter(v => v !== null && v !== undefined);
+            if (valid.length === 0) {
+                return null;
+            }
+            const sum = valid.reduce((a, b) => a + b, 0);
+            return sum / valid.length;
+        }
+
+        function drawLineChart(containerId, labels, values, color) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            const width = Math.max(container.clientWidth, 600);
+            const height = container.clientHeight || 180;
+            const padding = { top: 10, right: 10, bottom: 20, left: 30 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            const validValues = values.map(v => (v === null || v === undefined) ? null : Number(v)).filter(v => v !== null);
+            if (validValues.length === 0) {
+                container.textContent = 'No data yet';
+                return;
+            }
+
+            const minValue = Math.min(...validValues);
+            const maxValue = Math.max(...validValues);
+            const range = maxValue - minValue || 1;
+            const yBottom = padding.top + chartHeight;
+
+            function xFor(i) {
+                return padding.left + (i / (values.length - 1)) * chartWidth;
+            }
+            function yFor(v) {
+                return yBottom - ((v - minValue) / range) * chartHeight;
+            }
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+            svg.setAttribute('preserveAspectRatio', 'none');
+
+            // Grid lines
+            const gridCount = 4;
+            for (let i = 0; i <= gridCount; i++) {
+                const value = minValue + (range * i / gridCount);
+                const y = yFor(value);
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding.left);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', width - padding.right);
+                line.setAttribute('y2', y);
+                line.setAttribute('class', 'chart-grid');
+                svg.appendChild(line);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding.left - 5);
+                text.setAttribute('y', y + 3);
+                text.setAttribute('class', 'chart-label');
+                text.setAttribute('text-anchor', 'end');
+                text.textContent = Math.round(value);
+                svg.appendChild(text);
+            }
+
+            // X-axis labels (every 2 hours = 120 points)
+            const step = 120;
+            for (let i = 0; i < values.length; i += step) {
+                const x = xFor(i);
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', height - 5);
+                text.setAttribute('class', 'chart-label');
+                text.textContent = labels[i] || '';
+                svg.appendChild(text);
+            }
+
+            // Polylines broken at nulls
+            let currentSegment = [];
+            for (let i = 0; i < values.length; i++) {
+                const v = values[i];
+                if (v !== null && v !== undefined) {
+                    currentSegment.push(xFor(i) + ',' + yFor(Number(v)));
+                } else {
+                    if (currentSegment.length > 1) {
+                        drawSegment(svg, currentSegment, color);
+                    }
+                    currentSegment = [];
+                }
+            }
+            if (currentSegment.length > 1) {
+                drawSegment(svg, currentSegment, color);
+            }
+
+            container.appendChild(svg);
+        }
+
+        function drawSegment(svg, points, color) {
+            const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+            polyline.setAttribute('points', points.join(' '));
+            polyline.setAttribute('class', 'chart-line');
+            polyline.setAttribute('stroke', color);
+            svg.appendChild(polyline);
+        }
+
+        function updateStats(data) {
+            const avgTemp = average(data.temperatures);
+            const avgThrottle = average(data.throttleLevels);
+
+            document.getElementById('avgTemperature').textContent = avgTemp !== null ? avgTemp.toFixed(1) : '--';
+            document.getElementById('avgThrottle').textContent = avgThrottle !== null ? avgThrottle.toFixed(1) : '--';
+            document.getElementById('totalHeatingTime').textContent = formatDuration(data.totalHeatingMs);
+
+            drawLineChart('temperatureChart', data.labels, data.temperatures, '#e94560');
+            drawLineChart('throttleChart', data.labels, data.throttleLevels, '#28a745');
+        }
+
+        function pollStats() {
+            fetch('/ImmerManager/stats')
+                .then(response => response.json())
+                .then(data => updateStats(data))
+                .catch(error => console.error('Error polling stats:', error));
+        }
+
         renderPointButtons();
         createMarkers();
         updatePointInputs();
         setInterval(refreshImage, 2000);
         setInterval(pollState, 2000);
         setInterval(pollDetectedData, 2000);
+        pollStats();
+        setInterval(pollStats, 60000);
     </script>
 </body>
 </html>

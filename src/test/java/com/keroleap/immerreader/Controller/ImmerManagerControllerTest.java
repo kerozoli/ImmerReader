@@ -11,6 +11,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.SharedData.ImmerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
+import com.keroleap.immerreader.SharedData.ImmerStatistics;
+import com.keroleap.immerreader.SharedData.ImmerStatisticsSnapshot;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 import static org.mockito.Mockito.when;
@@ -31,6 +33,9 @@ class ImmerManagerControllerTest {
 
     @MockitoBean
     private ErrorStatistics errorStatistics;
+
+    @MockitoBean
+    private ImmerStatistics immerStatistics;
 
     @Test
     void getOffset_returnsCurrentValues() throws Exception {
@@ -203,5 +208,25 @@ class ImmerManagerControllerTest {
                 .andExpect(jsonPath("$.throttle").value(0))
                 .andExpect(jsonPath("$.heating").value(false))
                 .andExpect(jsonPath("$.boilerOn").value(false));
+    }
+
+    @Test
+    void getStats_returnsSnapshotFromStatistics() throws Exception {
+        ImmerStatisticsSnapshot snapshot = new ImmerStatisticsSnapshot(
+                java.util.Collections.singletonList("12:34"),
+                java.util.Collections.singletonList(42.0),
+                java.util.Collections.singletonList(3.0),
+                java.util.Collections.singletonList(45_000L),
+                45_000L);
+        when(immerStatistics.getLast24Hours()).thenReturn(snapshot);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/ImmerManager/stats"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.labels[0]").value("12:34"))
+                .andExpect(jsonPath("$.temperatures[0]").value(42.0))
+                .andExpect(jsonPath("$.throttleLevels[0]").value(3.0))
+                .andExpect(jsonPath("$.heatingMsPerMinute[0]").value(45_000))
+                .andExpect(jsonPath("$.totalHeatingMs").value(45_000));
     }
 }

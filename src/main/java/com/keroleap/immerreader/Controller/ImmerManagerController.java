@@ -13,6 +13,8 @@ import org.springframework.web.servlet.ModelAndView;
 import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.SharedData.ImmerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
+import com.keroleap.immerreader.SharedData.ImmerStatistics;
+import com.keroleap.immerreader.SharedData.ImmerStatisticsSnapshot;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
 
 @Controller
@@ -24,6 +26,9 @@ public class ImmerManagerController {
 
     @Autowired
     private ImmerData immerData;
+
+    @Autowired
+    private ImmerStatistics immerStatistics;
 
     @Autowired
     private ErrorStatistics errorStatistics;
@@ -101,6 +106,12 @@ public class ImmerManagerController {
     @ResponseBody
     public ImmerRest getDetectedData() {
         return immerData.getImmerRest();
+    }
+
+    @GetMapping("/stats")
+    @ResponseBody
+    public ImmerStatisticsSnapshot getStats() {
+        return immerStatistics.getLast24Hours();
     }
 
     @GetMapping("/adjust")
