@@ -33,12 +33,11 @@
         nav a.active {
             background: #e94560;
         }
-        .container {
+        .main-content {
             display: flex;
-            gap: 20px;
-            align-items: flex-start;
+            gap: 15px;
             padding: 0 20px;
-            flex-wrap: wrap;
+            align-items: flex-start;
         }
         .controls {
             background: #16213e;
@@ -46,7 +45,21 @@
             border-radius: 8px;
             flex: 0 0 auto;
             width: 170px;
-            max-width: 170px;
+        }
+        .image-container {
+            background: #16213e;
+            padding: 15px;
+            border-radius: 8px;
+            flex: 0 0 auto;
+            width: 480px;
+        }
+        .stats-panel {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+        .right-panel {
+            flex: 0 0 auto;
+            width: 220px;
         }
         .form-group {
             margin-bottom: 12px;
@@ -79,15 +92,10 @@
         button:hover {
             background: #ff6b6b;
         }
-        .image-container {
-            background: #16213e;
-            padding: 15px;
-            border-radius: 8px;
-            flex: 1 1 auto;
-            min-width: 300px;
-        }
         img {
             max-width: 100%;
+            width: 100%;
+            height: auto;
             border: 2px solid #0f3460;
             border-radius: 4px;
             display: block;
@@ -165,21 +173,6 @@
             font-size: 24px;
             font-weight: bold;
             color: #e94560;
-        }
-        .main-content {
-            display: flex;
-            gap: 15px;
-            padding: 0 20px;
-            flex-wrap: wrap;
-        }
-        .left-panel {
-            flex: 1 1 auto;
-            min-width: 500px;
-        }
-        .right-panel {
-            flex: 0 0 auto;
-            width: 320px;
-            min-width: 320px;
         }
         .toggle-section {
             margin-bottom: 15px;
@@ -279,8 +272,8 @@
         }
         .image-wrapper {
             position: relative;
-            display: inline-block;
-            max-width: 100%;
+            display: block;
+            width: 100%;
         }
         .marker {
             position: absolute;
@@ -341,6 +334,83 @@
             font-weight: bold;
             fill: #eee;
         }
+        .stats-section {
+            margin-top: 15px;
+        }
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .stat-card {
+            background: #0f3460;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            margin: 0 0 6px 0;
+            color: #aaa;
+            font-size: 12px;
+        }
+        .stat-card .value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #e94560;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        @media (min-width: 900px) {
+            .charts-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .chart-card {
+            background: #0f3460;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .chart-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            color: #aaa;
+        }
+        .chart-container {
+            width: 100%;
+            height: 180px;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+        .chart-container svg {
+            height: 100%;
+            min-width: 100%;
+            display: block;
+        }
+        .chart-line {
+            fill: none;
+            stroke-width: 2;
+        }
+        .chart-axis {
+            stroke: #555;
+            stroke-width: 1;
+        }
+        .chart-grid {
+            stroke: #16213e;
+            stroke-width: 1;
+            stroke-dasharray: 4;
+        }
+        .chart-label {
+            fill: #aaa;
+            font-size: 9px;
+            text-anchor: middle;
+        }
+        .chart-area {
+            fill-opacity: 0.2;
+        }
     </style>
 </head>
 <body>
@@ -379,152 +449,178 @@
     </div>
 
     <div class="main-content">
-        <div class="left-panel">
-            <div class="container">
-                <div class="controls">
-                    <div class="toggle-section">
-                        <label class="toggle-label">
-                            <span>Scheduler <span id="schedulerStatus" th:text="${enabled} ? 'Enabled' : 'Disabled'">Enabled</span></span>
-                            <input type="checkbox" id="schedulerToggle" th:checked="${enabled}">
-                            <span class="toggle-switch"></span>
-                        </label>
+        <div class="controls">
+            <div class="toggle-section">
+                <label class="toggle-label">
+                    <span>Scheduler <span id="schedulerStatus" th:text="${enabled} ? 'Enabled' : 'Disabled'">Enabled</span></span>
+                    <input type="checkbox" id="schedulerToggle" th:checked="${enabled}">
+                    <span class="toggle-switch"></span>
+                </label>
+            </div>
+
+            <div id="controlsPanel" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
+                <form id="pointsForm">
+                    <h3>Points</h3>
+                    <button type="button" id="editModeBtn" class="mode-btn">Edit mode: OFF</button>
+                    <div class="form-group">
+                        <div id="pointGroups"></div>
                     </div>
-
-                    <div id="controlsPanel" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
-                        <form id="pointsForm">
-                            <h3>Points</h3>
-                            <button type="button" id="editModeBtn" class="mode-btn">Edit mode: OFF</button>
-                            <div class="form-group">
-                                <div id="pointGroups"></div>
-                            </div>
-                            <div class="form-group">
-                                <label>Coordinate:</label>
-                                <div class="point-inputs">
-                                    <input type="number" id="pointX" name="pointX" required>
-                                    <input type="number" id="pointY" name="pointY" required>
-                                </div>
-                                <div id="dirtyIndicator" class="dirty-indicator">Unsaved changes</div>
-                            </div>
-                            <button type="submit">Apply</button>
-                        </form>
-
-                        <form id="referenceForm" style="margin-top: 15px;">
-                            <h3>Reference</h3>
-                            <div class="form-group">
-                                <label for="referenceX">X:</label>
-                                <input type="number" id="referenceX" name="x" th:value="${referenceX}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="referenceY">Y:</label>
-                                <input type="number" id="referenceY" name="y" th:value="${referenceY}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="referenceThreshold">Threshold:</label>
-                                <input type="number" id="referenceThreshold" name="threshold" th:value="${referenceThreshold}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="referenceHysteresis">Hyst:</label>
-                                <input type="number" id="referenceHysteresis" name="hysteresis" th:value="${referenceHysteresis}" required>
-                            </div>
-                            <button type="submit">Apply</button>
-                        </form>
-
-                        <form id="thresholdForm" style="margin-top: 15px;">
-                            <h3>Thresholds</h3>
-                            <div class="form-group">
-                                <label for="darkThreshold">Dark:</label>
-                                <input type="number" id="darkThreshold" name="dark" th:value="${darkThreshold}" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="lightThreshold">Light:</label>
-                                <input type="number" id="lightThreshold" name="light" th:value="${lightThreshold}" required>
-                            </div>
-                            <button type="submit">Apply</button>
-                        </form>
-
-                        <div class="current-values">
-                            <strong id="currentPointName">Heating</strong>
-                            (<span id="currentPointX">0</span>,
-                            <span id="currentPointY">0</span>)<br>
-                            Ref: (<span id="currentReferenceX" th:text="${referenceX}">0</span>,
-                            <span id="currentReferenceY" th:text="${referenceY}">0</span>)<br>
-                            Ref Thr: <span id="currentReferenceThreshold" th:text="${referenceThreshold}">0</span><br>
-                            Hyst: <span id="currentReferenceHysteresis" th:text="${referenceHysteresis}">0</span><br>
-                            Dark: <span id="currentDarkThreshold" th:text="${darkThreshold}">0</span><br>
-                            Light: <span id="currentLightThreshold" th:text="${lightThreshold}">0</span><br>
-                            Ambient: <span id="currentAmbientBrightness" th:text="${ambientBrightness}">0</span><br>
-                            Mode: <span id="currentMode" th:classappend="${lightMode} ? 'active' : ''" th:text="${lightMode} ? 'LIGHT' : 'DARK'">DARK</span>
+                    <div class="form-group">
+                        <label>Coordinate:</label>
+                        <div class="point-inputs">
+                            <input type="number" id="pointX" name="pointX" required>
+                            <input type="number" id="pointY" name="pointY" required>
                         </div>
+                        <div id="dirtyIndicator" class="dirty-indicator">Unsaved changes</div>
                     </div>
+                    <button type="submit">Apply</button>
+                </form>
 
-                    <div id="stockPanel" class="stock-values" th:style="${enabled} ? 'display:none;' : ''">
-                        <h3>Stock Values (Scheduler Disabled)</h3>
-                        <div>Temperature: 0°C</div>
-                        <div>Throttle: 0/4</div>
-                        <div>Heating: OFF</div>
-                        <div>Boiler: OFF</div>
+                <form id="referenceForm" style="margin-top: 15px;">
+                    <h3>Reference</h3>
+                    <div class="form-group">
+                        <label for="referenceX">X:</label>
+                        <input type="number" id="referenceX" name="x" th:value="${referenceX}" required>
                     </div>
-
-                    <div id="status" class="status">Updated!</div>
-                </div>
-
-                <div class="image-container" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
-                    <h2>Live Preview</h2>
-                    <div class="image-wrapper" id="imageWrapper">
-                        <img id="liveImage" src="/Immer/uncroppedimage" alt="Immer Camera Feed">
+                    <div class="form-group">
+                        <label for="referenceY">Y:</label>
+                        <input type="number" id="referenceY" name="y" th:value="${referenceY}" required>
                     </div>
-                    <p style="font-size: 12px; margin-top: 8px;"><small>Turn <strong>Edit mode</strong> ON to place points on a clean image. OFF shows the analyzer's red/white detection crosses. Apply to save.</small></p>
+                    <div class="form-group">
+                        <label for="referenceThreshold">Threshold:</label>
+                        <input type="number" id="referenceThreshold" name="threshold" th:value="${referenceThreshold}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="referenceHysteresis">Hyst:</label>
+                        <input type="number" id="referenceHysteresis" name="hysteresis" th:value="${referenceHysteresis}" required>
+                    </div>
+                    <button type="submit">Apply</button>
+                </form>
+
+                <form id="thresholdForm" style="margin-top: 15px;">
+                    <h3>Thresholds</h3>
+                    <div class="form-group">
+                        <label for="darkThreshold">Dark:</label>
+                        <input type="number" id="darkThreshold" name="dark" th:value="${darkThreshold}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lightThreshold">Light:</label>
+                        <input type="number" id="lightThreshold" name="light" th:value="${lightThreshold}" required>
+                    </div>
+                    <button type="submit">Apply</button>
+                </form>
+
+                <div class="current-values">
+                    <strong id="currentPointName">Heating</strong>
+                    (<span id="currentPointX">0</span>,
+                    <span id="currentPointY">0</span>)<br>
+                    Ref: (<span id="currentReferenceX" th:text="${referenceX}">0</span>,
+                    <span id="currentReferenceY" th:text="${referenceY}">0</span>)<br>
+                    Ref Thr: <span id="currentReferenceThreshold" th:text="${referenceThreshold}">0</span><br>
+                    Hyst: <span id="currentReferenceHysteresis" th:text="${referenceHysteresis}">0</span><br>
+                    Dark: <span id="currentDarkThreshold" th:text="${darkThreshold}">0</span><br>
+                    Light: <span id="currentLightThreshold" th:text="${lightThreshold}">0</span><br>
+                    Ambient: <span id="currentAmbientBrightness" th:text="${ambientBrightness}">0</span><br>
+                    Mode: <span id="currentMode" th:classappend="${lightMode} ? 'active' : ''" th:text="${lightMode} ? 'LIGHT' : 'DARK'">DARK</span>
                 </div>
             </div>
+
+            <div id="stockPanel" class="stock-values" th:style="${enabled} ? 'display:none;' : ''">
+                <h3>Stock Values (Scheduler Disabled)</h3>
+                <div>Temperature: 0°C</div>
+                <div>Throttle: 0/4</div>
+                <div>Heating: OFF</div>
+                <div>Boiler: OFF</div>
+            </div>
+
+            <div id="status" class="status">Updated!</div>
         </div>
 
-        <div class="right-panel">
-            <div class="data-section">
-                <h2>Error Statistics (Last 24 Hours)</h2>
-                <div class="error-stats">
-                    <div class="error-card">
-                        <h4>Timeout Errors</h4>
-                        <div class="count"><span id="timeoutErrors" th:text="${errorStats['timeout']} ?: 0">0</span></div>
-                    </div>
-                    <div class="error-card">
-                        <h4>General Errors</h4>
-                        <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
-                    </div>
-                    <div class="error-card">
-                        <h4>Unknown Digit</h4>
-                        <div class="count"><span id="unknownDigitErrors" th:text="${errorStats['unknown_digit']} ?: 0">0</span></div>
-                    </div>
+        <div class="image-container" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
+            <h2>Live Preview</h2>
+            <div class="image-wrapper" id="imageWrapper">
+                <img id="liveImage" src="/Immer/uncroppedimage" alt="Immer Camera Feed" style="width: 100%; max-width: 100%; height: auto;">
+            </div>
+            <p style="font-size: 12px; margin-top: 8px;"><small>Turn <strong>Edit mode</strong> ON to place points on a clean image. OFF shows the analyzer's red/white detection crosses. Apply to save.</small></p>
+        </div>
+
+    <div class="stats-panel">
+        <div class="data-section stats-section">
+            <h2>24-Hour Statistics</h2>
+            <div class="stats-summary">
+                <div class="stat-card">
+                    <h3>Avg Temperature</h3>
+                    <div class="value"><span id="avgTemperature">--</span>°C</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Avg Throttle</h3>
+                    <div class="value"><span id="avgThrottle">--</span></div>
+                </div>
+                <div class="stat-card">
+                    <h3>Heating Time</h3>
+                    <div class="value" id="totalHeatingTime">--</div>
                 </div>
             </div>
-
-            <div class="data-section">
-                <h2>7-Segment Cheat Sheet</h2>
-                <p style="font-size: 12px; color: #aaa; margin-top: 0;">Segment numbers 1-7 map like this. Place each point on the glowing centre of its segment.</p>
-                <div class="cheat-sheet">
-                    <svg width="180" height="260" viewBox="0 0 180 260">
-                        <g stroke="#0f3460" stroke-width="4" stroke-linejoin="round">
-                            <polygon points="40,20 140,20 130,40 50,40" fill="#e94560" />
-                            <polygon points="30,50 50,40 50,110 30,120" fill="#e94560" />
-                            <polygon points="150,50 130,40 130,110 150,120" fill="#e94560" />
-                            <polygon points="40,130 130,130 120,150 50,150" fill="#e94560" />
-                            <polygon points="30,160 50,150 50,220 30,230" fill="#e94560" />
-                            <polygon points="150,160 130,150 130,220 150,230" fill="#e94560" />
-                            <polygon points="40,240 120,240 130,220 50,220" fill="#e94560" />
-                        </g>
-                        <text x="90" y="15" text-anchor="middle" class="segment-label">1</text>
-                        <text x="20" y="85" text-anchor="middle" class="segment-label">2</text>
-                        <text x="160" y="85" text-anchor="middle" class="segment-label">3</text>
-                        <text x="90" y="145" text-anchor="middle" class="segment-label">4</text>
-                        <text x="20" y="195" text-anchor="middle" class="segment-label">5</text>
-                        <text x="160" y="195" text-anchor="middle" class="segment-label">6</text>
-                        <text x="90" y="255" text-anchor="middle" class="segment-label">7</text>
-                    </svg>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Temperature (24h, 1-min avg)</h3>
+                    <div class="chart-container" id="temperatureChart"></div>
+                </div>
+                <div class="chart-card">
+                    <h3>Throttle Level (24h, 1-min avg)</h3>
+                    <div class="chart-container" id="throttleChart"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script th:inline="javascript">
+    <div class="right-panel">
+        <div class="data-section">
+            <h2>Error Statistics (Last 24 Hours)</h2>
+            <div class="error-stats">
+                <div class="error-card">
+                    <h4>Timeout Errors</h4>
+                    <div class="count"><span id="timeoutErrors" th:text="${errorStats['timeout']} ?: 0">0</span></div>
+                </div>
+                <div class="error-card">
+                    <h4>General Errors</h4>
+                    <div class="count"><span id="generalErrors" th:text="${errorStats['error']} ?: 0">0</span></div>
+                </div>
+                <div class="error-card">
+                    <h4>Unknown Digit</h4>
+                    <div class="count"><span id="unknownDigitErrors" th:text="${errorStats['unknown_digit']} ?: 0">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-section">
+            <h2>7-Segment Cheat Sheet</h2>
+            <p style="font-size: 12px; color: #aaa; margin-top: 0;">Segment numbers 1-7 map like this. Place each point on the glowing centre of its segment.</p>
+            <div class="cheat-sheet">
+                <svg width="180" height="260" viewBox="0 0 180 260">
+                    <g stroke="#0f3460" stroke-width="4" stroke-linejoin="round">
+                        <polygon points="40,20 140,20 130,40 50,40" fill="#e94560" />
+                        <polygon points="30,50 50,40 50,110 30,120" fill="#e94560" />
+                        <polygon points="150,50 130,40 130,110 150,120" fill="#e94560" />
+                        <polygon points="40,130 130,130 120,150 50,150" fill="#e94560" />
+                        <polygon points="30,160 50,150 50,220 30,230" fill="#e94560" />
+                        <polygon points="150,160 130,150 130,220 150,230" fill="#e94560" />
+                        <polygon points="40,240 120,240 130,220 50,220" fill="#e94560" />
+                    </g>
+                    <text x="90" y="15" text-anchor="middle" class="segment-label">1</text>
+                    <text x="20" y="85" text-anchor="middle" class="segment-label">2</text>
+                    <text x="160" y="85" text-anchor="middle" class="segment-label">3</text>
+                    <text x="90" y="145" text-anchor="middle" class="segment-label">4</text>
+                    <text x="20" y="195" text-anchor="middle" class="segment-label">5</text>
+                    <text x="160" y="195" text-anchor="middle" class="segment-label">6</text>
+                    <text x="90" y="255" text-anchor="middle" class="segment-label">7</text>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
         const POINT_NAMES = [
             'Heating', 'Level 1', 'Level 2', 'Level 3', 'Level 4', 'Boiler',
             'Digit1 Seg1', 'Digit1 Seg2', 'Digit1 Seg3', 'Digit1 Seg4', 'Digit1 Seg5', 'Digit1 Seg6', 'Digit1 Seg7',
@@ -892,12 +988,155 @@
             img.src = '/Immer/uncroppedimage?analyze=' + analyze + '&t=' + new Date().getTime();
         }
 
+        function formatDuration(ms) {
+            if (ms <= 0) {
+                return '0m';
+            }
+            const totalMinutes = Math.round(ms / 60000);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            if (hours > 0) {
+                return hours + 'h ' + minutes + 'm';
+            }
+            return minutes + 'm';
+        }
+
+        function average(values) {
+            const valid = values.filter(v => v !== null && v !== undefined);
+            if (valid.length === 0) {
+                return null;
+            }
+            const sum = valid.reduce((a, b) => a + b, 0);
+            return sum / valid.length;
+        }
+
+        function drawLineChart(containerId, labels, values, color) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            const width = Math.max(container.clientWidth, 600);
+            const height = container.clientHeight || 180;
+            const padding = { top: 10, right: 10, bottom: 20, left: 30 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            const validValues = values.map(v => (v === null || v === undefined) ? null : Number(v)).filter(v => v !== null);
+            if (validValues.length === 0) {
+                container.textContent = 'No data yet';
+                return;
+            }
+
+            const minValue = Math.min(...validValues);
+            const maxValue = Math.max(...validValues);
+            const range = maxValue - minValue || 1;
+            const yBottom = padding.top + chartHeight;
+
+            function xFor(i) {
+                return padding.left + (i / (values.length - 1)) * chartWidth;
+            }
+            function yFor(v) {
+                return yBottom - ((v - minValue) / range) * chartHeight;
+            }
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+            svg.setAttribute('preserveAspectRatio', 'none');
+
+            // Grid lines
+            const gridCount = 4;
+            for (let i = 0; i <= gridCount; i++) {
+                const value = minValue + (range * i / gridCount);
+                const y = yFor(value);
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding.left);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', width - padding.right);
+                line.setAttribute('y2', y);
+                line.setAttribute('class', 'chart-grid');
+                svg.appendChild(line);
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding.left - 5);
+                text.setAttribute('y', y + 3);
+                text.setAttribute('class', 'chart-label');
+                text.setAttribute('text-anchor', 'end');
+                text.textContent = Math.round(value);
+                svg.appendChild(text);
+            }
+
+            // X-axis labels (every 2 hours = 120 points)
+            const step = 120;
+            for (let i = 0; i < values.length; i += step) {
+                const x = xFor(i);
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', height - 5);
+                text.setAttribute('class', 'chart-label');
+                text.textContent = labels[i] || '';
+                svg.appendChild(text);
+            }
+
+            // Polylines broken at nulls
+            let currentSegment = [];
+            for (let i = 0; i < values.length; i++) {
+                const v = values[i];
+                if (v !== null && v !== undefined) {
+                    currentSegment.push(xFor(i) + ',' + yFor(Number(v)));
+                } else {
+                    if (currentSegment.length > 1) {
+                        drawSegment(svg, currentSegment, color);
+                    }
+                    currentSegment = [];
+                }
+            }
+            if (currentSegment.length > 1) {
+                drawSegment(svg, currentSegment, color);
+            }
+
+            container.appendChild(svg);
+        }
+
+        function drawSegment(svg, points, color) {
+            const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+            polyline.setAttribute('points', points.join(' '));
+            polyline.setAttribute('class', 'chart-line');
+            polyline.setAttribute('stroke', color);
+            svg.appendChild(polyline);
+        }
+
+        function updateStats(data) {
+            const avgTemp = average(data.temperatures);
+            const avgThrottle = average(data.throttleLevels);
+
+            document.getElementById('avgTemperature').textContent = avgTemp !== null ? avgTemp.toFixed(1) : '--';
+            document.getElementById('avgThrottle').textContent = avgThrottle !== null ? avgThrottle.toFixed(1) : '--';
+            document.getElementById('totalHeatingTime').textContent = formatDuration(data.totalHeatingMs);
+
+            drawLineChart('temperatureChart', data.labels, data.temperatures, '#e94560');
+            drawLineChart('throttleChart', data.labels, data.throttleLevels, '#28a745');
+        }
+
+        async function pollStats() {
+            try {
+                const response = await fetch('/ImmerManager/stats');
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                const data = await response.json();
+                updateStats(data);
+            } catch (error) {
+                console.error('Error polling stats:', error);
+            }
+        }
+
         renderPointButtons();
         createMarkers();
         updatePointInputs();
         setInterval(refreshImage, 2000);
         setInterval(pollState, 2000);
         setInterval(pollDetectedData, 2000);
+        pollStats();
+        setInterval(pollStats, 60000);
     </script>
 </body>
 </html>

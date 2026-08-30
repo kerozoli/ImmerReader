@@ -18,6 +18,7 @@ import com.keroleap.immerreader.ImmerRest;
 import com.keroleap.immerreader.Service.ImmerAnalyzerService;
 import com.keroleap.immerreader.SharedData.ImmerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
+import com.keroleap.immerreader.SharedData.ImmerStatistics;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
 import com.keroleap.immerreader.SharedData.SchedulerHealthTracker;
 
@@ -40,6 +41,9 @@ public class ImmerScheduler {
 
     @Autowired
     private ImmerManagerData immerManagerData;
+
+    @Autowired
+    private ImmerStatistics immerStatistics;
 
     @Autowired
     private ErrorStatistics errorStatistics;
@@ -82,6 +86,7 @@ public class ImmerScheduler {
             result.setError(false);
             result.setErrorType(null);
             immerData.setImmerRest(result);
+            immerStatistics.record(result);
             onReadSuccess();
         } catch (TimeoutException e) {
             future.cancel(true);
