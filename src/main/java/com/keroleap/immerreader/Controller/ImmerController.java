@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
@@ -56,11 +57,12 @@ public @ResponseBody byte[] getImage() throws IOException {
 }
 
 @GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
-public @ResponseBody byte[] getUncroppedImage() throws IOException {
+public @ResponseBody byte[] getUncroppedImage(@RequestParam(required = false, defaultValue = "true") boolean analyze) throws IOException {
     BufferedImage cachedImage = immerAnalyzerService.getBufferedImage("http://192.168.1.196/image/jpeg.cgi");
-    immerAnalyzerService.getImmerRestData(cachedImage, immerManagerData.getXs(), immerManagerData.getYs());
+    if (analyze) {
+        immerAnalyzerService.getImmerRestData(cachedImage, immerManagerData.getXs(), immerManagerData.getYs());
+    }
 
-    // Crop the image
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     ImageIO.write(cachedImage, "jpg", baos);
     byte[] bytes = baos.toByteArray();

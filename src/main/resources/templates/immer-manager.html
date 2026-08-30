@@ -42,35 +42,38 @@
         }
         .controls {
             background: #16213e;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
-            min-width: 250px;
+            flex: 0 0 auto;
+            width: 170px;
+            max-width: 170px;
         }
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
             font-weight: bold;
+            font-size: 13px;
         }
         input[type="number"] {
             width: 100%;
-            padding: 8px;
+            padding: 6px;
             border: 1px solid #0f3460;
             border-radius: 4px;
             background: #1a1a2e;
             color: #eee;
-            font-size: 16px;
+            font-size: 14px;
         }
         button {
             background: #e94560;
             color: white;
-            padding: 10px 20px;
+            padding: 8px 12px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 13px;
             width: 100%;
         }
         button:hover {
@@ -78,19 +81,23 @@
         }
         .image-container {
             background: #16213e;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
+            flex: 1 1 auto;
+            min-width: 300px;
         }
         img {
-            max-width: 800px;
+            max-width: 100%;
             border: 2px solid #0f3460;
             border-radius: 4px;
+            display: block;
         }
         .current-values {
-            margin-top: 15px;
+            margin-top: 12px;
             padding: 10px;
             background: #0f3460;
             border-radius: 4px;
+            font-size: 12px;
         }
         .status {
             margin-top: 10px;
@@ -104,32 +111,33 @@
         }
         h1 {
             padding: 0 20px;
+            font-size: 22px;
         }
         .data-section {
             background: #16213e;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .data-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
         }
         .data-card {
             background: #0f3460;
-            padding: 15px;
+            padding: 10px;
             border-radius: 8px;
             text-align: center;
         }
         .data-card h3 {
-            margin: 0 0 10px 0;
+            margin: 0 0 6px 0;
             color: #aaa;
-            font-size: 14px;
+            font-size: 12px;
         }
         .data-card .value {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
             color: #e94560;
         }
@@ -137,44 +145,45 @@
             color: #28a745;
         }
         .error-stats {
-            margin-top: 20px;
+            margin-top: 15px;
         }
         .error-card {
             background: #0f3460;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
             margin-right: 10px;
             display: inline-block;
-            min-width: 150px;
+            min-width: 120px;
         }
         .error-card h4 {
             margin: 0 0 5px 0;
             color: #aaa;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
         }
         .error-card .count {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: bold;
             color: #e94560;
         }
         .main-content {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             padding: 0 20px;
             flex-wrap: wrap;
         }
         .left-panel {
-            flex: 1;
-            min-width: 300px;
+            flex: 1 1 auto;
+            min-width: 500px;
         }
         .right-panel {
-            flex: 1;
-            min-width: 300px;
+            flex: 0 0 auto;
+            width: 320px;
+            min-width: 320px;
         }
         .toggle-section {
-            margin-bottom: 20px;
-            padding: 15px;
+            margin-bottom: 15px;
+            padding: 10px;
             background: #0f3460;
             border-radius: 8px;
         }
@@ -183,20 +192,21 @@
             align-items: center;
             justify-content: space-between;
             cursor: pointer;
+            font-size: 13px;
         }
         .toggle-switch {
             position: relative;
-            width: 50px;
-            height: 26px;
+            width: 42px;
+            height: 22px;
             background: #555;
-            border-radius: 13px;
+            border-radius: 11px;
             transition: background 0.3s;
         }
         .toggle-switch::after {
             content: '';
             position: absolute;
-            width: 22px;
-            height: 22px;
+            width: 18px;
+            height: 18px;
             background: white;
             border-radius: 50%;
             top: 2px;
@@ -210,68 +220,126 @@
             background: #28a745;
         }
         input[type="checkbox"]:checked + .toggle-switch::after {
-            transform: translateX(24px);
+            transform: translateX(20px);
         }
         .disabled-overlay {
             opacity: 0.4;
             pointer-events: none;
         }
         .stock-values {
-            margin-top: 15px;
-            padding: 15px;
+            margin-top: 12px;
+            padding: 12px;
             background: #1a1a2e;
             border-radius: 8px;
             border: 1px solid #e94560;
         }
         .stock-values h3 {
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
             color: #e94560;
-            font-size: 16px;
+            font-size: 14px;
+        }
+        .point-group {
+            margin-bottom: 10px;
+        }
+        .point-group h4 {
+            margin: 0 0 5px 0;
+            font-size: 11px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .point-buttons {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 10px;
+            gap: 4px;
         }
         button.point-btn {
-            width: auto;
-            flex: 1 1 30%;
-            padding: 8px 4px;
-            font-size: 12px;
+            width: 32px;
+            height: 28px;
+            padding: 0;
+            font-size: 11px;
+            flex: 0 0 auto;
         }
         button.point-btn.active {
             background: #28a745;
         }
+        button.mode-btn {
+            width: auto;
+            padding: 6px 10px;
+            font-size: 12px;
+            margin-bottom: 10px;
+            background: #0f3460;
+            color: #eee;
+            border: 1px solid #e94560;
+        }
+        button.mode-btn.active {
+            background: #e94560;
+            color: white;
+            border-color: #e94560;
+        }
         .image-wrapper {
             position: relative;
             display: inline-block;
+            max-width: 100%;
         }
         .marker {
             position: absolute;
-            width: 20px;
-            height: 20px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            border: 2px solid #fff;
+            background: rgba(233, 69, 96, 0.8);
+            border: 1px solid white;
             transform: translate(-50%, -50%);
             pointer-events: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            font-weight: bold;
-            color: white;
-            background: #e94560;
+            z-index: 10;
+            display: none;
         }
-        .marker.active {
-            background: #28a745;
+        .image-wrapper.edit-mode .marker {
+            display: block;
+        }
+        .image-wrapper.edit-mode .marker.active {
+            width: 14px;
+            height: 14px;
+            background: rgba(40, 167, 69, 0.9);
+            box-shadow: 0 0 0 2px white, 0 0 6px #28a745;
+            border: none;
         }
         .point-inputs {
             display: flex;
-            gap: 10px;
+            gap: 6px;
         }
         .point-inputs input {
             flex: 1;
+        }
+        .dirty-indicator {
+            display: none;
+            font-size: 11px;
+            color: #ffcc00;
+            margin-top: 4px;
+        }
+        .dirty-indicator.visible {
+            display: block;
+        }
+        h2 {
+            font-size: 18px;
+            margin-top: 0;
+        }
+        h3 {
+            font-size: 14px;
+            margin: 0 0 10px 0;
+        }
+        .cheat-sheet {
+            margin-top: 15px;
+            text-align: center;
+        }
+        .cheat-sheet svg {
+            max-width: 100%;
+            height: auto;
+        }
+        .segment-label {
+            font-size: 11px;
+            font-weight: bold;
+            fill: #eee;
         }
     </style>
 </head>
@@ -313,100 +381,100 @@
     <div class="main-content">
         <div class="left-panel">
             <div class="container">
-        <div class="controls">
-            <div class="toggle-section">
-                <label class="toggle-label">
-                    <span>Scheduler <span id="schedulerStatus" th:text="${enabled} ? 'Enabled' : 'Disabled'">Enabled</span></span>
-                    <input type="checkbox" id="schedulerToggle" th:checked="${enabled}">
-                    <span class="toggle-switch"></span>
-                </label>
-            </div>
-
-            <div id="controlsPanel" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
-                <form id="pointsForm">
-                    <h3>Detection Points</h3>
-                    <div class="form-group">
-                        <label>Active Point:</label>
-                        <div class="point-buttons" id="pointButtons"></div>
+                <div class="controls">
+                    <div class="toggle-section">
+                        <label class="toggle-label">
+                            <span>Scheduler <span id="schedulerStatus" th:text="${enabled} ? 'Enabled' : 'Disabled'">Enabled</span></span>
+                            <input type="checkbox" id="schedulerToggle" th:checked="${enabled}">
+                            <span class="toggle-switch"></span>
+                        </label>
                     </div>
-                    <div class="form-group">
-                        <label>Coordinate:</label>
-                        <div class="point-inputs">
-                            <input type="number" id="pointX" name="pointX" required>
-                            <input type="number" id="pointY" name="pointY" required>
+
+                    <div id="controlsPanel" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
+                        <form id="pointsForm">
+                            <h3>Points</h3>
+                            <button type="button" id="editModeBtn" class="mode-btn">Edit mode: OFF</button>
+                            <div class="form-group">
+                                <div id="pointGroups"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Coordinate:</label>
+                                <div class="point-inputs">
+                                    <input type="number" id="pointX" name="pointX" required>
+                                    <input type="number" id="pointY" name="pointY" required>
+                                </div>
+                                <div id="dirtyIndicator" class="dirty-indicator">Unsaved changes</div>
+                            </div>
+                            <button type="submit">Apply</button>
+                        </form>
+
+                        <form id="referenceForm" style="margin-top: 15px;">
+                            <h3>Reference</h3>
+                            <div class="form-group">
+                                <label for="referenceX">X:</label>
+                                <input type="number" id="referenceX" name="x" th:value="${referenceX}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="referenceY">Y:</label>
+                                <input type="number" id="referenceY" name="y" th:value="${referenceY}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="referenceThreshold">Threshold:</label>
+                                <input type="number" id="referenceThreshold" name="threshold" th:value="${referenceThreshold}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="referenceHysteresis">Hyst:</label>
+                                <input type="number" id="referenceHysteresis" name="hysteresis" th:value="${referenceHysteresis}" required>
+                            </div>
+                            <button type="submit">Apply</button>
+                        </form>
+
+                        <form id="thresholdForm" style="margin-top: 15px;">
+                            <h3>Thresholds</h3>
+                            <div class="form-group">
+                                <label for="darkThreshold">Dark:</label>
+                                <input type="number" id="darkThreshold" name="dark" th:value="${darkThreshold}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="lightThreshold">Light:</label>
+                                <input type="number" id="lightThreshold" name="light" th:value="${lightThreshold}" required>
+                            </div>
+                            <button type="submit">Apply</button>
+                        </form>
+
+                        <div class="current-values">
+                            <strong id="currentPointName">Heating</strong>
+                            (<span id="currentPointX">0</span>,
+                            <span id="currentPointY">0</span>)<br>
+                            Ref: (<span id="currentReferenceX" th:text="${referenceX}">0</span>,
+                            <span id="currentReferenceY" th:text="${referenceY}">0</span>)<br>
+                            Ref Thr: <span id="currentReferenceThreshold" th:text="${referenceThreshold}">0</span><br>
+                            Hyst: <span id="currentReferenceHysteresis" th:text="${referenceHysteresis}">0</span><br>
+                            Dark: <span id="currentDarkThreshold" th:text="${darkThreshold}">0</span><br>
+                            Light: <span id="currentLightThreshold" th:text="${lightThreshold}">0</span><br>
+                            Ambient: <span id="currentAmbientBrightness" th:text="${ambientBrightness}">0</span><br>
+                            Mode: <span id="currentMode" th:classappend="${lightMode} ? 'active' : ''" th:text="${lightMode} ? 'LIGHT' : 'DARK'">DARK</span>
                         </div>
                     </div>
-                    <button type="submit">Apply All Points</button>
-                </form>
 
-                <form id="referenceForm" style="margin-top: 20px;">
-                    <h3>Reference Point</h3>
-                    <div class="form-group">
-                        <label for="referenceX">Reference X:</label>
-                        <input type="number" id="referenceX" name="x" th:value="${referenceX}" required>
+                    <div id="stockPanel" class="stock-values" th:style="${enabled} ? 'display:none;' : ''">
+                        <h3>Stock Values (Scheduler Disabled)</h3>
+                        <div>Temperature: 0°C</div>
+                        <div>Throttle: 0/4</div>
+                        <div>Heating: OFF</div>
+                        <div>Boiler: OFF</div>
                     </div>
-                    <div class="form-group">
-                        <label for="referenceY">Reference Y:</label>
-                        <input type="number" id="referenceY" name="y" th:value="${referenceY}" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="referenceThreshold">Reference Threshold:</label>
-                        <input type="number" id="referenceThreshold" name="threshold" th:value="${referenceThreshold}" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="referenceHysteresis">Hysteresis:</label>
-                        <input type="number" id="referenceHysteresis" name="hysteresis" th:value="${referenceHysteresis}" required>
-                    </div>
-                    <button type="submit">Apply Reference</button>
-                </form>
 
-                <form id="thresholdForm" style="margin-top: 20px;">
-                    <h3>Segment Thresholds</h3>
-                    <div class="form-group">
-                        <label for="darkThreshold">Dark Mode Threshold:</label>
-                        <input type="number" id="darkThreshold" name="dark" th:value="${darkThreshold}" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="lightThreshold">Light Mode Threshold:</label>
-                        <input type="number" id="lightThreshold" name="light" th:value="${lightThreshold}" required>
-                    </div>
-                    <button type="submit">Apply Thresholds</button>
-                </form>
-
-                <div class="current-values">
-                    <strong>Current Values:</strong><br>
-                    Active Point: <span id="currentPointName">Heating</span>
-                    (<span id="currentPointX">0</span>,
-                    <span id="currentPointY">0</span>)<br>
-                    Reference: (<span id="currentReferenceX" th:text="${referenceX}">0</span>,
-                    <span id="currentReferenceY" th:text="${referenceY}">0</span>)<br>
-                    Ref Threshold: <span id="currentReferenceThreshold" th:text="${referenceThreshold}">0</span><br>
-                    Hysteresis: <span id="currentReferenceHysteresis" th:text="${referenceHysteresis}">0</span><br>
-                    Dark Threshold: <span id="currentDarkThreshold" th:text="${darkThreshold}">0</span><br>
-                    Light Threshold: <span id="currentLightThreshold" th:text="${lightThreshold}">0</span><br>
-                    Ambient Brightness: <span id="currentAmbientBrightness" th:text="${ambientBrightness}">0</span><br>
-                    Mode: <span id="currentMode" th:classappend="${lightMode} ? 'active' : ''" th:text="${lightMode} ? 'LIGHT' : 'DARK'">DARK</span>
+                    <div id="status" class="status">Updated!</div>
                 </div>
-            </div>
 
-            <div id="stockPanel" class="stock-values" th:style="${enabled} ? 'display:none;' : ''">
-                <h3>Stock Values (Scheduler Disabled)</h3>
-                <div>Temperature: 0°C</div>
-                <div>Throttle: 0/4</div>
-                <div>Heating: OFF</div>
-                <div>Boiler: OFF</div>
-            </div>
-
-            <div id="status" class="status">Offset updated!</div>
-        </div>
-
-        <div class="image-container" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
-            <h2>Live Preview</h2>
-            <div class="image-wrapper" id="imageWrapper">
-                <img id="liveImage" src="/Immer/uncroppedimage" alt="Immer Camera Feed">
-            </div>
-            <p><small>Image refreshes automatically every 2 seconds. Select a point above, then click on the image to place it.</small></p>
-        </div>
+                <div class="image-container" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
+                    <h2>Live Preview</h2>
+                    <div class="image-wrapper" id="imageWrapper">
+                        <img id="liveImage" src="/Immer/uncroppedimage" alt="Immer Camera Feed">
+                    </div>
+                    <p style="font-size: 12px; margin-top: 8px;"><small>Turn <strong>Edit mode</strong> ON to place points on a clean image. OFF shows the analyzer's red/white detection crosses. Apply to save.</small></p>
+                </div>
             </div>
         </div>
 
@@ -428,6 +496,31 @@
                     </div>
                 </div>
             </div>
+
+            <div class="data-section">
+                <h2>7-Segment Cheat Sheet</h2>
+                <p style="font-size: 12px; color: #aaa; margin-top: 0;">Segment numbers 1-7 map like this. Place each point on the glowing centre of its segment.</p>
+                <div class="cheat-sheet">
+                    <svg width="180" height="260" viewBox="0 0 180 260">
+                        <g stroke="#0f3460" stroke-width="4" stroke-linejoin="round">
+                            <polygon points="40,20 140,20 130,40 50,40" fill="#e94560" />
+                            <polygon points="30,50 50,40 50,110 30,120" fill="#e94560" />
+                            <polygon points="150,50 130,40 130,110 150,120" fill="#e94560" />
+                            <polygon points="40,130 130,130 120,150 50,150" fill="#e94560" />
+                            <polygon points="30,160 50,150 50,220 30,230" fill="#e94560" />
+                            <polygon points="150,160 130,150 130,220 150,230" fill="#e94560" />
+                            <polygon points="40,240 120,240 130,220 50,220" fill="#e94560" />
+                        </g>
+                        <text x="90" y="15" text-anchor="middle" class="segment-label">1</text>
+                        <text x="20" y="85" text-anchor="middle" class="segment-label">2</text>
+                        <text x="160" y="85" text-anchor="middle" class="segment-label">3</text>
+                        <text x="90" y="145" text-anchor="middle" class="segment-label">4</text>
+                        <text x="20" y="195" text-anchor="middle" class="segment-label">5</text>
+                        <text x="160" y="195" text-anchor="middle" class="segment-label">6</text>
+                        <text x="90" y="255" text-anchor="middle" class="segment-label">7</text>
+                    </svg>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -437,28 +530,84 @@
             'Digit1 Seg1', 'Digit1 Seg2', 'Digit1 Seg3', 'Digit1 Seg4', 'Digit1 Seg5', 'Digit1 Seg6', 'Digit1 Seg7',
             'Digit2 Seg1', 'Digit2 Seg2', 'Digit2 Seg3', 'Digit2 Seg4', 'Digit2 Seg5', 'Digit2 Seg6', 'Digit2 Seg7'
         ];
+        const POINT_LABELS = [
+            'H', 'L1', 'L2', 'L3', 'L4', 'B',
+            '1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7',
+            '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '2.7'
+        ];
+        const POINT_GROUPS = [
+            { title: 'System', indices: [0, 1, 2, 3, 4, 5] },
+            { title: 'Digit 1', indices: [6, 7, 8, 9, 10, 11, 12] },
+            { title: 'Digit 2', indices: [13, 14, 15, 16, 17, 18, 19] }
+        ];
         const initialXs = /*[[${xs}]]*/ [];
         const initialYs = /*[[${ys}]]*/ [];
         let xs = [...initialXs];
         let ys = [...initialYs];
+        let savedXs = [...initialXs];
+        let savedYs = [...initialYs];
         let activePoint = 0;
+        let dirty = false;
+        let editMode = false;
 
-        const pointButtonsContainer = document.getElementById('pointButtons');
+        const pointGroupsContainer = document.getElementById('pointGroups');
         const pointXInput = document.getElementById('pointX');
         const pointYInput = document.getElementById('pointY');
         const liveImage = document.getElementById('liveImage');
         const imageWrapper = document.getElementById('imageWrapper');
+        const dirtyIndicator = document.getElementById('dirtyIndicator');
+        const editModeBtn = document.getElementById('editModeBtn');
         const markers = [];
 
+        function setDirty(value) {
+            dirty = value;
+            if (dirty) {
+                dirtyIndicator.classList.add('visible');
+            } else {
+                dirtyIndicator.classList.remove('visible');
+            }
+        }
+
+        function toggleEditMode() {
+            editMode = !editMode;
+            if (editMode) {
+                editModeBtn.textContent = 'Edit mode: ON';
+                editModeBtn.classList.add('active');
+                imageWrapper.classList.add('edit-mode');
+            } else {
+                editModeBtn.textContent = 'Edit mode: OFF';
+                editModeBtn.classList.remove('active');
+                imageWrapper.classList.remove('edit-mode');
+            }
+            refreshImage();
+            updateMarkers();
+        }
+
         function renderPointButtons() {
-            pointButtonsContainer.innerHTML = '';
-            POINT_NAMES.forEach((name, i) => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'secondary point-btn' + (i === activePoint ? ' active' : '');
-                btn.textContent = name;
-                btn.addEventListener('click', () => setActivePoint(i));
-                pointButtonsContainer.appendChild(btn);
+            pointGroupsContainer.innerHTML = '';
+            POINT_GROUPS.forEach(group => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'point-group';
+
+                const title = document.createElement('h4');
+                title.textContent = group.title;
+                groupDiv.appendChild(title);
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'point-buttons';
+
+                group.indices.forEach(i => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'point-btn' + (i === activePoint ? ' active' : '');
+                    btn.textContent = POINT_LABELS[i];
+                    btn.title = POINT_NAMES[i];
+                    btn.addEventListener('click', () => setActivePoint(i));
+                    buttonsDiv.appendChild(btn);
+                });
+
+                groupDiv.appendChild(buttonsDiv);
+                pointGroupsContainer.appendChild(groupDiv);
             });
         }
 
@@ -481,7 +630,6 @@
             for (let i = 0; i < POINT_NAMES.length; i++) {
                 const marker = document.createElement('div');
                 marker.className = 'marker' + (i === activePoint ? ' active' : '');
-                marker.textContent = i + 1;
                 imageWrapper.appendChild(marker);
                 markers.push(marker);
             }
@@ -514,6 +662,9 @@
         }
 
         imageWrapper.addEventListener('click', function(e) {
+            if (!editMode) {
+                return;
+            }
             const rect = liveImage.getBoundingClientRect();
             const imgWidth = liveImage.naturalWidth || rect.width;
             const imgHeight = liveImage.naturalHeight || rect.height;
@@ -529,19 +680,21 @@
 
             xs[activePoint] = x;
             ys[activePoint] = y;
+            setDirty(true);
             updatePointInputs();
             updateMarkers();
         });
 
-        pointXInput.addEventListener('change', function() {
-            xs[activePoint] = parseInt(this.value) || 0;
+        function onPointInputChanged() {
+            xs[activePoint] = parseInt(pointXInput.value) || 0;
+            ys[activePoint] = parseInt(pointYInput.value) || 0;
+            setDirty(true);
             updateMarkers();
-        });
+        }
 
-        pointYInput.addEventListener('change', function() {
-            ys[activePoint] = parseInt(this.value) || 0;
-            updateMarkers();
-        });
+        pointXInput.addEventListener('input', onPointInputChanged);
+        pointYInput.addEventListener('input', onPointInputChanged);
+        editModeBtn.addEventListener('click', toggleEditMode);
 
         document.getElementById('schedulerToggle').addEventListener('change', function() {
             fetch('/ImmerManager/toggle', {
@@ -569,12 +722,7 @@
                     imageContainer.classList.add('disabled-overlay');
                 }
 
-                const status = document.getElementById('status');
-                status.textContent = enabled ? 'Scheduler enabled!' : 'Scheduler disabled!';
-                status.className = 'status success';
-                setTimeout(() => {
-                    status.className = 'status';
-                }, 2000);
+                showStatus(enabled ? 'Scheduler enabled!' : 'Scheduler disabled!');
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -600,7 +748,10 @@
                 return response.json();
             })
             .then(data => {
-                updateCurrentValues(data);
+                savedXs = [...data.xs];
+                savedYs = [...data.ys];
+                setDirty(false);
+                updateCurrentValues(data, true);
                 showStatus('Points updated!');
                 refreshImage();
             })
@@ -626,8 +777,8 @@
             })
             .then(response => response.json())
             .then(data => {
-                updateCurrentValues(data);
-                showStatus('Reference point updated!');
+                updateCurrentValues(data, false);
+                showStatus('Reference updated!');
                 refreshImage();
             })
             .catch(error => console.error('Error:', error));
@@ -645,7 +796,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                updateCurrentValues(data);
+                updateCurrentValues(data, false);
                 showStatus('Thresholds updated!');
                 refreshImage();
             })
@@ -661,10 +812,12 @@
             }, 2000);
         }
 
-        function updateCurrentValues(data) {
-            if (data.xs !== undefined && data.ys !== undefined) {
+        function updateCurrentValues(data, updatePoints) {
+            if (updatePoints && data.xs !== undefined && data.ys !== undefined) {
                 xs = [...data.xs];
                 ys = [...data.ys];
+                savedXs = [...data.xs];
+                savedYs = [...data.ys];
                 updatePointInputs();
                 updateMarkers();
             }
@@ -716,7 +869,13 @@
         function pollState() {
             fetch('/ImmerManager')
                 .then(response => response.json())
-                .then(data => updateCurrentValues(data))
+                .then(data => {
+                    if (!dirty) {
+                        updateCurrentValues(data, true);
+                    } else {
+                        updateCurrentValues(data, false);
+                    }
+                })
                 .catch(error => console.error('Error polling state:', error));
         }
 
@@ -729,7 +888,8 @@
 
         function refreshImage() {
             const img = document.getElementById('liveImage');
-            img.src = '/Immer/uncroppedimage?t=' + new Date().getTime();
+            const analyze = !editMode;
+            img.src = '/Immer/uncroppedimage?analyze=' + analyze + '&t=' + new Date().getTime();
         }
 
         renderPointButtons();
