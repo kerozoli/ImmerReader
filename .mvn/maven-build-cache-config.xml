@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<cache xmlns="http://maven.apache.org/CACHE/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://maven.apache.org/CACHE/1.0.0 https://maven.apache.org/xsd/cache-1.0.0.xsd">
+    <configuration>
+        <enabled>true</enabled>
+        <hashAlgorithm>SHA-256</hashAlgorithm>
+        <projectVersioning adjustMetaInf="true"/>
+    </configuration>
+    <input>
+        <global>
+            <glob>{*.java,*.xml,*.properties,*.html,*.js,*.css}</glob>
+        </global>
+    </input>
+    <executionControl>
+        <runAlways>
+            <plugins>
+                <plugin groupId="org.apache.maven.plugins" artifactId="maven-clean-plugin"/>
+            </plugins>
+        </runAlways>
+        <reconcile logAllProperties="true">
+            <plugins>
+                <plugin groupId="org.apache.maven.plugins" artifactId="maven-resources-plugin"/>
+                <plugin groupId="org.apache.maven.plugins" artifactId="maven-compiler-plugin"/>
+                <plugin groupId="org.apache.maven.plugins" artifactId="maven-surefire-plugin"/>
+                <plugin groupId="org.springframework.boot" artifactId="spring-boot-maven-plugin"/>
+            </plugins>
+        </reconcile>
+    </executionControl>
+</cache>
