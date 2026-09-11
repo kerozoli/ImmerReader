@@ -23,11 +23,13 @@ public class EbedloManagerData {
     private static final int POINT_COUNT = 4;
     private static final int DEFAULT_THRESHOLD = 100;
     private static final int DEFAULT_INTERVAL_SECONDS = 15;
+    private static final double DEFAULT_TRIM_PERCENTAGE = 0.10;
 
     private final AtomicIntegerArray xs = new AtomicIntegerArray(POINT_COUNT);
     private final AtomicIntegerArray ys = new AtomicIntegerArray(POINT_COUNT);
     private final AtomicInteger threshold = new AtomicInteger(DEFAULT_THRESHOLD);
     private final AtomicInteger intervalSeconds = new AtomicInteger(DEFAULT_INTERVAL_SECONDS);
+    private volatile double trimPercentage = DEFAULT_TRIM_PERCENTAGE;
     private final AtomicBoolean enabled = new AtomicBoolean(false);
 
     @PostConstruct
@@ -43,6 +45,7 @@ public class EbedloManagerData {
                 }
                 threshold.set(Integer.parseInt(props.getProperty("threshold", String.valueOf(DEFAULT_THRESHOLD))));
                 intervalSeconds.set(Integer.parseInt(props.getProperty("intervalSeconds", String.valueOf(DEFAULT_INTERVAL_SECONDS))));
+                trimPercentage = clampTrimPercentage(parseDouble(props.getProperty("trimPercentage"), DEFAULT_TRIM_PERCENTAGE));
                 enabled.set(Boolean.parseBoolean(props.getProperty("enabled", "false")));
             } catch (IOException | NumberFormatException e) {
                 logger.warn("Could not load Ebedlo data from {}: {}", DATA_FILE, e.getMessage());
@@ -58,6 +61,7 @@ public class EbedloManagerData {
         }
         props.setProperty("threshold", String.valueOf(threshold.get()));
         props.setProperty("intervalSeconds", String.valueOf(intervalSeconds.get()));
+        props.setProperty("trimPercentage", String.valueOf(trimPercentage));
         props.setProperty("enabled", String.valueOf(enabled.get()));
         File file = new File(DATA_FILE);
         File parent = file.getParentFile();
@@ -146,5 +150,32 @@ public class EbedloManagerData {
     public void setIntervalSeconds(int intervalSeconds) {
         this.intervalSeconds.set(Math.max(1, intervalSeconds));
         save();
+    }
+
+    public double getTrimPercentage() {
+        return trimPercentage;
+    }
+
+    public void setTrimPercentage(double trimPercentage) {
+        this.trimPercentage = clampTrimPercentage(trimPercentage);
+        save();
+    }
+
+    private static double clampTrimPercentage(double value) {
+        if (Double.isNaN(value) || value < 0.0) {
+            return 0.0;
+        }
+        return Math.min(value, 0.49);
+    }
+
+    private static double parseDouble(String value, double defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 }

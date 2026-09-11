@@ -19,7 +19,6 @@ import com.keroleap.immerreader.SharedData.EbedloManagerData;
 public class EbedloAnalyzerService {
 
     private static final Logger logger = LoggerFactory.getLogger(EbedloAnalyzerService.class);
-    private static final double TRIM_PERCENTAGE = 0.10;
 
     @Autowired
     private CameraImageService cameraImageService;
@@ -65,7 +64,7 @@ public class EbedloAnalyzerService {
         }
 
         Polygon area = new Polygon(xs, ys, count);
-        double averageValue = computeTrimmedMeanValueInPolygon(bufferedImage, area);
+        double averageValue = computeTrimmedMeanValueInPolygon(bufferedImage, area, managerData.getTrimPercentage());
         boolean on = averageValue > managerData.getThreshold();
 
         ebedloRest.setOn(on);
@@ -74,7 +73,7 @@ public class EbedloAnalyzerService {
         return ebedloRest;
     }
 
-    private double computeTrimmedMeanValueInPolygon(BufferedImage image, Polygon polygon) {
+    private double computeTrimmedMeanValueInPolygon(BufferedImage image, Polygon polygon, double trimPercentage) {
         int width = image.getWidth();
         int height = image.getHeight();
         List<Integer> values = new ArrayList<>();
@@ -102,7 +101,7 @@ public class EbedloAnalyzerService {
         }
 
         Collections.sort(values);
-        int trimCount = (int) Math.floor(values.size() * TRIM_PERCENTAGE);
+        int trimCount = (int) Math.floor(values.size() * trimPercentage);
         int start = trimCount;
         int end = values.size() - trimCount;
         if (end <= start) {
