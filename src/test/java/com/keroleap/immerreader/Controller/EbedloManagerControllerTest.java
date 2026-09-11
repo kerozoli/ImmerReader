@@ -8,6 +8,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import com.keroleap.immerreader.Service.EbedloAnalyzerService;
 import com.keroleap.immerreader.SharedData.EbedloData;
 import com.keroleap.immerreader.SharedData.EbedloManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
@@ -31,6 +32,9 @@ class EbedloManagerControllerTest {
 
     @MockitoBean
     private ErrorStatistics errorStatistics;
+
+    @MockitoBean
+    private EbedloAnalyzerService ebedloAnalyzerService;
 
     @Test
     void getPoints_returnsCurrentValues() throws Exception {

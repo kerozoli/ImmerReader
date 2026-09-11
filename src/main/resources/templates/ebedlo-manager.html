@@ -297,6 +297,22 @@
             color: #aaa;
             margin-top: 4px;
         }
+        .plate-overlay polyline {
+            fill: rgba(40, 167, 69, 0.15);
+            stroke: #28a745;
+            stroke-width: 2;
+        }
+        .plate-marker {
+            background: #28a745;
+        }
+        .plate-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #0f3460;
+        }
+        .preview-image {
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -389,17 +405,52 @@
                     </div>
 
                     <div id="status" class="status">Settings updated!</div>
+
+                    <div class="plate-section">
+                        <h3>Plate Detection</h3>
+                        <form id="plateForm">
+                            <div class="form-group">
+                                <label for="plateThreshold">Plate Brightness Difference Threshold (0-255):</label>
+                                <input type="number" id="plateThreshold" name="plateThreshold" min="0" max="255" th:value="${plateThreshold}" required>
+                                <div class="threshold-hint">Difference from background HSV value that counts as a plate. Typical: 10-30.</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="plateMinRadius">Minimum Plate Radius (pixels):</label>
+                                <input type="number" id="plateMinRadius" name="plateMinRadius" min="1" th:value="${plateMinRadius}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="plateMaxRadius">Maximum Plate Radius (pixels):</label>
+                                <input type="number" id="plateMaxRadius" name="plateMaxRadius" min="1" th:value="${plateMaxRadius}" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Active Plate Point:</label>
+                                <div class="point-buttons" id="platePointButtons"></div>
+                            </div>
+                            <button type="submit">Apply Plate Settings</button>
+                        </form>
+                    </div>
                 </div>
 
                 <div class="image-container" th:classappend="${!enabled} ? 'disabled-overlay' : ''">
                     <h2>Live Preview</h2>
+                    <div class="form-group">
+                        <label>Click Mode:</label>
+                        <select id="clickMode">
+                            <option value="area" selected>Terítő terület</option>
+                            <option value="plate">Tányér kereső terület</option>
+                        </select>
+                    </div>
                     <div class="image-wrapper" id="imageWrapper">
                         <img id="liveImage" src="/Ebedlo/uncroppedimage" alt="Ebedlo Camera Feed">
                         <svg class="polygon-overlay" id="polygonOverlay" xmlns="http://www.w3.org/2000/svg">
                             <polyline id="polygonPolyline" points=""/>
                         </svg>
+                        <svg class="polygon-overlay plate-overlay" id="plateOverlay" xmlns="http://www.w3.org/2000/svg">
+                            <polyline id="platePolyline" points=""/>
+                        </svg>
                     </div>
-                    <p><small>Image refreshes automatically every <span id="previewIntervalSeconds" th:text="${intervalSeconds}">15</span> seconds. Click on image to set the active point.</small></p>
+                    <p><small>Image refreshes automatically every <span id="previewIntervalSeconds" th:text="${intervalSeconds}">15</span> seconds. Select click mode, then click on image to set points.</small></p>
+                    <p><small>Detected plates: <span id="detectedPlateCount">-</span></small></p>
                 </div>
             </div>
         </div>
@@ -660,6 +711,188 @@
         setInterval(refreshImage, intervalMs);
         setInterval(fetchAverageValue, 1000);
         updatePointButtons();
+
+        const clickMode = document.getElementById('clickMode');
+
+        imageWrapper.addEventListener('click', function(e) {
+            const rect = liveImage.getBoundingClientRect();
+            const imgWidth = liveImage.naturalWidth || rect.width;
+            const imgHeight = liveImage.naturalHeight || rect.height;
+            if (imgWidth === 0 || imgHeight === 0 || rect.width === 0 || rect.height === 0) {
+                console.warn('Image has no size yet, cannot set point');
+                return;
+            }
+            const scaleX = imgWidth / rect.width;
+            const scaleY = imgHeight / rect.height;
+
+            const x = Math.round((e.clientX - rect.left) * scaleX);
+            const y = Math.round((e.clientY - rect.top) * scaleY);
+
+            if (clickMode.value === 'plate') {
+                plateXs[activePlatePoint] = x;
+                plateYs[activePlatePoint] = y;
+                updatePlatePointButtons();
+            } else {
+                xs[activePoint] = x;
+                ys[activePoint] = y;
+                updatePointButtons();
+            }
+        });
+
+        const platePointCount = /*[[${#lists.size(plateXs)}]]*/ 4;
+        const initialPlateXs = /*[[${plateXs}]]*/ [];
+        const initialPlateYs = /*[[${plateYs}]]*/ [];
+        let plateXs = [...initialPlateXs];
+        let plateYs = [...initialPlateYs];
+        let activePlatePoint = 0;
+
+        const platePointButtonsContainer = document.getElementById('platePointButtons');
+        const plateOverlay = document.getElementById('plateOverlay');
+        const platePolyline = document.getElementById('platePolyline');
+        const plateMarkers = [];
+
+        for (let i = 0; i < platePointCount; i++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'secondary point-btn';
+            btn.textContent = (i + 1);
+            btn.addEventListener('click', () => setActivePlatePoint(i));
+            platePointButtonsContainer.appendChild(btn);
+
+            const marker = document.createElement('div');
+            marker.className = 'marker point plate-marker';
+            marker.textContent = (i + 1);
+            imageWrapper.appendChild(marker);
+            plateMarkers.push(marker);
+        }
+
+        function setActivePlatePoint(index) {
+            activePlatePoint = index;
+            clickMode.value = 'plate';
+            updatePlatePointButtons();
+        }
+
+        function updatePlatePointButtons() {
+            const buttons = platePointButtonsContainer.querySelectorAll('.point-btn');
+            buttons.forEach((btn, i) => {
+                if (i === activePlatePoint) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            updatePlateMarkers();
+        }
+
+        function updatePlateMarkers() {
+            const rect = liveImage.getBoundingClientRect();
+            const imgWidth = liveImage.naturalWidth || rect.width;
+            const imgHeight = liveImage.naturalHeight || rect.height;
+            if (imgWidth === 0 || imgHeight === 0) {
+                return;
+            }
+            const scaleX = rect.width / imgWidth;
+            const scaleY = rect.height / imgHeight;
+
+            plateMarkers.forEach((marker, i) => {
+                marker.style.left = (plateXs[i] * scaleX) + 'px';
+                marker.style.top = (plateYs[i] * scaleY) + 'px';
+                marker.style.display = (plateXs[i] !== 0 || plateYs[i] !== 0) ? 'flex' : 'none';
+                if (i === activePlatePoint) {
+                    marker.classList.add('active');
+                } else {
+                    marker.classList.remove('active');
+                }
+            });
+
+            plateOverlay.setAttribute('width', rect.width);
+            plateOverlay.setAttribute('height', rect.height);
+            plateOverlay.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+            const configuredIndices = [];
+            for (let i = 0; i < platePointCount; i++) {
+                if (plateXs[i] !== 0 || plateYs[i] !== 0) {
+                    configuredIndices.push(i);
+                }
+            }
+            if (configuredIndices.length >= 3) {
+                const points = configuredIndices.map(i => `${plateXs[i] * scaleX},${plateYs[i] * scaleY}`).join(' ');
+                platePolyline.setAttribute('points', points + ' ' + points.split(' ')[0]);
+                platePolyline.style.display = 'block';
+            } else {
+                platePolyline.style.display = 'none';
+            }
+        }
+
+        function updateAllMarkers() {
+            updateMarkers();
+            updatePlateMarkers();
+        }
+
+        liveImage.removeEventListener('load', updateMarkers);
+        liveImage.addEventListener('load', updateAllMarkers);
+        if (liveImage.complete) {
+            updateAllMarkers();
+        }
+        window.addEventListener('resize', updateAllMarkers);
+
+        clickMode.addEventListener('change', function() {
+            updatePointButtons();
+            updatePlatePointButtons();
+        });
+
+        document.getElementById('plateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const points = plateXs.map((x, i) => `${x},${plateYs[i]}`).join(',');
+            const threshold = document.getElementById('plateThreshold').value;
+            const minRadius = document.getElementById('plateMinRadius').value;
+            const maxRadius = document.getElementById('plateMaxRadius').value;
+
+            fetch('/EbedloManager/setPlate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `platePoints=${encodeURIComponent(points)}&plateThreshold=${threshold}&plateMinRadius=${minRadius}&plateMaxRadius=${maxRadius}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                const status = document.getElementById('status');
+                status.textContent = 'Plate settings updated!';
+                status.className = 'status success';
+                setTimeout(() => {
+                    status.className = 'status';
+                }, 2000);
+                refreshImage();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const status = document.getElementById('status');
+                status.textContent = 'Error: ' + error.message;
+                status.className = 'status success';
+            });
+        });
+
+        function fetchPlateData() {
+            fetch('/EbedloManager/plates')
+                .then(response => response.json())
+                .then(data => {
+                    const countElement = document.getElementById('detectedPlateCount');
+                    if (countElement) {
+                        countElement.textContent = data.detectedPlateCount != null ? data.detectedPlateCount : '-';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching plate data:', error);
+                });
+        }
+
+        setInterval(fetchPlateData, 1000);
+        updatePlatePointButtons();
     </script>
 </body>
 </html>

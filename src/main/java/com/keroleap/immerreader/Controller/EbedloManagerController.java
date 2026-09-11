@@ -1,6 +1,9 @@
 package com.keroleap.immerreader.Controller;
 
+import java.awt.image.BufferedImage;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.keroleap.immerreader.PlateRest;
+import com.keroleap.immerreader.Service.EbedloAnalyzerService;
 import com.keroleap.immerreader.SharedData.EbedloData;
 import com.keroleap.immerreader.SharedData.EbedloManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
@@ -21,6 +26,9 @@ public class EbedloManagerController {
 
     private static final int POINT_COUNT = 4;
 
+    @Value("${camera.ebedlo.url}")
+    private String cameraUrl;
+
     @Autowired
     private EbedloManagerData ebedloManagerData;
 
@@ -29,6 +37,9 @@ public class EbedloManagerController {
 
     @Autowired
     private ErrorStatistics errorStatistics;
+
+    @Autowired
+    private EbedloAnalyzerService ebedloAnalyzerService;
 
     @PostMapping("/set")
     @ResponseBody
@@ -98,6 +109,46 @@ public class EbedloManagerController {
         modelAndView.addObject("enabled", ebedloManagerData.isEnabled());
         modelAndView.addObject("ebedloRest", ebedloData.getEbedloRest());
         modelAndView.addObject("errorStats", errorStatistics.getLastErrorCounts("Ebedlo"));
+        modelAndView.addObject("plateXs", ebedloManagerData.getPlateXs());
+        modelAndView.addObject("plateYs", ebedloManagerData.getPlateYs());
+        modelAndView.addObject("plateThreshold", ebedloManagerData.getPlateThreshold());
+        modelAndView.addObject("plateMinRadius", ebedloManagerData.getPlateMinRadius());
+        modelAndView.addObject("plateMaxRadius", ebedloManagerData.getPlateMaxRadius());
         return modelAndView;
+    }
+
+    @PostMapping("/setPlate")
+    @ResponseBody
+    public ResponseEntity<?> setPlatePoints(@RequestParam String platePoints,
+                                           @RequestParam int plateThreshold,
+                                           @RequestParam int plateMinRadius,
+                                           @RequestParam int plateMaxRadius) {
+        String[] parts = platePoints.split(",");
+        if (parts.length != ebedloManagerData.getPlatePointCount() * 2) {
+            return ResponseEntity.badRequest().body("Expected " + (ebedloManagerData.getPlatePointCount() * 2)
+                    + " comma-separated coordinates, got " + parts.length);
+        }
+        try {
+            int[] xs = new int[ebedloManagerData.getPlatePointCount()];
+            int[] ys = new int[ebedloManagerData.getPlatePointCount()];
+            for (int i = 0; i < ebedloManagerData.getPlatePointCount(); i++) {
+                xs[i] = Integer.parseInt(parts[i * 2].trim());
+                ys[i] = Integer.parseInt(parts[i * 2 + 1].trim());
+            }
+            ebedloManagerData.setPlatePoints(xs, ys);
+            ebedloManagerData.setPlateThreshold(plateThreshold);
+            ebedloManagerData.setPlateMinRadius(plateMinRadius);
+            ebedloManagerData.setPlateMaxRadius(plateMaxRadius);
+            return ResponseEntity.ok(ebedloManagerData);
+        } catch (NumberFormatException e) {
+            return ResponseEntity.badRequest().body("Invalid coordinate value: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/plates")
+    @ResponseBody
+    public PlateRest getPlates() {
+        BufferedImage image = ebedloAnalyzerService.getBufferedImage(cameraUrl);
+        return ebedloAnalyzerService.detectPlates(image, ebedloManagerData);
     }
 }

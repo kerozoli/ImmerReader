@@ -51,6 +51,7 @@ public class EbedloController {
     private BufferedImage analyzeAndReturnImage() {
         BufferedImage cachedImage = ebedloAnalyzerService.getBufferedImage(cameraUrl);
         ebedloAnalyzerService.getEbedloRestData(cachedImage, ebedloManagerData);
+        ebedloAnalyzerService.detectPlates(cachedImage, ebedloManagerData);
         return cachedImage;
     }
 
