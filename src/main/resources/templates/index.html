@@ -107,7 +107,6 @@
         <a href="/ImmerManager/adjust">Immer Manager</a>
         <a href="/AristonManager/adjust">Ariston Manager</a>
         <a href="/EbedloManager/adjust">Ebedlo Manager</a>
-        <a href="/ChickenManager/adjust">Chicken Manager</a>
     </nav>
 
     <div class="container">
@@ -131,15 +130,8 @@
             <div class="card" th:classappend="${!ebedloEnabled} ? 'disabled-card' : ''">
                 <div class="status-badge" th:classappend="${ebedloEnabled} ? 'enabled' : 'disabled'" th:text="${ebedloEnabled} ? 'Enabled' : 'Disabled'">Enabled</div>
                 <h2>Ebedlo Manager</h2>
-                <p>Configure and monitor the Ebedlo RTSP camera with 10 light detection points.</p>
+                <p>Configure and monitor the Ebedlo RTSP camera with polygon-based brightness detection.</p>
                 <a href="/EbedloManager/adjust">Open Ebedlo Manager</a>
-            </div>
-
-            <div class="card" th:classappend="${!chickenEnabled} ? 'disabled-card' : ''">
-                <div class="status-badge" th:classappend="${chickenEnabled} ? 'enabled' : 'disabled'" th:text="${chickenEnabled} ? 'Enabled' : 'Disabled'">Enabled</div>
-                <h2>Chicken Manager</h2>
-                <p>Configure and monitor the chicken coop camera with polygon-based egg counting.</p>
-                <a href="/ChickenManager/adjust">Open Chicken Manager</a>
             </div>
         </div>
     </div>

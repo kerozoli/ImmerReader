@@ -13,7 +13,7 @@ import com.keroleap.immerreader.ErrorType;
 public class SchedulerHealthTracker implements HealthIndicator {
 
     private static final int CONSECUTIVE_TIMEOUT_THRESHOLD = 50;
-    private static final String[] TRACKED_SYSTEMS = { "Ariston", "Immer", "Ebedlo", "Chicken" };
+    private static final String[] TRACKED_SYSTEMS = { "Ariston", "Immer", "Ebedlo" };
 
     private final Map<String, ConsecutiveErrorState> states = new ConcurrentHashMap<>();
 

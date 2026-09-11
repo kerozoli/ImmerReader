@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.keroleap.immerreader.SharedData.AristonManagerData;
-import com.keroleap.immerreader.SharedData.ChickenManagerData;
 import com.keroleap.immerreader.SharedData.EbedloManagerData;
 import com.keroleap.immerreader.SharedData.ImmerManagerData;
 
@@ -22,16 +21,12 @@ public class HomeController {
     @Autowired
     private EbedloManagerData ebedloManagerData;
 
-    @Autowired
-    private ChickenManagerData chickenManagerData;
-
     @GetMapping("/")
     public ModelAndView home() {
         ModelAndView modelAndView = new ModelAndView("index");
         modelAndView.addObject("immerEnabled", immerManagerData.isEnabled());
         modelAndView.addObject("aristonEnabled", aristonManagerData.isEnabled());
         modelAndView.addObject("ebedloEnabled", ebedloManagerData.isEnabled());
-        modelAndView.addObject("chickenEnabled", chickenManagerData.isEnabled());
         return modelAndView;
     }
 }
