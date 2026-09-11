@@ -349,7 +349,17 @@
                             <div class="form-group">
                                 <label for="trimPercentage">Trim Percentage (0-49%):</label>
                                 <input type="number" id="trimPercentage" name="trimPercentage" min="0" max="49" step="0.01" th:value="${trimPercentage}" required>
-                                <div class="threshold-hint">Percentage of darkest and brightest pixels to discard from the average. Default: 10%.</div>
+                                <div class="threshold-hint">Percentage of pixels to discard from the average. Default: 10%.</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="trimMode">Trim Mode:</label>
+                                <select id="trimMode" name="trimMode" required>
+                                    <option value="LOWER" th:selected="${trimMode.name() == 'LOWER'}">Alsó (legkisebb értékek)</option>
+                                    <option value="UPPER" th:selected="${trimMode.name() == 'UPPER'}">Felső (legnagyobb értékek)</option>
+                                    <option value="BOTH" th:selected="${trimMode.name() == 'BOTH'}">Mindkettő</option>
+                                </select>
+                                <div class="threshold-hint">Choose whether to discard low, high, or both extreme pixel values.</div>
                             </div>
 
                             <div class="form-group">
@@ -368,7 +378,8 @@
                         <div class="current-values">
                             <strong>Current Points:</strong>
                             <div class="point-list" id="pointList"></div>
-                            <strong>Current Trim:</strong> <span id="currentTrimPercentage" th:text="${trimPercentage}">0.10</span>% <br>
+                            <strong>Current Trim:</strong> <span id="currentTrimPercentage" th:text="${trimPercentage}">0.10</span>%
+                            <span id="currentTrimMode" th:text="${trimMode}">BOTH</span> <br>
                             <strong>Current Interval:</strong> <span id="currentIntervalSeconds" th:text="${intervalSeconds}">15</span> s
                         </div>
                     </div>
@@ -544,6 +555,7 @@
             const points = xs.map((x, i) => `${x},${ys[i]}`).join(',');
             const threshold = document.getElementById('threshold').value;
             const trimPercentage = document.getElementById('trimPercentage').value;
+            const trimMode = document.getElementById('trimMode').value;
             const intervalSeconds = document.getElementById('intervalSeconds').value;
 
             fetch('/EbedloManager/set', {
@@ -551,7 +563,7 @@
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: `points=${encodeURIComponent(points)}&threshold=${threshold}&trimPercentage=${trimPercentage}&intervalSeconds=${intervalSeconds}`
+                body: `points=${encodeURIComponent(points)}&threshold=${threshold}&trimPercentage=${trimPercentage}&trimMode=${trimMode}&intervalSeconds=${intervalSeconds}`
             })
             .then(response => {
                 if (!response.ok) {
@@ -568,6 +580,7 @@
                 }, 2000);
 
                 document.getElementById('currentTrimPercentage').textContent = data.trimPercentage;
+                document.getElementById('currentTrimMode').textContent = data.trimMode;
                 document.getElementById('currentIntervalSeconds').textContent = data.intervalSeconds;
                 document.getElementById('previewIntervalSeconds').textContent = data.intervalSeconds;
                 refreshImage();
