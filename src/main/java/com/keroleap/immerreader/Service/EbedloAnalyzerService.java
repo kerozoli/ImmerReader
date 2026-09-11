@@ -14,12 +14,12 @@ import org.springframework.stereotype.Service;
 import com.keroleap.immerreader.EbedloRest;
 import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.SharedData.EbedloManagerData;
+import com.keroleap.immerreader.SharedData.TrimMode;
 
 @Service
 public class EbedloAnalyzerService {
 
     private static final Logger logger = LoggerFactory.getLogger(EbedloAnalyzerService.class);
-    private static final double TRIM_PERCENTAGE = 0.10;
 
     @Autowired
     private CameraImageService cameraImageService;
@@ -65,7 +65,7 @@ public class EbedloAnalyzerService {
         }
 
         Polygon area = new Polygon(xs, ys, count);
-        double averageValue = computeTrimmedMeanValueInPolygon(bufferedImage, area);
+        double averageValue = computeTrimmedMeanValueInPolygon(bufferedImage, area, managerData.getTrimPercentage(), managerData.getTrimMode());
         boolean on = averageValue > managerData.getThreshold();
 
         ebedloRest.setOn(on);
@@ -74,7 +74,7 @@ public class EbedloAnalyzerService {
         return ebedloRest;
     }
 
-    private double computeTrimmedMeanValueInPolygon(BufferedImage image, Polygon polygon) {
+    private double computeTrimmedMeanValueInPolygon(BufferedImage image, Polygon polygon, double trimPercentage, TrimMode trimMode) {
         int width = image.getWidth();
         int height = image.getHeight();
         List<Integer> values = new ArrayList<>();
@@ -102,9 +102,17 @@ public class EbedloAnalyzerService {
         }
 
         Collections.sort(values);
-        int trimCount = (int) Math.floor(values.size() * TRIM_PERCENTAGE);
-        int start = trimCount;
-        int end = values.size() - trimCount;
+        int trimCount = (int) Math.floor(values.size() * trimPercentage);
+        int start = 0;
+        int end = values.size();
+        if (trimMode == TrimMode.BOTH) {
+            start = trimCount;
+            end = values.size() - trimCount;
+        } else if (trimMode == TrimMode.LOWER) {
+            start = trimCount;
+        } else if (trimMode == TrimMode.UPPER) {
+            end = values.size() - trimCount;
+        }
         if (end <= start) {
             start = 0;
             end = values.size();
