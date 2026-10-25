@@ -136,6 +136,44 @@ class ImmerAnalyzerServiceTest {
         }
     }
 
+    /**
+     * Lights the segments of a 7-segment digit to display the given value (0-9).
+     * digitIndex 1 uses DIGIT1_SEG* coordinates; digitIndex 2 uses DIGIT2_SEG*.
+     */
+    private void setDigit(BufferedImage img, int[] xs, int[] ys, int digitIndex, int value) {
+        boolean[] segments;
+        if (value == 0) {
+            segments = new boolean[] { true, true, true, true, true, true, false };
+        } else if (value == 1) {
+            segments = new boolean[] { false, false, false, false, true, true, false };
+        } else if (value == 2) {
+            segments = new boolean[] { true, false, true, true, false, true, true };
+        } else if (value == 3) {
+            segments = new boolean[] { true, false, false, true, true, true, true };
+        } else if (value == 4) {
+            segments = new boolean[] { false, true, false, false, true, true, true };
+        } else if (value == 5) {
+            segments = new boolean[] { true, true, false, true, true, false, true };
+        } else if (value == 6) {
+            segments = new boolean[] { true, true, true, true, true, false, true };
+        } else if (value == 7) {
+            segments = new boolean[] { true, false, false, false, true, true, false };
+        } else if (value == 8) {
+            segments = new boolean[] { true, true, true, true, true, true, true };
+        } else if (value == 9) {
+            segments = new boolean[] { true, true, false, true, true, true, true };
+        } else {
+            throw new IllegalArgumentException("Unsupported digit: " + value);
+        }
+
+        int segOffset = digitIndex == 1 ? ImmerManagerData.DIGIT1_SEG1 : ImmerManagerData.DIGIT2_SEG1;
+        for (int i = 0; i < segments.length; i++) {
+            if (segments[i]) {
+                setRegionWhite(img, xs[segOffset + i], ys[segOffset + i]);
+            }
+        }
+    }
+
     private int[] defaultXs() {
         ImmerManagerData data = new ImmerManagerData();
         return data.getXs();
@@ -178,7 +216,7 @@ class ImmerAnalyzerServiceTest {
         assertTrue(result.isHeating());
         assertTrue(result.isBoilerOn());
         assertEquals(1, result.getThrottle());
-        // temperature 0 falls outside (20,56) range → falls back to previousTempValue=0,
+        // digits decode to an invalid value (>500) → falls back to previousTempValue=0,
         // and heating=true so it is not forced to 0
         assertEquals(0, result.getTemperaute());
     }
@@ -220,7 +258,7 @@ class ImmerAnalyzerServiceTest {
         // Encode temperature "35":
         //   digit1 = 3 → segments: d1=T,d2=F,d3=F,d4=T,d5=T,d6=T,d7=T
         //   digit2 = 5 → segments: d1=T,d2=T,d3=F,d4=T,d5=T,d6=F,d7=T
-        // Result: 3*10 + 5 = 35 which is in range (20, 56).
+        // Result: 3*10 + 5 = 35 which is in range [0, 65].
         BufferedImage img = createBlackImage();
         int[] xs = defaultXs();
         int[] ys = defaultYs();
@@ -248,6 +286,55 @@ class ImmerAnalyzerServiceTest {
 
         assertTrue(result.isHeating());
         assertEquals(35, result.getTemperaute());
+    }
+
+    @Test
+    void getImmerRestData_maximumTemperature65Accepted() {
+        BufferedImage img = createBlackImage();
+        int[] xs = defaultXs();
+        int[] ys = defaultYs();
+        setRegionWhite(img, xs[ImmerManagerData.HEATING], ys[ImmerManagerData.HEATING]);
+
+        setDigit(img, xs, ys, 1, 6);
+        setDigit(img, xs, ys, 2, 5);
+
+        ImmerRest result = service.getImmerRestData(img, xs, ys);
+
+        assertTrue(result.isHeating());
+        assertEquals(65, result.getTemperaute());
+    }
+
+    @Test
+    void getImmerRestData_temperature66FallsBackToPrevious() {
+        BufferedImage img = createBlackImage();
+        int[] xs = defaultXs();
+        int[] ys = defaultYs();
+        setRegionWhite(img, xs[ImmerManagerData.HEATING], ys[ImmerManagerData.HEATING]);
+
+        setDigit(img, xs, ys, 1, 6);
+        setDigit(img, xs, ys, 2, 6);
+
+        ImmerRest result = service.getImmerRestData(img, xs, ys);
+
+        assertTrue(result.isHeating());
+        // 66 is above the allowed maximum (65), so it falls back to previousTempValue (0)
+        assertEquals(0, result.getTemperaute());
+    }
+
+    @Test
+    void getImmerRestData_minimumTemperature0Accepted() {
+        BufferedImage img = createBlackImage();
+        int[] xs = defaultXs();
+        int[] ys = defaultYs();
+        setRegionWhite(img, xs[ImmerManagerData.HEATING], ys[ImmerManagerData.HEATING]);
+
+        setDigit(img, xs, ys, 1, 0);
+        setDigit(img, xs, ys, 2, 0);
+
+        ImmerRest result = service.getImmerRestData(img, xs, ys);
+
+        assertTrue(result.isHeating());
+        assertEquals(0, result.getTemperaute());
     }
 
     @Test

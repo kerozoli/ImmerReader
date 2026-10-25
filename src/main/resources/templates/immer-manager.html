@@ -1129,7 +1129,7 @@
             document.getElementById('avgThrottle').textContent = avgThrottle !== null ? avgThrottle.toFixed(1) : '--';
             document.getElementById('totalHeatingTime').textContent = formatDuration(data.totalHeatingMs);
 
-            drawLineChart('temperatureChart', data.labels, data.temperatures, '#e94560', 45, 55);
+            drawLineChart('temperatureChart', data.labels, data.temperatures, '#e94560', 0, 70);
             drawLineChart('throttleChart', data.labels, data.throttleLevels, '#28a745', 0, 4);
         }
 

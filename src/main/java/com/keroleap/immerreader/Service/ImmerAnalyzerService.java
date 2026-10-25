@@ -101,7 +101,7 @@ public class ImmerAnalyzerService {
         if (number > 500) {
             number = previousTempValue.get();
         }
-        if (!(20 < number && number < 56)) {
+        if (!(0 <= number && number <= 65)) {
             number = previousTempValue.get();
         }
 
