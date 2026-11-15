@@ -8,7 +8,7 @@ import jakarta.annotation.PostConstruct;
 
 @Component
 public class ImmerData {
-    ImmerRest immerRest;
+    private volatile ImmerRest immerRest;
 
     @PostConstruct
     public void init() {

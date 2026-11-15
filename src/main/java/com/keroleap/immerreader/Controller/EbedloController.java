@@ -49,8 +49,10 @@ public class EbedloController {
     }
 
     private BufferedImage analyzeAndReturnImage() {
-        BufferedImage cachedImage = ebedloAnalyzerService.getBufferedImage(cameraUrl);
-        ebedloAnalyzerService.getEbedloRestData(cachedImage, ebedloManagerData);
+        BufferedImage cachedImage = ebedloAnalyzerService.getPreviewImage(cameraUrl);
+        if (cachedImage != null) {
+            ebedloAnalyzerService.getEbedloRestData(cachedImage, ebedloManagerData);
+        }
         return cachedImage;
     }
 
@@ -76,9 +78,12 @@ public class EbedloController {
 
     @RequestMapping(value = "/ebedlodata")
     public ModelAndView getEbedloData() throws IOException {
-        BufferedImage cachedImage = ebedloAnalyzerService.getBufferedImage(cameraUrl);
+        BufferedImage cachedImage = ebedloAnalyzerService.getPreviewImage(cameraUrl);
         ModelAndView modelAndView = new ModelAndView("ebedlodata");
-        modelAndView.addObject("message", ebedloAnalyzerService.getEbedloRestData(cachedImage, ebedloManagerData).toString());
+        String message = cachedImage != null
+                ? ebedloAnalyzerService.getEbedloRestData(cachedImage, ebedloManagerData).toString()
+                : "Camera unavailable";
+        modelAndView.addObject("message", message);
         return modelAndView;
     }
 

@@ -1,5 +1,7 @@
 package com.keroleap.immerreader.Controller;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -112,6 +114,15 @@ public class ImmerManagerController {
     @ResponseBody
     public ImmerStatisticsSnapshot getStats() {
         return immerStatistics.getLast24Hours();
+    }
+
+    /**
+     * Rolling 24-hour error counters for this system.
+     */
+    @GetMapping("/errors")
+    @ResponseBody
+    public Map<String, Integer> getErrors() {
+        return errorStatistics.getLastErrorCounts("Immer");
     }
 
     @GetMapping("/adjust")

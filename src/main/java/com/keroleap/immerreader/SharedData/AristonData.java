@@ -7,7 +7,7 @@ import jakarta.annotation.PostConstruct;
 
 @Component
 public class AristonData {
-    AristonRest aristonRest;
+    private volatile AristonRest aristonRest;
 
     @PostConstruct
     public void init() {

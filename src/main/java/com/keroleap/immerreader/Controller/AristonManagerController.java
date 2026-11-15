@@ -1,5 +1,7 @@
 package com.keroleap.immerreader.Controller;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.keroleap.immerreader.AristonRest;
 import com.keroleap.immerreader.SharedData.AristonData;
 import com.keroleap.immerreader.SharedData.AristonManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
@@ -72,6 +75,25 @@ public class AristonManagerController {
     @ResponseBody
     public AristonManagerData getPoints() {
         return aristonManagerData;
+    }
+
+    /**
+     * Latest value published by the scheduler. Polled by the manager page so the
+     * displayed value and its freshness stay in sync without a full reload.
+     */
+    @GetMapping("/data")
+    @ResponseBody
+    public AristonRest getData() {
+        return aristonData.getAristonRest();
+    }
+
+    /**
+     * Rolling 24-hour error counters for this system.
+     */
+    @GetMapping("/errors")
+    @ResponseBody
+    public Map<String, Integer> getErrors() {
+        return errorStatistics.getLastErrorCounts("Ariston");
     }
 
     @GetMapping("/adjust")

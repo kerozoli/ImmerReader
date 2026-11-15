@@ -4,6 +4,7 @@ public class AristonRest {
     private int percentage;
     private boolean error;
     private ErrorType errorType;
+    private long lastSuccessMs;
 
     public boolean isError() {
         return error;
@@ -27,6 +28,14 @@ public class AristonRest {
 
     public void setPercentage(int percentage) {
         this.percentage = percentage;
+    }
+
+    public long getLastSuccessMs() {
+        return lastSuccessMs;
+    }
+
+    public void setLastSuccessMs(long lastSuccessMs) {
+        this.lastSuccessMs = lastSuccessMs;
     }
 
 }

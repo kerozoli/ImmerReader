@@ -183,6 +183,14 @@ public class ImmerAnalyzerService {
         return cameraImageService.capture(imageUrl);
     }
 
+    /**
+     * Returns the freshest available frame for display, falling back to the last
+     * good frame when the camera is unreachable.
+     */
+    public BufferedImage getPreviewImage(String imageUrl) {
+        return cameraImageService.captureWithFallback(imageUrl);
+    }
+
     private int measureBrightnessAt(int x, int y, BufferedImage image) {
         if (image == null || x < 3 || y < 3 || x >= image.getWidth() - 3 || y >= image.getHeight() - 3) {
             return 0;

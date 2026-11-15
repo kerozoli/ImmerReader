@@ -7,6 +7,7 @@ public class ImmerRest {
     private boolean boilerOn;
     private boolean error;
     private ErrorType errorType;
+    private long lastSuccessMs;
 
     public boolean isError() {
         return error;
@@ -54,5 +55,13 @@ public class ImmerRest {
 
     public void setHeating(boolean heating) {
         this.heating  = heating;
+    }
+
+    public long getLastSuccessMs() {
+        return lastSuccessMs;
+    }
+
+    public void setLastSuccessMs(long lastSuccessMs) {
+        this.lastSuccessMs = lastSuccessMs;
     }
 }

@@ -158,6 +158,17 @@
         .data-card .value.active {
             color: #28a745;
         }
+        .freshness {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #aaa;
+        }
+        .freshness .stale {
+            color: #e94560;
+        }
+        .freshness .ok {
+            color: #28a745;
+        }
         .error-stats {
             margin-top: 15px;
         }
@@ -450,6 +461,7 @@
                     <div class="value" id="boiler" th:classappend="${immerRest.boilerOn} ? 'active' : ''" th:text="${immerRest.boilerOn} ? 'ON' : 'OFF'">OFF</div>
                 </div>
             </div>
+            <p class="freshness"><span id="lastUpdated">Never updated</span></p>
         </div>
     </div>
 
@@ -547,6 +559,7 @@
                 <img id="liveImage" src="/Immer/uncroppedimage" alt="Immer Camera Feed" style="width: 100%; max-width: 100%; height: auto;">
             </div>
             <p style="font-size: 12px; margin-top: 8px;"><small>Turn <strong>Edit mode</strong> ON to place points on a clean image. OFF shows the analyzer's red/white detection crosses. Apply to save.</small></p>
+            <p class="freshness"><span id="previewStatus">Live</span></p>
         </div>
 
     <div class="stats-panel">
@@ -957,6 +970,15 @@
             document.getElementById('temperature').textContent = data.temperaute != null ? data.temperaute : 0;
             document.getElementById('throttle').textContent = data.throttle != null ? data.throttle : 0;
 
+            const lastUpdated = document.getElementById('lastUpdated');
+            if (data.error) {
+                lastUpdated.textContent = 'Stale - last update ' + formatAge(data.lastSuccessMs);
+                lastUpdated.className = 'stale';
+            } else {
+                lastUpdated.textContent = 'Updated ' + formatAge(data.lastSuccessMs);
+                lastUpdated.className = 'ok';
+            }
+
             const heatingEl = document.getElementById('heating');
             heatingEl.textContent = data.heating ? 'ON' : 'OFF';
             if (data.heating) {
@@ -994,11 +1016,74 @@
                 .catch(error => console.error('Error polling detected data:', error));
         }
 
+        // The preview refresh is chained after the previous image finishes loading,
+        // so a slow camera cannot pile up overlapping requests.
+        const PREVIEW_INTERVAL_MS = 2000;
+        const IMAGE_RETRY_MS = 5000;
+        const ERROR_POLL_MS = 15000;
+        let imageTimer = null;
+
+        function scheduleImageRefresh(delayMs) {
+            clearTimeout(imageTimer);
+            imageTimer = setTimeout(refreshImage, delayMs);
+        }
+
         function refreshImage() {
+            clearTimeout(imageTimer);
             const img = document.getElementById('liveImage');
             const analyze = !editMode;
             img.src = '/Immer/uncroppedimage?analyze=' + analyze + '&t=' + new Date().getTime();
         }
+
+        function setPreviewStatus(ok) {
+            const status = document.getElementById('previewStatus');
+            status.textContent = ok ? 'Live' : 'Camera unavailable';
+            status.className = ok ? 'ok' : 'stale';
+        }
+
+        function formatAge(timestampMs) {
+            if (!timestampMs) {
+                return 'never';
+            }
+            const seconds = Math.max(0, Math.round((Date.now() - timestampMs) / 1000));
+            if (seconds < 2) {
+                return 'just now';
+            }
+            if (seconds < 60) {
+                return seconds + 's ago';
+            }
+            const minutes = Math.round(seconds / 60);
+            if (minutes < 60) {
+                return minutes + 'm ago';
+            }
+            return Math.round(minutes / 60) + 'h ago';
+        }
+
+        function pollErrors() {
+            fetch('/ImmerManager/errors')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('timeoutErrors').textContent = data.timeout || 0;
+                    document.getElementById('generalErrors').textContent = data.error || 0;
+                    document.getElementById('unknownDigitErrors').textContent = data.unknown_digit || 0;
+                })
+                .catch(error => console.error('Error polling error statistics:', error));
+        }
+
+        liveImage.addEventListener('load', function() {
+            setPreviewStatus(true);
+            scheduleImageRefresh(PREVIEW_INTERVAL_MS);
+        });
+
+        liveImage.addEventListener('error', function() {
+            setPreviewStatus(false);
+            scheduleImageRefresh(IMAGE_RETRY_MS);
+        });
 
         function formatDuration(ms) {
             if (ms <= 0) {
@@ -1149,7 +1234,12 @@
         renderPointButtons();
         createMarkers();
         updatePointInputs();
-        setInterval(refreshImage, 2000);
+        if (liveImage.complete && liveImage.naturalWidth > 0) {
+            setPreviewStatus(true);
+            scheduleImageRefresh(PREVIEW_INTERVAL_MS);
+        }
+        pollErrors();
+        setInterval(pollErrors, ERROR_POLL_MS);
         setInterval(pollState, 2000);
         setInterval(pollDetectedData, 2000);
         pollStats();

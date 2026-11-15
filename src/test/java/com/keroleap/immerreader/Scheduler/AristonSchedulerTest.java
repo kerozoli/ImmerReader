@@ -9,7 +9,10 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import com.keroleap.immerreader.AristonRest;
+import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.Service.AristonAnalyzerService;
+import com.keroleap.immerreader.Service.CameraUnavailableException;
+import com.keroleap.immerreader.SharedData.AristonData;
 import com.keroleap.immerreader.SharedData.AristonManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
 import com.keroleap.immerreader.SharedData.SchedulerHealthTracker;
@@ -18,6 +21,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AristonSchedulerTest {
+
+    @Mock
+    private AristonData aristonData;
 
     @Mock
     private AristonManagerData aristonManagerData;
@@ -59,10 +65,69 @@ class AristonSchedulerTest {
         when(aristonAnalyzerService.getBufferedImage(anyString())).thenReturn(mockImage);
         AristonRest rest = new AristonRest();
         rest.setPercentage(50);
-        when(aristonAnalyzerService.getAristonRestData(any(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(rest);
+        when(aristonAnalyzerService.getAristonRestData(any(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt()))
+                .thenReturn(rest);
 
         assertDoesNotThrow(() -> aristonScheduler.AristonScheduledRead());
         verify(aristonAnalyzerService).getBufferedImage(anyString());
+    }
+
+    @Test
+    void scheduledRead_publishesResultAndTimestamp() throws Exception {
+        when(aristonManagerData.isEnabled()).thenReturn(true);
+        when(aristonAnalyzerService.getBufferedImage(anyString()))
+                .thenReturn(new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB));
+        AristonRest rest = new AristonRest();
+        rest.setPercentage(40);
+        when(aristonAnalyzerService.getAristonRestData(any(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt()))
+                .thenReturn(rest);
+
+        aristonScheduler.AristonScheduledRead();
+
+        verify(aristonData).setAristonRest(rest);
+        verify(schedulerHealthTracker).recordSuccess("Ariston");
+        assertFalse(rest.isError());
+        assertTrue(rest.getLastSuccessMs() > 0);
+    }
+
+    @Test
+    void scheduledRead_recordsTimeoutError() {
+        when(aristonManagerData.isEnabled()).thenReturn(true);
+        when(aristonAnalyzerService.getBufferedImage(anyString()))
+                .thenThrow(new CameraUnavailableException("timeout", true));
+
+        aristonScheduler.AristonScheduledRead();
+
+        verify(errorStatistics).recordError("Ariston", ErrorType.TIMEOUT);
+        verify(schedulerHealthTracker).recordError("Ariston", ErrorType.TIMEOUT);
+        verify(aristonData, never()).setAristonRest(any());
+    }
+
+    @Test
+    void scheduledRead_recordsFetchError() {
+        when(aristonManagerData.isEnabled()).thenReturn(true);
+        when(aristonAnalyzerService.getBufferedImage(anyString()))
+                .thenThrow(new CameraUnavailableException("http 500", false));
+
+        aristonScheduler.AristonScheduledRead();
+
+        verify(errorStatistics).recordError("Ariston", ErrorType.FETCH_ERROR);
+    }
+
+    @Test
+    void scheduledRead_marksDataStaleAfterFiveConsecutiveErrors() {
+        when(aristonManagerData.isEnabled()).thenReturn(true);
+        AristonRest current = new AristonRest();
+        when(aristonData.getAristonRest()).thenReturn(current);
+        when(aristonAnalyzerService.getBufferedImage(anyString()))
+                .thenThrow(new CameraUnavailableException("timeout", true));
+
+        for (int i = 0; i < 5; i++) {
+            aristonScheduler.AristonScheduledRead();
+        }
+
+        assertTrue(current.isError());
+        assertEquals(ErrorType.TIMEOUT, current.getErrorType());
     }
 
     @Test
