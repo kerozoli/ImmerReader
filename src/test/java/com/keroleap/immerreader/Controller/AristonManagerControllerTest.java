@@ -1,5 +1,7 @@
 package com.keroleap.immerreader.Controller;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -8,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import com.keroleap.immerreader.AristonRest;
 import com.keroleap.immerreader.SharedData.AristonData;
 import com.keroleap.immerreader.SharedData.AristonManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
@@ -147,6 +150,29 @@ class AristonManagerControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
 
         verify(aristonManagerData).setEnabled(false);
+    }
+
+    @Test
+    void getData_returnsLatestSchedulerValue() throws Exception {
+        AristonRest rest = new AristonRest();
+        rest.setPercentage(65);
+        rest.setLastSuccessMs(1000L);
+        when(aristonData.getAristonRest()).thenReturn(rest);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/AristonManager/data"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.percentage").value(65))
+                .andExpect(jsonPath("$.lastSuccessMs").value(1000));
+    }
+
+    @Test
+    void getErrors_returnsErrorCounters() throws Exception {
+        when(errorStatistics.getLastErrorCounts("Ariston")).thenReturn(Map.of("timeout", 3, "error", 1));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/AristonManager/errors"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.timeout").value(3))
+                .andExpect(jsonPath("$.error").value(1));
     }
 
     @Test

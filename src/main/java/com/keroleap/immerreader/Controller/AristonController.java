@@ -1,16 +1,17 @@
 package com.keroleap.immerreader.Controller;
 
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 import javax.imageio.ImageIO;
 
-import java.awt.image.BufferedImage;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,7 +27,10 @@ import com.keroleap.immerreader.SharedData.AristonManagerData;
 @RequestMapping("/Ariston")
 public class AristonController {
 
-    private static final Logger logger = LoggerFactory.getLogger(AristonController.class);
+    private static final int CROP_X1 = 60;
+    private static final int CROP_Y1 = 115;
+    private static final int CROP_X2 = 260;
+    private static final int CROP_Y2 = 230;
 
     @Autowired
     private AristonData aristonData;
@@ -37,53 +41,81 @@ public class AristonController {
     @Autowired
     private AristonManagerData aristonManagerData;
 
-    @GetMapping(value = "/image", produces = MediaType.IMAGE_JPEG_VALUE)
-    public @ResponseBody byte[] getImage() throws IOException {
-        BufferedImage cachedImage = aristonAnalyzerService.getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-        aristonAnalyzerService.getAristonRestData(cachedImage,
+    @Value("${camera.ariston.url:http://192.168.1.191/cgi/jpg/image.cgi}")
+    private String cameraUrl = "http://192.168.1.191/cgi/jpg/image.cgi";
+
+    /**
+     * Returns a cropped preview. The preview is best-effort: when the camera is
+     * unreachable the last good frame is shown instead of failing the request.
+     */
+    @GetMapping("/image")
+    public ResponseEntity<byte[]> getImage() throws IOException {
+        BufferedImage image = aristonAnalyzerService.getPreviewImage(cameraUrl);
+        if (image == null) {
+            return cameraUnavailable();
+        }
+        aristonAnalyzerService.getAristonRestData(image,
                 aristonManagerData.getStartX(), aristonManagerData.getStartY(),
                 aristonManagerData.getControlX(), aristonManagerData.getControlY(),
                 aristonManagerData.getEndX(), aristonManagerData.getEndY());
-        int x1 = 60;
-        int y1 = 115;
-        int x2 = 260;
-        int y2 = 230;
-
-        int width = x2 - x1;
-        int height = y2 - y1;
-
-        BufferedImage bufferedImage = cachedImage.getSubimage(x1, y1, width, height);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(bufferedImage, "jpg", baos);
-        return baos.toByteArray();
+        return jpeg(crop(image, CROP_X1, CROP_Y1, CROP_X2, CROP_Y2));
     }
 
-    @GetMapping(value = "/uncroppedimage", produces = MediaType.IMAGE_JPEG_VALUE)
-    public @ResponseBody byte[] getUncroppedImage() throws IOException {
-        BufferedImage cachedImage = aristonAnalyzerService.getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-        aristonAnalyzerService.getAristonRestData(cachedImage,
+    /**
+     * Returns the full preview with the analyzer's detection crosses.
+     */
+    @GetMapping("/uncroppedimage")
+    public ResponseEntity<byte[]> getUncroppedImage() throws IOException {
+        BufferedImage image = aristonAnalyzerService.getPreviewImage(cameraUrl);
+        if (image == null) {
+            return cameraUnavailable();
+        }
+        aristonAnalyzerService.getAristonRestData(image,
                 aristonManagerData.getStartX(), aristonManagerData.getStartY(),
                 aristonManagerData.getControlX(), aristonManagerData.getControlY(),
                 aristonManagerData.getEndX(), aristonManagerData.getEndY());
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(cachedImage, "jpg", baos);
-        return baos.toByteArray();
+        return jpeg(image);
     }
 
-    @RequestMapping(value = "/aristondata")
-    public ModelAndView getAristonData() throws IOException {
-        BufferedImage cachedImage = aristonAnalyzerService.getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
+    @RequestMapping("/aristondata")
+    public ModelAndView getAristonData() {
         ModelAndView modelAndView = new ModelAndView("immerdata");
-        modelAndView.addObject("message", aristonAnalyzerService.getAristonRestData(cachedImage,
-                aristonManagerData.getStartX(), aristonManagerData.getStartY(),
-                aristonManagerData.getControlX(), aristonManagerData.getControlY(),
-                aristonManagerData.getEndX(), aristonManagerData.getEndY()).toString());
+        BufferedImage image = aristonAnalyzerService.getPreviewImage(cameraUrl);
+        String message = image != null
+                ? aristonAnalyzerService.getAristonRestData(image,
+                        aristonManagerData.getStartX(), aristonManagerData.getStartY(),
+                        aristonManagerData.getControlX(), aristonManagerData.getControlY(),
+                        aristonManagerData.getEndX(), aristonManagerData.getEndY()).toString()
+                : "Camera unavailable";
+        modelAndView.addObject("message", message);
         return modelAndView;
     }
 
-    @RequestMapping(value = "/aristonrestdata")
+    @RequestMapping("/aristonrestdata")
     @ResponseBody
     public AristonRest getAristonRestData() {
         return aristonData.getAristonRest();
+    }
+
+    private ResponseEntity<byte[]> jpeg(BufferedImage image) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(image, "jpg", baos);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .body(baos.toByteArray());
+    }
+
+    private ResponseEntity<byte[]> cameraUnavailable() {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("Camera unavailable".getBytes(StandardCharsets.UTF_8));
+    }
+
+    private BufferedImage crop(BufferedImage image, int x1, int y1, int x2, int y2) {
+        int left = Math.max(0, Math.min(x1, image.getWidth() - 1));
+        int top = Math.max(0, Math.min(y1, image.getHeight() - 1));
+        int right = Math.max(left + 1, Math.min(x2, image.getWidth()));
+        int bottom = Math.max(top + 1, Math.min(y2, image.getHeight()));
+        return image.getSubimage(left, top, right - left, bottom - top);
     }
 }

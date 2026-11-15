@@ -229,4 +229,16 @@ class ImmerManagerControllerTest {
                 .andExpect(jsonPath("$.heatingMsPerMinute[0]").value(45_000))
                 .andExpect(jsonPath("$.totalHeatingMs").value(45_000));
     }
+
+    @Test
+    void getErrors_returnsErrorCounters() throws Exception {
+        when(errorStatistics.getLastErrorCounts("Immer"))
+                .thenReturn(java.util.Map.of("timeout", 4, "error", 2, "unknown_digit", 1));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/ImmerManager/errors"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.timeout").value(4))
+                .andExpect(jsonPath("$.error").value(2))
+                .andExpect(jsonPath("$.unknown_digit").value(1));
+    }
 }

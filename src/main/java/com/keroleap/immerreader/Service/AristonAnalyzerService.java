@@ -56,6 +56,14 @@ public class AristonAnalyzerService {
         return cameraImageService.capture(imageUrl);
     }
 
+    /**
+     * Returns the freshest available frame for display, falling back to the last
+     * good frame when the camera is unreachable.
+     */
+    public BufferedImage getPreviewImage(String imageUrl) {
+        return cameraImageService.captureWithFallback(imageUrl);
+    }
+
     private int findLongestBrightRun(boolean[] detected) {
         int bestStart = -1;
         int bestLength = 0;

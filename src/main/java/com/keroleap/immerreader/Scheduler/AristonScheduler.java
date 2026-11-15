@@ -4,18 +4,18 @@ import java.awt.image.BufferedImage;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.TriggerContext;
@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 import com.keroleap.immerreader.AristonRest;
 import com.keroleap.immerreader.ErrorType;
 import com.keroleap.immerreader.Service.AristonAnalyzerService;
+import com.keroleap.immerreader.Service.CameraUnavailableException;
 import com.keroleap.immerreader.SharedData.AristonData;
 import com.keroleap.immerreader.SharedData.AristonManagerData;
 import com.keroleap.immerreader.SharedData.ErrorStatistics;
@@ -38,6 +39,9 @@ public class AristonScheduler {
     private static final Logger logger = LoggerFactory.getLogger(AristonScheduler.class);
     private static final int HISTORY_SIZE = 5;
     private static final int DEADBAND = 2;
+    private static final int ERROR_THRESHOLD = 5;
+    private static final long DEFAULT_INTERVAL_MS = 15000L;
+    private static final long MIN_INTERVAL_MS = 1000L;
 
     @Autowired
     private AristonData aristonData;
@@ -57,13 +61,29 @@ public class AristonScheduler {
     @Autowired
     private TaskScheduler taskScheduler;
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    @Value("${camera.ariston.url:http://192.168.1.191/cgi/jpg/image.cgi}")
+    private String cameraUrl = "http://192.168.1.191/cgi/jpg/image.cgi";
+
+    /**
+     * Dedicated thread for the blocking camera read. It is deliberately separate
+     * from the Spring {@link TaskScheduler}, which is shared with other schedulers.
+     * A SynchronousQueue rejects a read when the previous one is still running, so
+     * slow cameras cannot build up a backlog of queued reads.
+     */
+    private final ThreadPoolExecutor readExecutor = new ThreadPoolExecutor(
+            1, 1, 0L, TimeUnit.MILLISECONDS, new SynchronousQueue<>(),
+            runnable -> {
+                Thread thread = new Thread(runnable, "ariston-reader");
+                thread.setDaemon(true);
+                return thread;
+            });
+
     private final AtomicInteger consecutiveErrors = new AtomicInteger(0);
     private volatile ErrorType lastErrorType = null;
     private final Deque<Integer> history = new ArrayDeque<>();
     private volatile int lastPublished = -1;
     private volatile ScheduledFuture<?> scheduledFuture;
-    private final AtomicLong configuredIntervalMs = new AtomicLong(15000);
+    private final AtomicLong configuredIntervalMs = new AtomicLong(DEFAULT_INTERVAL_MS);
 
     @PostConstruct
     public void init() {
@@ -72,16 +92,25 @@ public class AristonScheduler {
 
     private void scheduleRead() {
         cancelExisting();
-        configuredIntervalMs.set(aristonManagerData.getIntervalSeconds() * 1000L);
+        configuredIntervalMs.set(resolveIntervalMs());
         Trigger trigger = new Trigger() {
             @Override
             public Instant nextExecution(TriggerContext triggerContext) {
                 Instant lastCompletion = triggerContext.lastCompletion();
-                long nextMs = (lastCompletion != null ? lastCompletion.toEpochMilli() : System.currentTimeMillis()) + configuredIntervalMs.get();
+                long nextMs = (lastCompletion != null ? lastCompletion.toEpochMilli() : System.currentTimeMillis())
+                        + configuredIntervalMs.get();
                 return Instant.ofEpochMilli(nextMs);
             }
         };
-        scheduledFuture = taskScheduler.schedule(this::AristonScheduledRead, trigger);
+        scheduledFuture = taskScheduler.schedule(this::dispatchRead, trigger);
+    }
+
+    private void dispatchRead() {
+        try {
+            readExecutor.execute(this::AristonScheduledRead);
+        } catch (RejectedExecutionException e) {
+            logger.debug("Skipping Ariston read, previous read is still running.");
+        }
     }
 
     private void cancelExisting() {
@@ -89,6 +118,12 @@ public class AristonScheduler {
             scheduledFuture.cancel(false);
             scheduledFuture = null;
         }
+    }
+
+    private long resolveIntervalMs() {
+        int seconds = aristonManagerData.getIntervalSeconds();
+        long intervalMs = seconds > 0 ? seconds * 1000L : DEFAULT_INTERVAL_MS;
+        return Math.max(MIN_INTERVAL_MS, intervalMs);
     }
 
     public void AristonScheduledRead() {
@@ -99,35 +134,32 @@ public class AristonScheduler {
         }
 
         if (taskScheduler != null) {
-            long currentIntervalMs = aristonManagerData.getIntervalSeconds() * 1000L;
+            long currentIntervalMs = resolveIntervalMs();
             if (currentIntervalMs != configuredIntervalMs.get()) {
                 scheduleRead();
                 return;
             }
         }
 
-        Future<AristonRest> future = executor.submit(() -> {
-            BufferedImage cachedImage = aristonAnalyzerService.getBufferedImage("http://192.168.1.191/cgi/jpg/image.cgi");
-            return aristonAnalyzerService.getAristonRestData(cachedImage,
+        try {
+            BufferedImage image = aristonAnalyzerService.getBufferedImage(cameraUrl);
+            AristonRest result = aristonAnalyzerService.getAristonRestData(image,
                     aristonManagerData.getStartX(), aristonManagerData.getStartY(),
                     aristonManagerData.getControlX(), aristonManagerData.getControlY(),
                     aristonManagerData.getEndX(), aristonManagerData.getEndY());
-        });
 
-        try {
-            AristonRest result = future.get(10000, TimeUnit.MILLISECONDS);
             int smoothed = smoothPercentage(result.getPercentage());
             result.setPercentage(smoothed);
             result.setError(false);
             result.setErrorType(null);
+            result.setLastSuccessMs(System.currentTimeMillis());
             aristonData.setAristonRest(result);
             consecutiveErrors.set(0);
             lastErrorType = null;
             schedulerHealthTracker.recordSuccess("Ariston");
-        } catch (TimeoutException e) {
-            future.cancel(true);
-            logger.warn("Timeout fetching Ariston data, keeping previous value.");
-            handleError(ErrorType.TIMEOUT);
+        } catch (CameraUnavailableException e) {
+            logger.warn("Ariston camera unavailable: {}", e.getMessage());
+            handleError(e.isTimedOut() ? ErrorType.TIMEOUT : ErrorType.FETCH_ERROR);
         } catch (Exception e) {
             logger.error("Error fetching Ariston data: {}", e.getMessage());
             handleError(ErrorType.FETCH_ERROR);
@@ -137,19 +169,18 @@ public class AristonScheduler {
     private void handleError(ErrorType errorType) {
         errorStatistics.recordError("Ariston", errorType);
         schedulerHealthTracker.recordError("Ariston", errorType);
-        if (errorType.equals(lastErrorType)) {
-            consecutiveErrors.incrementAndGet();
-        } else {
-            lastErrorType = errorType;
-            consecutiveErrors.set(1);
-        }
-        if (consecutiveErrors.get() >= 5) {
-            aristonData.getAristonRest().setError(true);
-            aristonData.getAristonRest().setErrorType(errorType);
+        lastErrorType = errorType;
+        int streak = consecutiveErrors.incrementAndGet();
+        if (streak >= ERROR_THRESHOLD) {
+            AristonRest current = aristonData.getAristonRest();
+            if (current != null) {
+                current.setError(true);
+                current.setErrorType(errorType);
+            }
         }
     }
 
-    private int smoothPercentage(int raw) {
+    private synchronized int smoothPercentage(int raw) {
         history.addLast(raw);
         while (history.size() > HISTORY_SIZE) {
             history.removeFirst();
@@ -177,6 +208,6 @@ public class AristonScheduler {
     public void destroy() {
         logger.info("Shutting down AristonScheduler executor.");
         cancelExisting();
-        executor.shutdownNow();
+        readExecutor.shutdownNow();
     }
 }

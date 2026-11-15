@@ -8,11 +8,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
+import java.awt.image.BufferedImage;
+
 import com.keroleap.immerreader.AristonRest;
 import com.keroleap.immerreader.Service.AristonAnalyzerService;
 import com.keroleap.immerreader.SharedData.AristonData;
 import com.keroleap.immerreader.SharedData.AristonManagerData;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -72,5 +77,33 @@ class AristonControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.get("/Ariston/aristonrestdata"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.percentage").value(100));
+    }
+
+    @Test
+    void uncroppedImage_returnsJpegWhenCameraAvailable() throws Exception {
+        BufferedImage image = new BufferedImage(400, 300, BufferedImage.TYPE_INT_RGB);
+        when(aristonAnalyzerService.getPreviewImage(anyString())).thenReturn(image);
+        when(aristonAnalyzerService.getAristonRestData(any(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt()))
+                .thenReturn(new AristonRest());
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/Ariston/uncroppedimage"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.IMAGE_JPEG));
+    }
+
+    @Test
+    void uncroppedImage_returnsServiceUnavailableWhenCameraNeverDelivered() throws Exception {
+        when(aristonAnalyzerService.getPreviewImage(anyString())).thenReturn(null);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/Ariston/uncroppedimage"))
+                .andExpect(status().isServiceUnavailable());
+    }
+
+    @Test
+    void image_returnsServiceUnavailableWhenCameraNeverDelivered() throws Exception {
+        when(aristonAnalyzerService.getPreviewImage(anyString())).thenReturn(null);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/Ariston/image"))
+                .andExpect(status().isServiceUnavailable());
     }
 }

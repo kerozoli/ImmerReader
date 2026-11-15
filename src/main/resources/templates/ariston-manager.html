@@ -165,6 +165,17 @@
             font-weight: bold;
             color: #e94560;
         }
+        .freshness {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #aaa;
+        }
+        .freshness .stale {
+            color: #e94560;
+        }
+        .freshness .ok {
+            color: #28a745;
+        }
         .error-stats {
             margin-top: 20px;
         }
@@ -278,6 +289,7 @@
                     <div class="value"><span id="percentage" th:text="${aristonRest.percentage}">0</span>%</div>
                 </div>
             </div>
+            <p class="freshness"><span id="lastUpdated">Never updated</span></p>
         </div>
     </div>
 
@@ -356,6 +368,7 @@
                         <div id="endMarker" class="marker end" style="display:none;"></div>
                     </div>
                     <p><small>Image refreshes automatically every <span id="previewIntervalSeconds" th:text="${intervalSeconds}">15</span> seconds. Click on image to set active point.</small></p>
+                    <p class="freshness"><span id="previewStatus">Live</span></p>
                 </div>
             </div>
         </div>
@@ -551,13 +564,112 @@
             });
         });
 
+        // The preview refresh is chained after the previous image finishes loading,
+        // so a slow camera cannot pile up overlapping requests.
+        const IMAGE_RETRY_MS = 5000;
+        const DATA_POLL_MS = 5000;
+        const ERROR_POLL_MS = 15000;
+        let imageTimer = null;
+
+        function previewIntervalMs() {
+            const seconds = parseInt(intervalSecondsInput.value, 10);
+            return (isNaN(seconds) || seconds < 1 ? 15 : seconds) * 1000;
+        }
+
+        function scheduleImageRefresh(delayMs) {
+            clearTimeout(imageTimer);
+            imageTimer = setTimeout(refreshImage, delayMs);
+        }
+
         function refreshImage() {
+            clearTimeout(imageTimer);
             const img = document.getElementById('liveImage');
             img.src = '/Ariston/uncroppedimage?t=' + new Date().getTime();
         }
 
-        const intervalMs = parseInt(document.getElementById('intervalSeconds').value) * 1000;
-        setInterval(refreshImage, intervalMs);
+        function setPreviewStatus(ok) {
+            const status = document.getElementById('previewStatus');
+            status.textContent = ok ? 'Live' : 'Camera unavailable';
+            status.className = ok ? 'ok' : 'stale';
+        }
+
+        liveImage.addEventListener('load', function() {
+            setPreviewStatus(true);
+            scheduleImageRefresh(previewIntervalMs());
+        });
+
+        liveImage.addEventListener('error', function() {
+            setPreviewStatus(false);
+            scheduleImageRefresh(IMAGE_RETRY_MS);
+        });
+
+        function formatAge(timestampMs) {
+            if (!timestampMs) {
+                return 'never';
+            }
+            const seconds = Math.max(0, Math.round((Date.now() - timestampMs) / 1000));
+            if (seconds < 2) {
+                return 'just now';
+            }
+            if (seconds < 60) {
+                return seconds + 's ago';
+            }
+            const minutes = Math.round(seconds / 60);
+            if (minutes < 60) {
+                return minutes + 'm ago';
+            }
+            return Math.round(minutes / 60) + 'h ago';
+        }
+
+        function pollData() {
+            fetch('/Ariston/aristonrestdata')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('percentage').textContent = data.percentage;
+                    const lastUpdated = document.getElementById('lastUpdated');
+                    if (data.error) {
+                        lastUpdated.textContent = 'Stale - last update ' + formatAge(data.lastSuccessMs);
+                        lastUpdated.className = 'stale';
+                    } else {
+                        lastUpdated.textContent = 'Updated ' + formatAge(data.lastSuccessMs);
+                        lastUpdated.className = 'ok';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error polling Ariston data:', error);
+                    document.getElementById('lastUpdated').textContent = 'Data unavailable';
+                });
+        }
+
+        function pollErrors() {
+            fetch('/AristonManager/errors')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    document.getElementById('timeoutErrors').textContent = data.timeout || 0;
+                    document.getElementById('generalErrors').textContent = data.error || 0;
+                })
+                .catch(error => console.error('Error polling error statistics:', error));
+        }
+
+        if (liveImage.complete && liveImage.naturalWidth > 0) {
+            setPreviewStatus(true);
+            scheduleImageRefresh(previewIntervalMs());
+        }
+
+        pollData();
+        pollErrors();
+        setInterval(pollData, DATA_POLL_MS);
+        setInterval(pollErrors, ERROR_POLL_MS);
     </script>
 </body>
 </html>

@@ -28,6 +28,14 @@ public class EbedloAnalyzerService {
         return cameraImageService.capture(imageUrl);
     }
 
+    /**
+     * Returns the freshest available frame for display, falling back to the last
+     * good frame when the camera is unreachable.
+     */
+    public BufferedImage getPreviewImage(String imageUrl) {
+        return cameraImageService.captureWithFallback(imageUrl);
+    }
+
     public EbedloRest getEbedloRestData(BufferedImage bufferedImage, EbedloManagerData managerData) {
         EbedloRest ebedloRest = new EbedloRest();
         if (bufferedImage == null) {
